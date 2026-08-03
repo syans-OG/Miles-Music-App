@@ -1,0 +1,24 @@
+{
+  "_type": "playlist",
+  "id": "PLDuK_0-3anUREPpS5-EDohLzh29Zpwlv1",
+  "title": "Fixture YouTube Playlist",
+  "webpage_url": "https://www.youtube.com/playlist?list=PLDuK_0-3anUREPpS5-EDohLzh29Zpwlv1",
+  "entries": [
+    {
+      "_type": "url",
+      "id": "dQw4w9WgXcQ",
+      "title": "Fixture Track One",
+      "url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+      "duration": 212,
+      "uploader": "Fixture Channel",
+      "live_status": "not_live"
+    },
+    {
+      "_type": "url",
+      "id": "live0000001",
+      "title": "Fixture Live Track",
+      "url": "https://www.youtube.com/watch?v=live0000001",
+      "live_status": "is_live"
+    }
+  ]
+}

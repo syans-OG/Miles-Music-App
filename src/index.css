@@ -1,0 +1,467 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    outline: none !important;
+  }
+  html, body, #root {
+    background: transparent !important;
+    @apply text-slate-100 font-sans antialiased;
+    user-select: none;
+    -webkit-user-select: none;
+    overflow: hidden;
+  }
+
+  /* Tauri / Desktop Window Dragging */
+  [data-tauri-drag-region] {
+    -webkit-app-region: drag;
+  }
+  button, input, textarea, select, a, label, [role="button"] {
+    -webkit-app-region: no-drag;
+  }
+}
+
+/* Glassmorphism Luxury Panel */
+.glass-panel {
+  background: rgba(18, 20, 28, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 10px 24px -4px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.glass-panel-subtle {
+  background: rgba(22, 25, 32, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* CD Jewel Case Styling (Image 1 Inspiration) */
+.cd-jewel-case {
+  position: relative;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow:
+    0 6px 16px rgba(0, 0, 0, 0.35),
+    inset 0 0 15px rgba(255, 255, 255, 0.05);
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.cd-jewel-case:hover {
+  transform: translateY(-6px) scale(1.02);
+  border-color: rgba(255, 255, 255, 0.35);
+  box-shadow:
+    0 12px 28px rgba(0, 0, 0, 0.5),
+    0 0 20px rgba(255, 255, 255, 0.1);
+}
+
+.cd-disc-center {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #08090C 30%, rgba(255, 255, 255, 0.4) 35%, #08090C 70%);
+  border: 1.5px solid rgba(255, 255, 255, 0.3);
+  box-shadow: inset 0 0 4px rgba(0, 0, 0, 0.8);
+}
+
+/* Metallic Vinyl Turntable Body (Image 2 Inspiration) */
+.turntable-body {
+  background: linear-gradient(145deg, #2b303c, #161820);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow:
+    0 12px 30px rgba(0, 0, 0, 0.45),
+    inset 0 1px 1px rgba(255, 255, 255, 0.2);
+  border-radius: 24px;
+}
+
+/* Spinning Vinyl Groove Texture */
+.vinyl-grooves {
+  background: radial-gradient(
+    circle,
+    #111 15%,
+    #1f1f1f 17%,
+    #0c0c0c 20%,
+    #262626 25%,
+    #111 30%,
+    #1f1f1f 40%,
+    #0d0d0d 50%,
+    #222 65%,
+    #111 100%
+  );
+  border: 2px solid #333;
+}
+
+/* Vinyl Shine Reflex Animation */
+.vinyl-shine {
+  background: linear-gradient(
+    135deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.12) 45%,
+    rgba(255, 255, 255, 0.22) 50%,
+    rgba(255, 255, 255, 0.12) 55%,
+    transparent 100%
+  );
+}
+
+/* Custom Physical Cabinet Drawer Styling (User Sketch) */
+.drawer-cabinet-shadow {
+  box-shadow:
+    0 16px 36px rgba(0, 0, 0, 0.5),
+    inset 0 12px 24px rgba(0, 0, 0, 0.8),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+.drawer-top-console {
+  background: linear-gradient(160deg, rgba(24, 27, 38, 0.95) 0%, rgba(14, 16, 24, 0.98) 100%);
+  filter: drop-shadow(0 10px 18px rgba(0, 0, 0, 0.35));
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.2),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.5);
+}
+
+.mode-one-no-outer-shadow {
+  filter: none;
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.2),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.5);
+}
+
+.mode-two-no-outer-shadow {
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.2);
+}
+
+/* Metallic Chrome Arm Detail */
+.chrome-tonearm {
+  background: linear-gradient(90deg, #e2e8f0 0%, #ffffff 50%, #94a3b8 100%);
+  box-shadow: 1px 2px 5px rgba(0, 0, 0, 0.5);
+}
+
+/* Hi-Fi LED Status Light */
+.hi-fi-led-on {
+  background: #10b981;
+  box-shadow: 0 0 8px #10b981, 0 0 16px rgba(16, 185, 129, 0.5);
+}
+
+.hi-fi-led-off {
+  background: #475569;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.6);
+}
+
+/* Pure Circular CD Disc Styling (Frameless / Without Box Container) */
+.pure-cd-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 4px;
+  border-radius: 16px;
+  background: transparent;
+  border: none;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.pure-cd-container:hover {
+  background: transparent;
+  transform: translateY(-5px);
+}
+
+
+.pure-cd-disc {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  position: relative;
+  overflow: hidden;
+  box-shadow:
+    0 6px 16px rgba(0, 0, 0, 0.8),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.2);
+  transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.pure-cd-container:hover .pure-cd-disc {
+  transform: rotate(180deg) scale(1.06);
+}
+
+/* CD Inner Spindle Ring & Center Hole */
+.pure-cd-center-hole {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: rgba(12, 14, 20, 0.95);
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.9);
+  z-index: 10;
+}
+
+@keyframes drawerPullDown {
+  from {
+    opacity: 0;
+    transform: translateY(-16px) scaleY(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scaleY(1);
+  }
+}
+
+.animate-drawer-pull {
+  animation: drawerPullDown 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes signal-scan {
+  0% { transform: translateX(-110%); }
+  50% { transform: translateX(110%); }
+  100% { transform: translateX(310%); }
+}
+
+/* ============================================
+   MODE TRANSITION ANIMATIONS (GPU-accelerated)
+   Uses transform:scale() instead of width/height
+   to avoid conflicts with Tailwind fixed sizes.
+   ============================================ */
+
+/* --- MODE 1 → MODE 2 (ControlBar 440px → VinylWidget 176px) --- */
+/* Scale ratio: 440/176 = 2.5 (starts 2.5x bigger, shrinks to 1x) */
+@keyframes scaleInFromMode1 {
+  0% {
+    transform: scale(1.1);
+    opacity: 0.94;
+  }
+  72% {
+    transform: scale(0.992);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* --- MODE 2 → MODE 1 (VinylWidget 176px → ControlBar 440px) --- */
+/* Scale ratio: 176/440 = 0.4 (starts 0.4x smaller, grows to 1x) */
+@keyframes scaleInFromMode2 {
+  0% {
+    transform: scale(0.9);
+    opacity: 0.94;
+  }
+  72% {
+    transform: scale(1.008);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* --- MODE 2 → MODE 3 (VinylWidget 176px → MicroBubble 48px) --- */
+/* Scale ratio: 176/48 ≈ 3.67 (starts big, shrinks to 1x) */
+@keyframes scaleInFromMode2ToMode3 {
+  0% {
+    transform: scale(1.12);
+    opacity: 0.94;
+  }
+  72% {
+    transform: scale(0.99);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* --- MODE 3 → MODE 1 (MicroBubble 48px → ControlBar 440px) --- */
+/* Scale ratio: 48/440 ≈ 0.11 */
+@keyframes scaleInFromMode3ToMode1 {
+  0% {
+    transform: scale(0.88);
+    opacity: 0.94;
+  }
+  72% {
+    transform: scale(1.01);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* --- MODE 3 → MODE 2 (MicroBubble 48px → VinylWidget 176px) --- */
+/* Scale ratio: 48/176 ≈ 0.27 */
+@keyframes scaleInFromMode3ToMode2 {
+  0% {
+    transform: scale(0.88);
+    opacity: 0.94;
+  }
+  72% {
+    transform: scale(1.01);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* --- MODE 1 → MODE 3 (ControlBar 440px → MicroBubble 48px) --- */
+/* Scale ratio: 440/48 ≈ 9.17 */
+@keyframes scaleInFromMode1ToMode3 {
+  0% {
+    transform: scale(1.14);
+    opacity: 0.94;
+  }
+  72% {
+    transform: scale(0.988);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* ---- Animation Classes: Mode 1 → Mode 2 (Shrink) ---- */
+.animate-shrink-mode2-left,
+.animate-shrink-mode2-top-left,
+.animate-shrink-mode2-bottom-left {
+  transform-origin: left top;
+  animation: scaleInFromMode1 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.animate-shrink-mode2-right,
+.animate-shrink-mode2-top-right,
+.animate-shrink-mode2-bottom-right {
+  transform-origin: right top;
+  animation: scaleInFromMode1 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.animate-shrink-mode2-center,
+.animate-shrink-mode2-free,
+.animate-shrink-mode2 {
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  transform-origin: center top;
+  animation: scaleInFromMode1 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* ---- Animation Classes: Mode 2 → Mode 1 (Expand) ---- */
+.animate-expand-mode1-left,
+.animate-expand-mode1-top-left,
+.animate-expand-mode1-bottom-left {
+  transform-origin: left top;
+  animation: scaleInFromMode2 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.animate-expand-mode1-right,
+.animate-expand-mode1-top-right,
+.animate-expand-mode1-bottom-right {
+  transform-origin: right top;
+  animation: scaleInFromMode2 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.animate-expand-mode1-center,
+.animate-expand-mode1-free,
+.animate-expand-mode1 {
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  transform-origin: center top;
+  animation: scaleInFromMode2 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* ---- Animation Classes: Mode 2 → Mode 3 (Shrink to Bubble) ---- */
+.animate-shrink-mode3-left,
+.animate-shrink-mode3-top-left,
+.animate-shrink-mode3-bottom-left {
+  transform-origin: left top;
+  animation: scaleInFromMode2ToMode3 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.animate-shrink-mode3-right,
+.animate-shrink-mode3-top-right,
+.animate-shrink-mode3-bottom-right {
+  transform-origin: right top;
+  animation: scaleInFromMode2ToMode3 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.animate-shrink-mode3-center,
+.animate-shrink-mode3-free,
+.animate-shrink-mode3 {
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  transform-origin: center top;
+  animation: scaleInFromMode2ToMode3 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* ---- Animation Classes: Mode 3 → Mode 1 (Expand from Bubble) ---- */
+.animate-expand-mode1-from-mode3-left {
+  transform-origin: left top;
+  animation: scaleInFromMode3ToMode1 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.animate-expand-mode1-from-mode3-right {
+  transform-origin: right top;
+  animation: scaleInFromMode3ToMode1 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.animate-expand-mode1-from-mode3-center {
+  transform-origin: center top;
+  animation: scaleInFromMode3ToMode1 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* ---- Animation Classes: Mode 3 → Mode 2 (Expand Bubble to Vinyl) ---- */
+.animate-expand-mode2-from-mode3-left {
+  transform-origin: left top;
+  animation: scaleInFromMode3ToMode2 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.animate-expand-mode2-from-mode3-right {
+  transform-origin: right top;
+  animation: scaleInFromMode3ToMode2 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.animate-expand-mode2-from-mode3-center {
+  transform-origin: center top;
+  animation: scaleInFromMode3ToMode2 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* ---- Animation Classes: Mode 1 → Mode 3 (Shrink Bar to Bubble) ---- */
+.animate-shrink-mode3-from-mode1-left {
+  transform-origin: left top;
+  animation: scaleInFromMode1ToMode3 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.animate-shrink-mode3-from-mode1-right {
+  transform-origin: right top;
+  animation: scaleInFromMode1ToMode3 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.animate-shrink-mode3-from-mode1-center {
+  transform-origin: center top;
+  animation: scaleInFromMode1ToMode3 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+
+
+
+/* Custom Minimalist Scrollbar */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}

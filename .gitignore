@@ -1,0 +1,46 @@
+# Dependencies and frontend output
+/node_modules/
+/dist/
+/coverage/
+
+# Rust and Tauri build output
+/src-tauri/target/
+/src-tauri/target-*/
+/src-tauri/gen/schemas/
+
+# Sidecars are downloaded from pinned releases by scripts/download-sidecars.ps1
+/src-tauri/binaries/*.exe
+
+# Installers and packaged artifacts belong in GitHub Releases
+*.msi
+*-setup.exe
+*.appx
+*.appxbundle
+
+# Local configuration, credentials, and logs
+.env
+.env.*
+!.env.example
+*.log
+npm-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Editor and operating-system files
+/.idea/
+/.vscode/
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+*.tmp
+*.temp
+*.bak
+
+# Local prototypes and internal planning history
+/design-demos/
+/direction-approved.md
+/PROJECT_CONTEXT_HANDOVER.md
+/PROJECT_PLAN.md
+/PHASE_*.md
+/YOUTUBE_INTEGRATION_IMPLEMENTATION_PLAN.md

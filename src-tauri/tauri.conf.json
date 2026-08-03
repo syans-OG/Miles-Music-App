@@ -1,0 +1,65 @@
+{
+  "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
+  "productName": "Miles",
+  "version": "1.0.0",
+  "identifier": "com.miles.musicplayer",
+  "build": {
+    "frontendDist": "../dist",
+    "devUrl": "http://localhost:3000",
+    "beforeDevCommand": "npm run dev",
+    "beforeBuildCommand": "npm run build"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "Miles",
+        "width": 500,
+        "height": 660,
+        "resizable": true,
+        "decorations": false,
+        "transparent": true,
+        "alwaysOnTop": true,
+        "center": true,
+        "shadow": false,
+        "additionalBrowserArgs": "--disable-features=msWebOOUI,msPdfOOUI,msSmartScreenProtection --disable-gpu"
+      }
+    ],
+    "security": {
+      "csp": {
+        "default-src": "'self' customprotocol: asset:",
+        "connect-src": "ipc: http://ipc.localhost",
+        "img-src": "'self' asset: http://asset.localhost blob: data: https://images.unsplash.com https://i.ytimg.com https://*.ytimg.com",
+        "media-src": "'self' asset: http://asset.localhost blob: https://*.googlevideo.com",
+        "font-src": "'self' https://fonts.gstatic.com",
+        "style-src": "'self' 'unsafe-inline' https://fonts.googleapis.com"
+      },
+      "assetProtocol": {
+        "enable": true,
+        "scope": [
+          "$APPLOCALDATA/library/**"
+        ]
+      }
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "externalBin": [
+      "binaries/yt-dlp",
+      "binaries/deno"
+    ],
+    "resources": [
+      "licenses/*"
+    ],
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "android": {
+      "debugApplicationIdSuffix": ".debug"
+    }
+  }
+}

@@ -1,0 +1,15 @@
+MILES MUSIC PLAYER - BUNDLED SIDECAR NOTICES
+
+This distribution bundles the following executables for optional YouTube
+integration. Local music playback does not depend on these components.
+
+yt-dlp 2026.07.04
+Source: https://github.com/yt-dlp/yt-dlp/tree/2026.07.04
+License notice: yt-dlp-LICENSE.txt
+Bundled executable notices: yt-dlp-THIRD_PARTY_LICENSES.txt
+
+Deno 2.9.4
+Source: https://github.com/denoland/deno/tree/v2.9.4
+License notice: deno-LICENSE.md
+
+Miles is not affiliated with or endorsed by YouTube, yt-dlp, or Deno.

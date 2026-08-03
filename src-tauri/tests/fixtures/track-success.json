@@ -1,0 +1,32 @@
+{
+  "id": "dQw4w9WgXcQ",
+  "title": "Fixture Track One",
+  "artist": "Fixture Artist",
+  "uploader": "Fixture Channel",
+  "duration": 212,
+  "thumbnail": "https://i.ytimg.com/vi/dQw4w9WgXcQ/maxresdefault.jpg",
+  "thumbnails": [
+    {
+      "url": "https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg",
+      "width": 480,
+      "height": 360
+    },
+    {
+      "url": "https://i.ytimg.com/vi/dQw4w9WgXcQ/maxresdefault.jpg",
+      "width": 1280,
+      "height": 720
+    }
+  ],
+  "webpage_url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+  "is_live": false,
+  "live_status": "not_live",
+  "url": "https://rr.example.googlevideo.com/videoplayback?expire=2000000000&fixture=1",
+  "ext": "m4a",
+  "acodec": "mp4a.40.2",
+  "vcodec": "none",
+  "protocol": "https",
+  "http_headers": {
+    "User-Agent": "Fixture Agent",
+    "Referer": "https://www.youtube.com/"
+  }
+}

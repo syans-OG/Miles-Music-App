@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "target": "x86_64-pc-windows-msvc",
+  "binaries": [
+    {
+      "id": "yt-dlp",
+      "version": "2026.07.04",
+      "downloadUrl": "https://github.com/yt-dlp/yt-dlp/releases/download/2026.07.04/yt-dlp.exe",
+      "publisherAssetSha256": "52fe3c26dcf71fbdc85b528589020bb0b8e383155cfa81b64dd447bbe35e24b8",
+      "fileName": "binaries/yt-dlp-x86_64-pc-windows-msvc.exe",
+      "runtimeFileName": "yt-dlp.exe",
+      "sha256": "52fe3c26dcf71fbdc85b528589020bb0b8e383155cfa81b64dd447bbe35e24b8"
+    },
+    {
+      "id": "deno",
+      "version": "2.9.4",
+      "downloadUrl": "https://github.com/denoland/deno/releases/download/v2.9.4/deno-x86_64-pc-windows-msvc.zip",
+      "publisherAssetSha256": "68ed08b05c56cf887e9aa509947dc3f468f7e12f47a13e5c1abd51d46d1453ef",
+      "fileName": "binaries/deno-x86_64-pc-windows-msvc.exe",
+      "runtimeFileName": "deno.exe",
+      "sha256": "4a2757fe99afc2c62c46500c8221cfa0189ac4bfb7064141875ad9c0f04b60ef"
+    }
+  ]
+}

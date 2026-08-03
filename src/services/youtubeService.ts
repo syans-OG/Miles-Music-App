@@ -1,0 +1,237 @@
+import { invoke } from '@tauri-apps/api/core';
+
+import type {
+  ResolvedYoutubeTrack,
+  YoutubeAudioStream,
+  YoutubeCommandError,
+  YoutubeErrorCode,
+  YoutubePlaylistImport,
+} from '../types/youtube';
+
+const VIDEO_ID_PATTERN = /^[A-Za-z0-9_-]{11}$/;
+const PLAYLIST_ID_PATTERN = /^[A-Za-z0-9_-]{10,80}$/;
+const YOUTUBE_HOSTS = new Set(['youtube.com', 'www.youtube.com', 'm.youtube.com', 'music.youtube.com']);
+const STREAM_EXPIRY_SAFETY_SECONDS = 30;
+const MAX_STREAM_CACHE_ENTRIES = 4;
+
+export type YoutubeResolvePurpose = 'explicit_selection' | 'sequential_next' | 'prefetch';
+export type YoutubeResolutionStatus = 'resolving' | 'ready' | 'error';
+export type YoutubeResource =
+  | { kind: 'video'; videoId: string; canonicalUrl: string }
+  | { kind: 'playlist'; playlistId: string; canonicalUrl: string };
+
+interface YoutubeRuntimeResolution {
+  requestToken: number;
+  status: YoutubeResolutionStatus;
+  stream?: YoutubeAudioStream;
+  error?: YoutubeServiceError;
+  lastAccessedAt: number;
+}
+
+const runtimeResolutions = new Map<string, YoutubeRuntimeResolution>();
+let nextRequestToken = 1;
+
+const errorMessages: Record<YoutubeErrorCode, string> = {
+  invalid_url: 'URL YouTube tidak valid.',
+  https_required: 'Link YouTube harus menggunakan HTTPS.',
+  unsupported_host: 'Host link tidak didukung.',
+  unsupported_url: 'Jenis link YouTube tidak didukung.',
+  invalid_video_id: 'ID video YouTube tidak valid.',
+  invalid_playlist_id: 'ID playlist YouTube tidak valid.',
+  live_unsupported: 'Live Stream tidak didukung.',
+  upcoming_unsupported: 'Video yang belum tayang tidak didukung.',
+  private_video: 'Video privat tidak dapat diimpor.',
+  age_restricted: 'Video dengan batasan usia tidak dapat diakses.',
+  unavailable: 'Video tidak tersedia.',
+  invalid_metadata: 'Metadata YouTube tidak valid.',
+  audio_stream_unavailable: 'Audio video tidak tersedia.',
+  dependency_unavailable: 'Komponen YouTube Miles tidak tersedia atau rusak.',
+  busy: 'Proses YouTube sedang sibuk.',
+  cancelled: 'Proses YouTube dibatalkan.',
+  timeout: 'YouTube terlalu lama merespons. Silakan coba lagi.',
+  process_failed: 'Gagal memproses link YouTube.',
+  output_too_large: 'Data playlist melebihi batas aman.',
+};
+
+export const getYoutubeErrorMessage = (code: YoutubeErrorCode): string => errorMessages[code];
+
+export class YoutubeServiceError extends Error {
+  readonly code: YoutubeErrorCode;
+  readonly retryable: boolean;
+
+  constructor(error: YoutubeCommandError) {
+    super(errorMessages[error.code]);
+    this.name = 'YoutubeServiceError';
+    this.code = error.code;
+    this.retryable = error.retryable;
+  }
+}
+
+const isYoutubeErrorCode = (value: unknown): value is YoutubeErrorCode =>
+  typeof value === 'string' && Object.prototype.hasOwnProperty.call(errorMessages, value);
+
+const toYoutubeServiceError = (error: unknown): YoutubeServiceError => {
+  if (error instanceof YoutubeServiceError) return error;
+  if (typeof error === 'object' && error !== null) {
+    const candidate = error as Partial<YoutubeCommandError>;
+    if (isYoutubeErrorCode(candidate.code)) {
+      return new YoutubeServiceError({
+        code: candidate.code,
+        retryable: candidate.retryable === true,
+        detail: typeof candidate.detail === 'string' ? candidate.detail : undefined,
+      });
+    }
+  }
+  return new YoutubeServiceError({ code: 'process_failed', retryable: false });
+};
+
+const isFresh = (stream: YoutubeAudioStream) =>
+  stream.expiresAtUnix === null
+  || stream.expiresAtUnix - STREAM_EXPIRY_SAFETY_SECONDS > Math.floor(Date.now() / 1000);
+
+const trimRuntimeCache = () => {
+  if (runtimeResolutions.size <= MAX_STREAM_CACHE_ENTRIES) return;
+  const removable = [...runtimeResolutions.entries()]
+    .filter(([, entry]) => entry.status !== 'resolving')
+    .sort(([, left], [, right]) => left.lastAccessedAt - right.lastAccessedAt);
+  while (runtimeResolutions.size > MAX_STREAM_CACHE_ENTRIES && removable.length > 0) {
+    const oldest = removable.shift();
+    if (oldest) runtimeResolutions.delete(oldest[0]);
+  }
+};
+
+export const getCachedYoutubeStream = (videoId: string): YoutubeAudioStream | null => {
+  const resolution = runtimeResolutions.get(videoId);
+  if (resolution?.status !== 'ready' || !resolution.stream) return null;
+  if (isFresh(resolution.stream)) {
+    resolution.lastAccessedAt = Date.now();
+    return resolution.stream;
+  }
+  runtimeResolutions.delete(videoId);
+  return null;
+};
+
+export const getYoutubeResolutionStatus = (videoId: string): YoutubeResolutionStatus | 'unresolved' =>
+  runtimeResolutions.get(videoId)?.status ?? 'unresolved';
+
+export const clearYoutubeStreamCache = (videoId?: string) => {
+  if (videoId) runtimeResolutions.delete(videoId);
+  else runtimeResolutions.clear();
+};
+
+const uniqueQueryValue = (url: URL, key: string): string | null => {
+  const values = url.searchParams.getAll(key);
+  return values.length === 1 && values[0] ? values[0] : null;
+};
+
+export const detectYoutubeResource = (input: string): YoutubeResource | null => {
+  try {
+    const value = input.trim();
+    if (!value || value.length > 2_048 || value.startsWith('-')) return null;
+    const url = new URL(value);
+    if (url.protocol !== 'https:' || url.username || url.password || url.port) return null;
+    const host = url.hostname.toLowerCase();
+    if (host !== 'youtu.be' && !YOUTUBE_HOSTS.has(host)) return null;
+
+    const playlistId = uniqueQueryValue(url, 'list');
+    if (playlistId) {
+      return PLAYLIST_ID_PATTERN.test(playlistId)
+        ? {
+            kind: 'playlist',
+            playlistId,
+            canonicalUrl: `https://www.youtube.com/playlist?list=${playlistId}`,
+          }
+        : null;
+    }
+    if (url.searchParams.getAll('list').length > 1) return null;
+
+    const segments = url.pathname.split('/').filter(Boolean);
+    const videoId = host === 'youtu.be'
+      ? (segments.length === 1 ? segments[0] : null)
+      : url.pathname === '/watch'
+        ? uniqueQueryValue(url, 'v')
+        : segments.length === 2 && ['shorts', 'embed', 'live', 'v'].includes(segments[0])
+          ? segments[1]
+          : null;
+    return videoId && VIDEO_ID_PATTERN.test(videoId)
+      ? {
+          kind: 'video',
+          videoId,
+          canonicalUrl: `https://www.youtube.com/watch?v=${videoId}`,
+        }
+      : null;
+  } catch {
+    return null;
+  }
+};
+
+export const extractYoutubeVideoId = (input: string): string | null => {
+  const resource = detectYoutubeResource(input);
+  return resource?.kind === 'video' ? resource.videoId : null;
+};
+
+export const importYoutubePlaylist = async (url: string): Promise<YoutubePlaylistImport> => {
+  try {
+    return await invoke<YoutubePlaylistImport>('import_youtube_playlist', { url });
+  } catch (error) {
+    throw toYoutubeServiceError(error);
+  }
+};
+
+export const cancelYoutubeImport = async (): Promise<void> => {
+  await invoke('cancel_youtube_import');
+};
+
+export const cancelYoutubeResolve = async (): Promise<void> => {
+  await invoke('cancel_youtube_resolve');
+};
+
+export const resolveYoutubeTrack = async (
+  videoId: string,
+  purpose: YoutubeResolvePurpose = 'explicit_selection',
+  shouldCommit: () => boolean = () => true,
+): Promise<ResolvedYoutubeTrack> => {
+  if (!VIDEO_ID_PATTERN.test(videoId)) {
+    throw new YoutubeServiceError({ code: 'invalid_video_id', retryable: false });
+  }
+
+  const requestToken = nextRequestToken++;
+  runtimeResolutions.set(videoId, {
+    requestToken,
+    status: 'resolving',
+    lastAccessedAt: Date.now(),
+  });
+  try {
+    const track = await invoke<ResolvedYoutubeTrack>('resolve_youtube_track', { videoId, purpose });
+    if (runtimeResolutions.get(videoId)?.requestToken === requestToken) {
+      if (shouldCommit()) {
+        runtimeResolutions.set(videoId, {
+          requestToken,
+          status: 'ready',
+          stream: track.stream,
+          lastAccessedAt: Date.now(),
+        });
+        trimRuntimeCache();
+      } else {
+        runtimeResolutions.delete(videoId);
+      }
+    }
+    return track;
+  } catch (error) {
+    const mapped = toYoutubeServiceError(error);
+    if (runtimeResolutions.get(videoId)?.requestToken === requestToken) {
+      if (shouldCommit()) {
+        runtimeResolutions.set(videoId, {
+          requestToken,
+          status: 'error',
+          error: mapped,
+          lastAccessedAt: Date.now(),
+        });
+        trimRuntimeCache();
+      } else {
+        runtimeResolutions.delete(videoId);
+      }
+    }
+    throw mapped;
+  }
+};

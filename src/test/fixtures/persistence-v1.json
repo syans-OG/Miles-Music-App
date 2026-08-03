@@ -1,0 +1,142 @@
+{
+  "state": {
+    "queue": [
+      {
+        "id": "local-fixture-1",
+        "title": "Fixture Local Song",
+        "artist": "Fixture Artist",
+        "album": "Fixture Album",
+        "coverUrl": "asset://localhost/library/fixture-cover.png",
+        "audioUrl": "asset://localhost/library/fixture-song.mp3",
+        "duration": 180,
+        "isLocal": true,
+        "isFavorite": true,
+        "filePath": "C:\\Users\\Fixture\\AppData\\Local\\com.miles.musicplayer\\library\\fixture-song.mp3",
+        "fileHash": "fixture-local-hash",
+        "coverPath": "C:\\Users\\Fixture\\AppData\\Local\\com.miles.musicplayer\\library\\fixture-cover.png",
+        "playCount": 7,
+        "lastPlayed": 1700000000000
+      },
+      {
+        "id": "yt-legacy-valid",
+        "title": "Extracted Track from YT",
+        "artist": "YouTube Stream",
+        "album": "Aura Cloud",
+        "coverUrl": "https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg",
+        "audioUrl": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+        "duration": 180,
+        "youtubeUrl": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+        "isFavorite": true,
+        "playCount": 3,
+        "lastPlayed": 1700000001000
+      },
+      {
+        "id": "yt-legacy-invalid",
+        "title": "Broken YouTube Placeholder",
+        "artist": "YouTube Stream",
+        "coverUrl": "https://example.com/placeholder.jpg",
+        "audioUrl": "https://example.com/not-youtube",
+        "duration": 180,
+        "youtubeUrl": "https://example.com/not-youtube",
+        "playCount": 1
+      }
+    ],
+    "playbackQueue": [
+      {
+        "id": "local-fixture-1",
+        "title": "Fixture Local Song",
+        "artist": "Fixture Artist",
+        "album": "Fixture Album",
+        "coverUrl": "asset://localhost/library/fixture-cover.png",
+        "audioUrl": "asset://localhost/library/fixture-song.mp3",
+        "duration": 180,
+        "isLocal": true,
+        "isFavorite": true,
+        "filePath": "C:\\Users\\Fixture\\AppData\\Local\\com.miles.musicplayer\\library\\fixture-song.mp3",
+        "fileHash": "fixture-local-hash",
+        "coverPath": "C:\\Users\\Fixture\\AppData\\Local\\com.miles.musicplayer\\library\\fixture-cover.png",
+        "playCount": 7,
+        "lastPlayed": 1700000000000
+      },
+      {
+        "id": "yt-legacy-valid",
+        "title": "Extracted Track from YT",
+        "artist": "YouTube Stream",
+        "album": "Aura Cloud",
+        "coverUrl": "https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg",
+        "audioUrl": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+        "duration": 180,
+        "youtubeUrl": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+        "isFavorite": true,
+        "playCount": 3,
+        "lastPlayed": 1700000001000
+      }
+    ],
+    "playlists": [
+      {
+        "id": "playlist-fixture-1",
+        "name": "Fixture Favorites",
+        "curator": "Miles",
+        "coverUrl": "asset://localhost/library/fixture-cover.png",
+        "songs": [
+          {
+            "id": "local-fixture-1",
+            "title": "Fixture Local Song",
+            "artist": "Fixture Artist",
+            "album": "Fixture Album",
+            "coverUrl": "asset://localhost/library/fixture-cover.png",
+            "audioUrl": "asset://localhost/library/fixture-song.mp3",
+            "duration": 180,
+            "isLocal": true,
+            "isFavorite": true,
+            "filePath": "C:\\Users\\Fixture\\AppData\\Local\\com.miles.musicplayer\\library\\fixture-song.mp3",
+            "fileHash": "fixture-local-hash",
+            "coverPath": "C:\\Users\\Fixture\\AppData\\Local\\com.miles.musicplayer\\library\\fixture-cover.png",
+            "playCount": 7,
+            "lastPlayed": 1700000000000
+          },
+          {
+            "id": "yt-legacy-valid",
+            "title": "Extracted Track from YT",
+            "artist": "YouTube Stream",
+            "album": "Aura Cloud",
+            "coverUrl": "https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg",
+            "audioUrl": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+            "duration": 180,
+            "youtubeUrl": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+            "isFavorite": true,
+            "playCount": 3,
+            "lastPlayed": 1700000001000
+          }
+        ],
+        "isPinned": true
+      }
+    ],
+    "volume": 0.65,
+    "isMuted": false,
+    "isLooping": false,
+    "mode": "control-bar",
+    "startupMode": "last",
+    "queueEndBehavior": "stop",
+    "isAlwaysOnTop": true,
+    "currentSong": {
+      "id": "yt-legacy-valid",
+      "title": "Extracted Track from YT",
+      "artist": "YouTube Stream",
+      "album": "Aura Cloud",
+      "coverUrl": "https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg",
+      "audioUrl": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+      "duration": 180,
+      "youtubeUrl": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+      "isFavorite": true,
+      "playCount": 3,
+      "lastPlayed": 1700000001000
+    },
+    "currentIndex": 1,
+    "resumePosition": {
+      "songId": "yt-legacy-valid",
+      "time": 42
+    }
+  },
+  "version": 0
+}
