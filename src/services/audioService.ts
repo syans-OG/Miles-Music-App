@@ -87,7 +87,9 @@ export class AudioService {
         (state) => state.playbackRetryToken,
         () => {
           const status = usePlayerStore.getState().playbackStatus;
-          if (status !== 'resolving' && status !== 'loading') this.startLoadCycle(true);
+          if (status !== 'resolving' && status !== 'loading') {
+            this.handleIntentChange(usePlayerStore.getState().playbackIntent);
+          }
         },
       ),
       usePlayerStore.subscribe(
@@ -187,9 +189,9 @@ export class AudioService {
       const track = await this.resolveTrack(
         song.source.videoId,
         purpose,
-        () => this.isCurrentSelection(generation, selectionSerial, song.id),
+        () => this.isCurrentSelection(generation, selectionSerial, song.id) && usePlayerStore.getState().playbackIntent,
       );
-      if (!this.isCurrentSelection(generation, selectionSerial, song.id)) return;
+      if (!this.isCurrentSelection(generation, selectionSerial, song.id) || !usePlayerStore.getState().playbackIntent) return;
       usePlayerStore.getState().setPlaybackStatus('loading');
       this.assignSource(song, track.stream.url, generation, selectionSerial);
       await this.playAssignedSource(generation);
@@ -251,11 +253,7 @@ export class AudioService {
       }),
       on('pause', () => {
         if (!isCurrent()) return;
-        const state = usePlayerStore.getState();
-        state.setPlaybackStatus('idle');
-        if (state.playbackIntent) {
-          state.setPlaybackIntent(false);
-        }
+        usePlayerStore.getState().setPlaybackStatus('idle');
       }),
       on('waiting', () => {
         if (!isCurrent()) return;
@@ -378,8 +376,7 @@ export class AudioService {
     const state = usePlayerStore.getState();
     return generation === this.loadGeneration
       && selectionSerial === state.selectionSerial
-      && state.currentSong?.id === songId
-      && state.playbackIntent;
+      && state.currentSong?.id === songId;
   }
 
   private detachCurrentLoad() {

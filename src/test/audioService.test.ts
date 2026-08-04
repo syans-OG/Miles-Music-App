@@ -348,25 +348,43 @@ describe('AudioService lazy YouTube playback', () => {
     expect(window.localStorage.getItem('aura_music_player_storage')).not.toContain('bbbbbbbbbbb');
   });
 
-  it('resumes playback seamlessly when togglePlayPause is called after pause', async () => {
+  it('resumes playback seamlessly across multiple repeated pause and play cycles', async () => {
     const audio = new FakeAudio();
     const song = localSong('resume-test');
     usePlayerStore.setState({ queue: [song], currentSong: song, playbackQueue: [song] });
     service = new AudioService({ audio });
 
+    // Cycle 1: Start playing
     usePlayerStore.getState().playSong(song);
     await flush();
     audio.emit('playing');
     expect(usePlayerStore.getState().isPlaying).toBe(true);
 
+    // Cycle 1: Pause
     usePlayerStore.getState().togglePlayPause();
     await flush();
-    usePlayerStore.getState().setPlaybackStatus('idle');
+    audio.emit('pause');
     expect(usePlayerStore.getState().isPlaying).toBe(false);
+    expect(usePlayerStore.getState().playbackIntent).toBe(false);
 
+    // Cycle 2: Resume Play
     usePlayerStore.getState().togglePlayPause();
     await flush();
     expect(usePlayerStore.getState().playbackIntent).toBe(true);
-    expect(audio.playCalls).toBeGreaterThanOrEqual(2);
+    audio.emit('playing');
+    expect(usePlayerStore.getState().isPlaying).toBe(true);
+
+    // Cycle 2: Pause
+    usePlayerStore.getState().togglePlayPause();
+    await flush();
+    audio.emit('pause');
+    expect(usePlayerStore.getState().isPlaying).toBe(false);
+    expect(usePlayerStore.getState().playbackIntent).toBe(false);
+
+    // Cycle 3: Resume Play again
+    usePlayerStore.getState().togglePlayPause();
+    await flush();
+    expect(usePlayerStore.getState().playbackIntent).toBe(true);
+    expect(audio.playCalls).toBeGreaterThanOrEqual(3);
   });
 });
