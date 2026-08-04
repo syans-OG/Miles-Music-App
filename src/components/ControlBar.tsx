@@ -167,10 +167,10 @@ export const ControlBar: React.FC = () => {
 
   const handleClose = async () => {
     try {
-      await invoke('close_window');
+      await invoke('hide_window');
     } catch {
       try {
-        await getCurrentWindow().close();
+        await getCurrentWindow().hide();
       } catch {
         // Browser fallback
       }

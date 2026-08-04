@@ -5,7 +5,9 @@ use sha2::{Digest, Sha256};
 use std::io::Cursor;
 use std::path::{Path, PathBuf};
 use tauri::ipc::{InvokeBody, Request};
-use tauri::{AppHandle, Manager, PhysicalPosition, Window};
+use tauri::menu::{Menu, MenuItem};
+use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
+use tauri::{AppHandle, Emitter, Manager, PhysicalPosition, Window};
 
 mod sidecar_manifest;
 pub mod youtube;
@@ -560,10 +562,73 @@ fn close_window(window: Window) -> Result<(), String> {
     window.close().map_err(|e| e.to_string())
 }
 
+#[tauri::command]
+fn hide_window(window: Window) -> Result<(), String> {
+    window.hide().map_err(|e| e.to_string())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let application = tauri::Builder::default()
         .manage(youtube::commands::YoutubeCommandService::default())
+        .setup(|app| {
+            let show_item = MenuItem::with_id(app, "show", "Tampilkan Miles", true, None::<&str>)?;
+            let play_pause_item = MenuItem::with_id(app, "play_pause", "Play / Pause", true, None::<&str>)?;
+            let next_item = MenuItem::with_id(app, "next", "Lagu Berikutnya", true, None::<&str>)?;
+            let quit_item = MenuItem::with_id(app, "quit", "Keluar", true, None::<&str>)?;
+            let menu = Menu::with_items(app, &[&show_item, &play_pause_item, &next_item, &quit_item])?;
+
+            let icon = app.default_window_icon().cloned().expect("default window icon missing");
+
+            let _tray = TrayIconBuilder::new()
+                .icon(icon)
+                .menu(&menu)
+                .on_menu_event(|app, event| {
+                    match event.id.as_ref() {
+                        "show" => {
+                            if let Some(window) = app.get_webview_window("main") {
+                                let _ = window.show();
+                                let _ = window.unminimize();
+                                let _ = window.set_focus();
+                            }
+                        }
+                        "play_pause" => {
+                            let _ = app.emit("tray-play-pause", ());
+                        }
+                        "next" => {
+                            let _ = app.emit("tray-next-track", ());
+                        }
+                        "quit" => {
+                            app.exit(0);
+                        }
+                        _ => {}
+                    }
+                })
+                .on_tray_icon_event(|tray, event| {
+                    if let TrayIconEvent::Click {
+                        button: MouseButton::Left,
+                        button_state: MouseButtonState::Up,
+                        ..
+                    } = event
+                    {
+                        let app = tray.app_handle();
+                        if let Some(window) = app.get_webview_window("main") {
+                            let _ = window.show();
+                            let _ = window.unminimize();
+                            let _ = window.set_focus();
+                        }
+                    }
+                })
+                .build(app)?;
+
+            Ok(())
+        })
+        .on_window_event(|window, event| {
+            if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                api.prevent_close();
+                let _ = window.hide();
+            }
+        })
         .invoke_handler(tauri::generate_handler![
             save_imported_audio,
             delete_library_song,
@@ -572,6 +637,7 @@ pub fn run() {
             detect_dock_position,
             minimize_window,
             close_window,
+            hide_window,
             youtube::dependencies::get_youtube_dependency_health,
             youtube::commands::import_youtube_playlist,
             youtube::commands::resolve_youtube_track,

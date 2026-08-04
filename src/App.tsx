@@ -44,6 +44,34 @@ export const App: React.FC = () => {
       });
   }, [isAlwaysOnTop]);
 
+  // System Tray IPC listeners (Play/Pause, Next Track from System Tray menu)
+  useEffect(() => {
+    let unlistenPlayPause: (() => void) | undefined;
+    let unlistenNext: (() => void) | undefined;
+
+    const setupTrayListeners = async () => {
+      try {
+        const { listen } = await import('@tauri-apps/api/event');
+        unlistenPlayPause = await listen('tray-play-pause', () => {
+          const state = usePlayerStore.getState();
+          state.setPlaybackIntent(!state.playbackIntent);
+        });
+        unlistenNext = await listen('tray-next-track', () => {
+          usePlayerStore.getState().playNext();
+        });
+      } catch {
+        // Browser fallback
+      }
+    };
+
+    void setupTrayListeners();
+
+    return () => {
+      if (unlistenPlayPause) unlistenPlayPause();
+      if (unlistenNext) unlistenNext();
+    };
+  }, []);
+
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();

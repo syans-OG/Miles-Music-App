@@ -27,7 +27,7 @@ log = "0.4"
 lofty = "0.24"
 image = { version = "0.25", default-features = false, features = ["jpeg", "png", "webp"] }
 sha2 = "0.10"
-tauri = { version = "2.11.3", features = ["protocol-asset"] }
+tauri = { version = "2.11.3", features = ["protocol-asset", "tray-icon"] }
 url = "2.5"
 
 [target.'cfg(target_os = "windows")'.dependencies]
