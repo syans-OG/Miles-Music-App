@@ -23,6 +23,13 @@
   }
 }
 
+/* Pause GPU animations when window is hidden to save WebView RAM & CPU */
+body.is-app-hidden *,
+body.is-app-hidden *::before,
+body.is-app-hidden *::after {
+  animation-play-state: paused !important;
+}
+
 /* Glassmorphism Luxury Panel */
 .glass-panel {
   background: rgba(18, 20, 28, 0.92);

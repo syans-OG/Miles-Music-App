@@ -51,14 +51,22 @@ export const App: React.FC = () => {
 
     const setupTrayListeners = async () => {
       try {
-        const { listen } = await import('@tauri-apps/api/event');
-        unlistenPlayPause = await listen('tray-play-pause', () => {
+        const { getCurrentWindow } = await import('@tauri-apps/api/window');
+        const win = getCurrentWindow();
+        const handlePlayPause = () => {
           const state = usePlayerStore.getState();
-          state.setPlaybackIntent(!state.playbackIntent);
-        });
-        unlistenNext = await listen('tray-next-track', () => {
+          if (!state.currentSong && state.queue.length > 0) {
+            state.playSong(state.queue[0]);
+          } else {
+            state.setPlaybackIntent(!state.playbackIntent);
+          }
+        };
+        const handleNext = () => {
           usePlayerStore.getState().playNext();
-        });
+        };
+
+        unlistenPlayPause = await win.listen('tray-play-pause', handlePlayPause);
+        unlistenNext = await win.listen('tray-next-track', handleNext);
       } catch {
         // Browser fallback
       }
@@ -70,6 +78,21 @@ export const App: React.FC = () => {
       if (unlistenPlayPause) unlistenPlayPause();
       if (unlistenNext) unlistenNext();
     };
+  }, []);
+
+  // Pause GPU animations & release rendering overhead when app is hidden to System Tray
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.hidden) {
+        document.body.classList.add('is-app-hidden');
+      } else {
+        document.body.classList.remove('is-app-hidden');
+      }
+    };
+
+    handleVisibility();
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => document.removeEventListener('visibilitychange', handleVisibility);
   }, []);
 
   const handleDragOver = (e: React.DragEvent) => {

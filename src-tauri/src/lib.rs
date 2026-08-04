@@ -593,9 +593,15 @@ pub fn run() {
                             }
                         }
                         "play_pause" => {
+                            if let Some(window) = app.get_webview_window("main") {
+                                let _ = window.emit("tray-play-pause", ());
+                            }
                             let _ = app.emit("tray-play-pause", ());
                         }
                         "next" => {
+                            if let Some(window) = app.get_webview_window("main") {
+                                let _ = window.emit("tray-next-track", ());
+                            }
                             let _ = app.emit("tray-next-track", ());
                         }
                         "quit" => {
