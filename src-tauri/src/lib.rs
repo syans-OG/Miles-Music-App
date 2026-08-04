@@ -573,42 +573,45 @@ pub fn run() {
         .manage(youtube::commands::YoutubeCommandService::default())
         .setup(|app| {
             let show_item = MenuItem::with_id(app, "show", "Tampilkan Miles", true, None::<&str>)?;
-            let play_pause_item = MenuItem::with_id(app, "play_pause", "Play / Pause", true, None::<&str>)?;
+            let play_pause_item =
+                MenuItem::with_id(app, "play_pause", "Play / Pause", true, None::<&str>)?;
             let next_item = MenuItem::with_id(app, "next", "Lagu Berikutnya", true, None::<&str>)?;
             let quit_item = MenuItem::with_id(app, "quit", "Keluar", true, None::<&str>)?;
-            let menu = Menu::with_items(app, &[&show_item, &play_pause_item, &next_item, &quit_item])?;
+            let menu =
+                Menu::with_items(app, &[&show_item, &play_pause_item, &next_item, &quit_item])?;
 
-            let icon = app.default_window_icon().cloned().expect("default window icon missing");
+            let icon = app
+                .default_window_icon()
+                .cloned()
+                .expect("default window icon missing");
 
             let _tray = TrayIconBuilder::new()
                 .icon(icon)
                 .menu(&menu)
-                .on_menu_event(|app, event| {
-                    match event.id.as_ref() {
-                        "show" => {
-                            if let Some(window) = app.get_webview_window("main") {
-                                let _ = window.show();
-                                let _ = window.unminimize();
-                                let _ = window.set_focus();
-                            }
+                .on_menu_event(|app, event| match event.id.as_ref() {
+                    "show" => {
+                        if let Some(window) = app.get_webview_window("main") {
+                            let _ = window.show();
+                            let _ = window.unminimize();
+                            let _ = window.set_focus();
                         }
-                        "play_pause" => {
-                            if let Some(window) = app.get_webview_window("main") {
-                                let _ = window.emit("tray-play-pause", ());
-                            }
-                            let _ = app.emit("tray-play-pause", ());
-                        }
-                        "next" => {
-                            if let Some(window) = app.get_webview_window("main") {
-                                let _ = window.emit("tray-next-track", ());
-                            }
-                            let _ = app.emit("tray-next-track", ());
-                        }
-                        "quit" => {
-                            app.exit(0);
-                        }
-                        _ => {}
                     }
+                    "play_pause" => {
+                        if let Some(window) = app.get_webview_window("main") {
+                            let _ = window.emit("tray-play-pause", ());
+                        }
+                        let _ = app.emit("tray-play-pause", ());
+                    }
+                    "next" => {
+                        if let Some(window) = app.get_webview_window("main") {
+                            let _ = window.emit("tray-next-track", ());
+                        }
+                        let _ = app.emit("tray-next-track", ());
+                    }
+                    "quit" => {
+                        app.exit(0);
+                    }
+                    _ => {}
                 })
                 .on_tray_icon_event(|tray, event| {
                     if let TrayIconEvent::Click {
