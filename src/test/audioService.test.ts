@@ -347,4 +347,26 @@ describe('AudioService lazy YouTube playback', () => {
     expect(window.localStorage.getItem('aura_music_player_storage')).not.toContain('aaaaaaaaaaa');
     expect(window.localStorage.getItem('aura_music_player_storage')).not.toContain('bbbbbbbbbbb');
   });
+
+  it('resumes playback seamlessly when togglePlayPause is called after pause', async () => {
+    const audio = new FakeAudio();
+    const song = localSong('resume-test');
+    usePlayerStore.setState({ queue: [song], currentSong: song, playbackQueue: [song] });
+    service = new AudioService({ audio });
+
+    usePlayerStore.getState().playSong(song);
+    await flush();
+    audio.emit('playing');
+    expect(usePlayerStore.getState().isPlaying).toBe(true);
+
+    usePlayerStore.getState().togglePlayPause();
+    await flush();
+    usePlayerStore.getState().setPlaybackStatus('idle');
+    expect(usePlayerStore.getState().isPlaying).toBe(false);
+
+    usePlayerStore.getState().togglePlayPause();
+    await flush();
+    expect(usePlayerStore.getState().playbackIntent).toBe(true);
+    expect(audio.playCalls).toBeGreaterThanOrEqual(2);
+  });
 });

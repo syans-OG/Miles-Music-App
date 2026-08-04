@@ -319,10 +319,10 @@ export const usePlayerStore = create<PlayerStore>()(
             return;
           }
           const targetIntent = !state.isPlaying;
-          set({
+          set((s) => ({
             playbackIntent: targetIntent,
-            ...(targetIntent ? { playbackError: null } : {}),
-          });
+            ...(targetIntent ? { playbackError: null, playbackRetryToken: s.playbackRetryToken + 1 } : {}),
+          }));
         },
         setPlaybackStatus: (playbackStatus) => set({
           playbackStatus,

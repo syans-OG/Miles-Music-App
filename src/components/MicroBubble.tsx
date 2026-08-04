@@ -11,8 +11,7 @@ export const MicroBubble: React.FC = () => {
     playbackIntent,
     playbackStatus,
     playbackError,
-    setPlaybackIntent,
-    requestPlaybackRetry,
+    togglePlayPause,
     cycleMode,
     dockPosition,
     prevMode,
@@ -22,8 +21,7 @@ export const MicroBubble: React.FC = () => {
     playbackIntent: state.playbackIntent,
     playbackStatus: state.playbackStatus,
     playbackError: state.playbackError,
-    setPlaybackIntent: state.setPlaybackIntent,
-    requestPlaybackRetry: state.requestPlaybackRetry,
+    togglePlayPause: state.togglePlayPause,
     cycleMode: state.cycleMode,
     dockPosition: state.dockPosition,
     prevMode: state.prevMode,
@@ -41,7 +39,7 @@ export const MicroBubble: React.FC = () => {
       case 'bottom-right':
         return `${prefix}-right`;
       default:
-        return `${prefix}-center`;
+        return 'animate-shrink-mode3-center';
     }
   };
 
@@ -70,7 +68,7 @@ export const MicroBubble: React.FC = () => {
       className={`relative group w-12 h-12 cursor-grab active:cursor-grabbing ${getAnimationClass()}`}
     >
       <div
-        onClick={() => playbackError ? requestPlaybackRetry() : setPlaybackIntent(!playbackIntent)}
+        onClick={() => togglePlayPause()}
         title={playbackError?.message ?? (isPlaybackPending ? 'Menyiapkan audio…' : playbackIntent ? 'Pause' : 'Play')}
         className="w-full h-full animate-float rounded-full glass-panel p-1 flex items-center justify-center border border-white/20 shadow-2xl hover:scale-110 transition-transform relative overflow-hidden"
       >

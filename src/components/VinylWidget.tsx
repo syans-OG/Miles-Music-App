@@ -24,8 +24,7 @@ export const VinylWidget: React.FC = () => {
     playbackIntent,
     playbackStatus,
     playbackError,
-    setPlaybackIntent,
-    requestPlaybackRetry,
+    togglePlayPause,
     isLooping,
     toggleLoop,
     playNext,
@@ -40,8 +39,7 @@ export const VinylWidget: React.FC = () => {
     playbackIntent: state.playbackIntent,
     playbackStatus: state.playbackStatus,
     playbackError: state.playbackError,
-    setPlaybackIntent: state.setPlaybackIntent,
-    requestPlaybackRetry: state.requestPlaybackRetry,
+    togglePlayPause: state.togglePlayPause,
     isLooping: state.isLooping,
     toggleLoop: state.toggleLoop,
     playNext: state.playNext,
@@ -187,7 +185,7 @@ export const VinylWidget: React.FC = () => {
             </button>
 
             <button
-              onClick={() => playbackError ? requestPlaybackRetry() : setPlaybackIntent(!playbackIntent)}
+              onClick={() => togglePlayPause()}
               className={`w-9 h-9 rounded-full flex items-center justify-center shadow-xl hover:scale-105 transition-transform ${playbackError ? 'bg-rose-400 text-white' : 'bg-white text-dark-900'}`}
               title={playbackError ? `${playbackError.message} Coba lagi` : playbackIntent ? 'Pause' : 'Play'}
             >

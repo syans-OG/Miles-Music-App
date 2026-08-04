@@ -251,7 +251,11 @@ export class AudioService {
       }),
       on('pause', () => {
         if (!isCurrent()) return;
-        usePlayerStore.getState().setPlaybackStatus('idle');
+        const state = usePlayerStore.getState();
+        state.setPlaybackStatus('idle');
+        if (state.playbackIntent) {
+          state.setPlaybackIntent(false);
+        }
       }),
       on('waiting', () => {
         if (!isCurrent()) return;
@@ -277,6 +281,13 @@ export class AudioService {
       await this.audio.play();
     } catch (error) {
       if (generation !== this.loadGeneration || !usePlayerStore.getState().playbackIntent) return;
+      if (state.currentSong?.source.kind === 'youtube' && !this.mediaRetryUsed) {
+        this.mediaRetryUsed = true;
+        this.clearStreamCache(state.currentSong.source.videoId);
+        this.clearAssignedSource();
+        this.startLoadCycle(true);
+        return;
+      }
       const message = error instanceof Error ? error.message : 'Audio tidak dapat diputar.';
       usePlayerStore.getState().setPlaybackError({
         songId: state.currentSong?.id ?? '',
