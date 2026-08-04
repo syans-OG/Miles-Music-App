@@ -38,8 +38,7 @@ export const ControlBar: React.FC = () => {
     playbackIntent,
     playbackStatus,
     playbackError,
-    setPlaybackIntent,
-    requestPlaybackRetry,
+    togglePlayPause,
     isLooping,
     toggleLoop,
     playNext,
@@ -74,6 +73,7 @@ export const ControlBar: React.FC = () => {
     playbackStatus: state.playbackStatus,
     playbackError: state.playbackError,
     setPlaybackIntent: state.setPlaybackIntent,
+    togglePlayPause: state.togglePlayPause,
     requestPlaybackRetry: state.requestPlaybackRetry,
     isLooping: state.isLooping,
     toggleLoop: state.toggleLoop,
@@ -524,7 +524,7 @@ export const ControlBar: React.FC = () => {
               </button>
 
               <button
-                onClick={() => playbackError ? requestPlaybackRetry() : setPlaybackIntent(!playbackIntent)}
+                onClick={() => togglePlayPause()}
                 className={`w-8.5 h-8.5 rounded-full flex items-center justify-center hover:scale-105 transition-transform shadow-lg shadow-white/10 ${playbackError ? 'bg-rose-400 text-white' : 'bg-white text-dark-900'}`}
                 title={playbackError ? `${playbackError.message} Coba lagi` : playbackIntent ? 'Pause' : 'Play'}
               >

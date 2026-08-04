@@ -54,12 +54,7 @@ export const App: React.FC = () => {
         const { getCurrentWindow } = await import('@tauri-apps/api/window');
         const win = getCurrentWindow();
         const handlePlayPause = () => {
-          const state = usePlayerStore.getState();
-          if (!state.currentSong && state.queue.length > 0) {
-            state.playSong(state.queue[0]);
-          } else {
-            state.setPlaybackIntent(!state.playbackIntent);
-          }
+          usePlayerStore.getState().togglePlayPause();
         };
         const handleNext = () => {
           usePlayerStore.getState().playNext();

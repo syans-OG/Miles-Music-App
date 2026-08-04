@@ -82,6 +82,7 @@ export interface PlayerActions {
 
   setCdSubTab: (subTab: 'all' | 'recent' | 'favorites') => void;
   setPlaybackIntent: (shouldPlay: boolean) => void;
+  togglePlayPause: () => void;
   setPlaybackStatus: (status: PlaybackStatus) => void;
   setPlaybackError: (error: PlaybackErrorState | null) => void;
   requestPlaybackRetry: () => void;
@@ -303,6 +304,26 @@ export const usePlayerStore = create<PlayerStore>()(
           playbackIntent,
           ...(playbackIntent ? { playbackError: null } : {}),
         }),
+        togglePlayPause: () => {
+          const state = get();
+          if (state.playbackError) {
+            get().requestPlaybackRetry();
+            return;
+          }
+          if (!state.currentSong) {
+            if (state.playbackQueue.length > 0) {
+              get().playSong(state.playbackQueue[0]);
+            } else if (state.queue.length > 0) {
+              get().playSong(state.queue[0]);
+            }
+            return;
+          }
+          const targetIntent = !state.isPlaying;
+          set({
+            playbackIntent: targetIntent,
+            ...(targetIntent ? { playbackError: null } : {}),
+          });
+        },
         setPlaybackStatus: (playbackStatus) => set({
           playbackStatus,
           isPlaying: playbackStatus === 'playing',
