@@ -550,6 +550,16 @@ async fn detect_dock_position(window: Window) -> Result<String, String> {
     handle_drag_end_snap(window).await
 }
 
+#[tauri::command]
+fn minimize_window(window: Window) -> Result<(), String> {
+    window.minimize().map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn close_window(window: Window) -> Result<(), String> {
+    window.close().map_err(|e| e.to_string())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let application = tauri::Builder::default()
@@ -560,6 +570,8 @@ pub fn run() {
             resize_widget_window,
             handle_drag_end_snap,
             detect_dock_position,
+            minimize_window,
+            close_window,
             youtube::dependencies::get_youtube_dependency_health,
             youtube::commands::import_youtube_playlist,
             youtube::commands::resolve_youtube_track,

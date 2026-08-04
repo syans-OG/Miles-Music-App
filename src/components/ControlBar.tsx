@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
+import { invoke } from '@tauri-apps/api/core';
+import { getCurrentWindow } from '@tauri-apps/api/window';
 import {
   Play,
   Pause,
@@ -13,11 +15,6 @@ import {
   ChevronRight,
   FolderKanban,
   Repeat,
-  ArrowUpLeft,
-  ArrowUpRight,
-  ArrowDownLeft,
-  ArrowDownRight,
-  Move,
   Loader2,
   RotateCcw,
   Minus,
@@ -158,19 +155,25 @@ export const ControlBar: React.FC = () => {
 
   const handleMinimize = async () => {
     try {
-      const { getCurrentWindow } = await import('@tauri-apps/api/window');
-      await getCurrentWindow().minimize();
+      await invoke('minimize_window');
     } catch {
-      // Browser fallback
+      try {
+        await getCurrentWindow().minimize();
+      } catch {
+        // Browser fallback
+      }
     }
   };
 
   const handleClose = async () => {
     try {
-      const { getCurrentWindow } = await import('@tauri-apps/api/window');
-      await getCurrentWindow().close();
+      await invoke('close_window');
     } catch {
-      // Browser fallback
+      try {
+        await getCurrentWindow().close();
+      } catch {
+        // Browser fallback
+      }
     }
   };
 
@@ -185,7 +188,6 @@ export const ControlBar: React.FC = () => {
       return;
     }
     try {
-      const { getCurrentWindow } = await import('@tauri-apps/api/window');
       const win = getCurrentWindow();
       await win.startDragging();
       setTimeout(() => {
@@ -421,93 +423,40 @@ export const ControlBar: React.FC = () => {
                 {isYoutubeTaskActive && !isUrlInputOpen && <span className="absolute -right-0.5 -top-0.5 h-1.5 w-1.5 rounded-full bg-amber-300" />}
               </button>
 
-              {/* Expandable Snap & Window Actions (Inserted Inline between + and ^) */}
+              {/* Expandable Window Actions (Minimize & Close) */}
               {isTopControlOpen && (
-                <div className="flex items-center gap-0.5 animate-in fade-in slide-in-from-right-3 duration-300">
+                <div className="flex items-center gap-1 animate-in fade-in slide-in-from-right-3 duration-300">
                   <button
-                    onClick={() => setDockPosition('top-left')}
-                    title="Snap: Pojok Kiri Atas"
-                    className={`p-1 rounded-lg transition-all ${
-                      dockPosition === 'top-left'
-                        ? 'bg-amber-400 text-slate-950 font-bold shadow-sm scale-105'
-                        : 'text-slate-400 hover:text-white hover:bg-white/10'
-                    }`}
-                  >
-                    <ArrowUpLeft className="w-3 h-3" />
-                  </button>
-
-                  <button
-                    onClick={() => setDockPosition('top-right')}
-                    title="Snap: Pojok Kanan Atas"
-                    className={`p-1 rounded-lg transition-all ${
-                      dockPosition === 'top-right'
-                        ? 'bg-amber-400 text-slate-950 font-bold shadow-sm scale-105'
-                        : 'text-slate-400 hover:text-white hover:bg-white/10'
-                    }`}
-                  >
-                    <ArrowUpRight className="w-3 h-3" />
-                  </button>
-
-                  <button
-                    onClick={() => setDockPosition('bottom-left')}
-                    title="Snap: Pojok Kiri Bawah"
-                    className={`p-1 rounded-lg transition-all ${
-                      dockPosition === 'bottom-left'
-                        ? 'bg-amber-400 text-slate-950 font-bold shadow-sm scale-105'
-                        : 'text-slate-400 hover:text-white hover:bg-white/10'
-                    }`}
-                  >
-                    <ArrowDownLeft className="w-3 h-3" />
-                  </button>
-
-                  <button
-                    onClick={() => setDockPosition('bottom-right')}
-                    title="Snap: Pojok Kanan Bawah"
-                    className={`p-1 rounded-lg transition-all ${
-                      dockPosition === 'bottom-right'
-                        ? 'bg-amber-400 text-slate-950 font-bold shadow-sm scale-105'
-                        : 'text-slate-400 hover:text-white hover:bg-white/10'
-                    }`}
-                  >
-                    <ArrowDownRight className="w-3 h-3" />
-                  </button>
-
-                  <button
-                    onClick={() => setDockPosition('free')}
-                    title="Posisi Bebas (Free Drag)"
-                    className={`p-1 rounded-lg transition-all ${
-                      dockPosition === 'free'
-                        ? 'bg-amber-400 text-slate-950 font-bold shadow-sm scale-105'
-                        : 'text-slate-400 hover:text-white hover:bg-white/10'
-                    }`}
-                  >
-                    <Move className="w-3 h-3" />
-                  </button>
-
-                  <span className="w-[1px] h-3 bg-white/20 mx-0.5" />
-
-                  <button
-                    onClick={handleMinimize}
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      void handleMinimize();
+                    }}
                     title="Minimize Widget"
                     className="p-1 rounded-lg text-slate-400 hover:text-amber-300 hover:bg-white/10 transition-colors"
                   >
-                    <Minus className="w-3 h-3" />
+                    <Minus className="w-3.5 h-3.5" />
                   </button>
 
                   <button
-                    onClick={handleClose}
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      void handleClose();
+                    }}
                     title="Close Application"
                     className="p-1 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/20 transition-colors"
                   >
-                    <X className="w-3 h-3" />
+                    <X className="w-3.5 h-3.5" />
                   </button>
                 </div>
               )}
 
-              {/* Toggle Button: < (expand to left) / > (collapse to right) */}
+              {/* Toggle Button: < (expand) / > (collapse) */}
               <button
+                type="button"
                 onClick={toggleTopControl}
-                title={isTopControlOpen ? 'Sembunyikan Menu Posisi & Kontrol' : 'Tampilkan Menu Posisi & Kontrol (Top Control)'}
+                title={isTopControlOpen ? 'Sembunyikan Kontrol Jendela' : 'Tampilkan Kontrol Jendela (Minimize & Close)'}
                 className={`p-1 text-slate-400 hover:text-white transition-all rounded-lg hover:bg-white/10 ${
                   isTopControlOpen ? 'text-amber-400 font-bold bg-white/10' : ''
                 }`}
