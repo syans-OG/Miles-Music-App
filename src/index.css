@@ -120,7 +120,6 @@ body.is-app-hidden *::after {
 /* Custom Physical Cabinet Drawer Styling (User Sketch) */
 .drawer-cabinet-shadow {
   box-shadow:
-    0 16px 36px rgba(0, 0, 0, 0.5),
     inset 0 12px 24px rgba(0, 0, 0, 0.8),
     inset 0 1px 0 rgba(255, 255, 255, 0.12);
 }

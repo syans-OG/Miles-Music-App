@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { AlertTriangle, Check, ChevronDown, ChevronUp, Clock, Disc, Flame, FolderHeart, FolderPlus, Heart, Headphones, ListMusic, ListOrdered, ListPlus, MoreHorizontal, Pencil, Play, Plus, Save, Search, Settings, Sparkles, Trash2, X } from 'lucide-react';
+import { AlertTriangle, Check, ChevronDown, ChevronUp, Clock, Disc, Flame, FolderHeart, FolderPlus, Heart, ListMusic, ListOrdered, ListPlus, MoreHorizontal, Pencil, Play, Plus, Save, Search, Settings, Sparkles, Trash2, X } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
 import { usePlayerStore } from '../stores/usePlayerStore';
 import { Playlist, Song } from '../types/player';
@@ -248,7 +248,6 @@ export const MusicDrawer: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cdScrollRef = useRef<HTMLDivElement>(null);
   const queueScrollRef = useRef<HTMLDivElement>(null);
-  const topScrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!libraryNotice) return;
@@ -291,14 +290,6 @@ export const MusicDrawer: React.FC = () => {
     overscan: 2,
     getItemKey: (index) => playbackQueue[index]?.id ?? index,
   });
-  const topVirtualizer = useVirtualizer({
-    count: topSongs.length,
-    getScrollElement: () => topScrollRef.current,
-    estimateSize: () => 60,
-    gap: 8,
-    overscan: 2,
-    getItemKey: (index) => topSongs[index]?.id ?? index,
-  });
 
   const managedPlaylist = selectedPlaylistId
     ? playlists.find((playlist) => playlist.id === selectedPlaylistId) ?? null
@@ -311,9 +302,12 @@ export const MusicDrawer: React.FC = () => {
     }
   };
 
-  // Helper to format total listening time (playCount * duration) into "Xj Ym didengar"
-  const formatListeningTime = (playCount: number, durationSec: number) => {
-    const totalSec = playCount * durationSec;
+  // Helper to format real-time total listened seconds into "Xs didengar", "Xm didengar", or "Xj Ym didengar"
+  const formatListeningTime = (listenedSec: number = 0) => {
+    const totalSec = Math.floor(listenedSec);
+    if (totalSec < 60) {
+      return `${totalSec}s didengar`;
+    }
     const totalMin = Math.floor(totalSec / 60);
     const hours = Math.floor(totalMin / 60);
     const mins = totalMin % 60;
@@ -408,19 +402,7 @@ export const MusicDrawer: React.FC = () => {
             <span>Playlist</span>
           </button>
 
-          {/* TOP Category Tab */}
-          <button
-            onClick={() => { setSettingsOpen(false); setDrawerTab('top'); }}
-            className={`flex min-w-0 items-center justify-center gap-1 rounded-xl px-1 py-1.5 text-[10px] font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-amber-300/50 active:scale-[0.98] ${
-              drawerTab === 'top' && !isSettingsOpen
-                ? 'bg-gold-500 text-dark-900 shadow-md font-bold'
-                : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            <Flame className={`h-3 w-3 flex-shrink-0 ${drawerTab === 'top' && !isSettingsOpen ? 'text-amber-500' : ''}`} />
-            <span>TOP</span>
-          </button>
-
+          {/* Queue Category Tab (Positioned BEFORE TOP) */}
           <button
             onClick={() => { setSettingsOpen(false); setDrawerTab('queue'); }}
             className={`flex min-w-0 items-center justify-center gap-1 rounded-xl px-1 py-1.5 text-[10px] font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-amber-300/50 active:scale-[0.98] ${
@@ -431,6 +413,19 @@ export const MusicDrawer: React.FC = () => {
           >
             <ListOrdered className={`h-3 w-3 flex-shrink-0 ${drawerTab === 'queue' && !isSettingsOpen ? 'text-amber-500' : ''}`} />
             <span>Queue</span>
+          </button>
+
+          {/* TOP Category Tab (Matching Standard Pill Design) */}
+          <button
+            onClick={() => { setSettingsOpen(false); setDrawerTab('top'); }}
+            className={`flex min-w-0 items-center justify-center gap-1 rounded-xl px-1 py-1.5 text-[10px] font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-amber-300/50 active:scale-[0.98] ${
+              drawerTab === 'top' && !isSettingsOpen
+                ? 'bg-white text-dark-900 shadow-md font-bold'
+                : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            <Flame className={`h-3 w-3 flex-shrink-0 ${drawerTab === 'top' && !isSettingsOpen ? 'text-amber-500 fill-amber-500' : 'text-amber-500/80'}`} />
+            <span>TOP</span>
           </button>
 
         </div>
@@ -678,69 +673,85 @@ export const MusicDrawer: React.FC = () => {
         </div>
       )}
 
-      {/* CATEGORY 4: TOP (Songs Analytics with Hours/Minutes Listened & Play Count) */}
+      {/* CATEGORY 4: TOP (Songs Analytics with Hours/Minutes Listened & Play Count - TOP 5 Cards Layout) */}
       {!isSettingsOpen && drawerTab === 'top' && (
-        <div ref={topScrollRef} className="h-[317px] overflow-y-auto overscroll-contain pr-1">
-          {topSongs.length > 0 && (
-            <div className="relative w-full" style={{ height: topVirtualizer.getTotalSize() }}>
-              {topVirtualizer.getVirtualItems().map((virtualItem) => {
-                const index = virtualItem.index;
-                const song = topSongs[index];
-                if (!song) return null;
-                const isTop1 = index === 0;
-                return (
-                  <div
-                    key={virtualItem.key}
-                    ref={topVirtualizer.measureElement}
-                    data-index={index}
-                    onClick={() => playSong(song)}
-                    className={`absolute left-0 top-0 flex w-full cursor-pointer items-center justify-between rounded-2xl border p-2.5 transition-all ${
-                  currentSong?.id === song.id
-                    ? 'bg-white/15 border-amber-400/40 shadow-lg'
-                    : 'bg-white/5 hover:bg-white/10 border-white/5'
-                }`}
-                    style={{ transform: `translateY(${virtualItem.start}px)` }}
-                  >
-                {/* Left Side: Rank, Cover, Title & Artist */}
-                <div className="flex items-center gap-3 min-w-0 pr-2">
-                  <span className={`w-5 text-center text-xs font-bold font-mono ${
-                    isTop1 ? 'text-amber-400 text-sm font-extrabold' : index === 1 ? 'text-slate-300' : 'text-slate-500'
-                  }`}>
-                    #{index + 1}
-                  </span>
+        <div className="h-[317px] overflow-y-auto space-y-2 pr-1 py-0.5">
+          {topSongs.length > 0 ? (
+            topSongs.slice(0, 5).map((song, index) => {
+              const isTop1 = index === 0;
+              const isTop2 = index === 1;
+              const isTop3 = index === 2;
+              const isCurrentlyPlaying = currentSong?.id === song.id;
 
-                  <img
-                    src={getDisplayCoverUrl(song.coverUrl, 96)}
-                    alt={song.title}
-                    loading="lazy"
-                    decoding="async"
-                    className="w-10 h-10 rounded-xl object-cover border border-white/10 flex-shrink-0"
-                  />
+              return (
+                <div
+                  key={song.id}
+                  onClick={() => playSong(song)}
+                  className={`group flex cursor-pointer items-center justify-between rounded-2xl border p-2.5 transition-all hover:bg-white/10 active:scale-[0.98] ${
+                    isCurrentlyPlaying
+                      ? 'border-amber-400/40 bg-amber-400/10 font-bold'
+                      : isTop1
+                        ? 'border-amber-400/30 bg-gradient-to-r from-amber-500/15 via-white/[0.06] to-white/[0.04]'
+                        : isTop2
+                          ? 'border-slate-300/20 bg-white/5'
+                          : isTop3
+                            ? 'border-amber-700/25 bg-white/5'
+                            : 'border-white/5 bg-white/5'
+                  }`}
+                >
+                  {/* Left Side: Rank Badge, Artwork Cover, Title & Artist */}
+                  <div className="flex items-center gap-3 min-w-0 pr-2">
+                    <div
+                      className={`flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-lg font-mono text-[10px] font-bold shadow-sm ${
+                        isTop1
+                          ? 'bg-gradient-to-br from-amber-400 to-orange-500 text-dark-900 shadow-amber-500/30'
+                          : isTop2
+                            ? 'bg-slate-300 text-dark-900'
+                            : isTop3
+                              ? 'bg-amber-700/90 text-amber-100'
+                              : 'bg-white/10 text-slate-400'
+                      }`}
+                    >
+                      #{index + 1}
+                    </div>
 
-                  <div className="min-w-0">
-                    <h5 className="text-xs font-bold text-white flex items-center gap-1.5 truncate">
-                      <span className="truncate">{song.title}</span>
-                      {isTop1 && <Sparkles className="w-3.5 h-3.5 text-amber-400 fill-amber-400 flex-shrink-0" />}
-                    </h5>
-                    <p className="text-[10px] text-slate-400 truncate">{song.artist}</p>
+                    <img
+                      src={getDisplayCoverUrl(song.coverUrl, 96)}
+                      alt={song.title}
+                      loading="lazy"
+                      decoding="async"
+                      className="h-10 w-10 flex-shrink-0 rounded-xl border border-white/10 object-cover"
+                    />
+
+                    <div className="min-w-0">
+                      <h5 className="flex items-center gap-1.5 truncate text-xs font-bold text-white">
+                        <span className="truncate">{song.title}</span>
+                        {isTop1 && <Sparkles className="h-3.5 w-3.5 flex-shrink-0 fill-amber-400 text-amber-400" />}
+                      </h5>
+                      <p className="truncate text-[10px] text-slate-400">{song.artist}</p>
+                    </div>
+                  </div>
+
+                  {/* Right Side: Analytics Stats (Play Count & Listening Duration) */}
+                  <div className="flex flex-shrink-0 flex-col items-end gap-1 font-mono text-[10px]">
+                    <div className="flex items-center gap-1 rounded-full border border-amber-500/20 bg-amber-500/10 px-2 py-0.5 text-amber-300 font-semibold">
+                      <Flame className="h-3 w-3 fill-amber-400/30 text-amber-400" />
+                      <span>{song.playCount}x diputar</span>
+                    </div>
+
+                    <span className="flex items-center gap-1 text-[9px] text-slate-400">
+                      <Clock className="h-2.5 w-2.5 text-slate-500" />
+                      <span>{formatListeningTime(song.listenedSeconds)}</span>
+                    </span>
                   </div>
                 </div>
-
-                {/* Right Side: Analytics Stats (Play Count & Listening Duration) */}
-                <div className="flex flex-col items-end gap-1 flex-shrink-0">
-                  <div className="flex items-center gap-1 text-[10px] font-mono text-amber-300 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-full">
-                    <Headphones className="w-3 h-3 text-amber-400" />
-                    <span>{song.playCount}x diputar</span>
-                  </div>
-
-                  <span className="text-[10px] font-mono text-slate-400 flex items-center gap-1">
-                    <Clock className="w-2.5 h-2.5 text-slate-500" />
-                    <span>{formatListeningTime(song.playCount, song.duration)}</span>
-                  </span>
-                </div>
-                  </div>
-                );
-              })}
+              );
+            })
+          ) : (
+            <div className="flex h-full flex-col items-center justify-center text-center">
+              <Flame className="mb-2 h-8 w-8 text-slate-600" />
+              <p className="text-xs font-semibold text-slate-300">Belum ada Top Songs</p>
+              <p className="mt-1 max-w-[220px] text-[10px] text-slate-500">Putar lagu untuk melihat statistik musik terfavorit Anda.</p>
             </div>
           )}
         </div>

@@ -124,6 +124,7 @@ export const migrateSongToV2 = (value: unknown): Song | null => {
     duration: Math.max(0, validNumber(value.duration, 0)),
     isFavorite: value.isFavorite === true || undefined,
     playCount: Math.max(0, validNumber(value.playCount, 0)),
+    listenedSeconds: Math.max(0, validNumber(value.listenedSeconds, 0)),
     lastPlayed: typeof value.lastPlayed === 'number' && Number.isFinite(value.lastPlayed)
       ? value.lastPlayed
       : undefined,

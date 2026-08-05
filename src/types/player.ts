@@ -55,6 +55,7 @@ export interface Song {
   duration: number; // in seconds
   isFavorite?: boolean;
   playCount: number;
+  listenedSeconds?: number;
   lastPlayed?: number; // timestamp
 }
 

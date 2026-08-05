@@ -118,6 +118,7 @@ export interface PlayerActions {
   purgeUnavailableYoutubeSong: (songId: string, nextSongId: string | null, notice: string) => void;
   clearLibraryNotice: () => void;
   incrementPlayCount: (songId: string) => void;
+  addListenedTime: (songId: string, seconds: number) => void;
   toggleAlwaysOnTop: () => void;
   setAlwaysOnTop: (enabled: boolean) => void;
   setSettingsOpen: (isOpen: boolean) => void;
@@ -131,6 +132,12 @@ const storageValueCache = new Map<string, string>();
 let nextYoutubeImportRequestId = 1;
 let activeYoutubeImportRequestId = 0;
 const YOUTUBE_COVER_FALLBACK = 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=600&auto=format&fit=crop&q=80';
+
+const sortTopSongs = (songs: Song[]): Song[] => [...songs].sort((a, b) => {
+  const durationDiff = (b.listenedSeconds || 0) - (a.listenedSeconds || 0);
+  if (Math.abs(durationDiff) > 0.01) return durationDiff;
+  return b.playCount - a.playCount;
+});
 
 const playlistEntryToSong = (entry: YoutubePlaylistEntry): Song => ({
   id: `yt-${entry.videoId}`,
@@ -258,7 +265,7 @@ export const usePlayerStore = create<PlayerStore>()(
         playlists: initialPlaylists,
         selectedPlaylistId: null,
         youtubeImportTask: null,
-        topSongs: [...initialSongs].sort((a, b) => b.playCount - a.playCount),
+        topSongs: sortTopSongs(initialSongs),
         isAlwaysOnTop: true,
         isTopControlOpen: false,
         isSettingsOpen: false,
@@ -517,7 +524,7 @@ export const usePlayerStore = create<PlayerStore>()(
               availability: 'available',
             },
             duration: track.durationSeconds,
-            playCount: 1,
+            playCount: 0,
             lastPlayed: Date.now(),
             };
 
@@ -528,7 +535,7 @@ export const usePlayerStore = create<PlayerStore>()(
             const playbackQueue = state.playbackQueue.some((item) => item.id === song.id)
               ? state.playbackQueue
               : [...state.playbackQueue, song];
-            const updatedTop = [...updatedQueue].sort((a, b) => b.playCount - a.playCount);
+            const updatedTop = sortTopSongs(updatedQueue);
             return {
               queue: updatedQueue,
               playbackQueue,
@@ -610,7 +617,7 @@ export const usePlayerStore = create<PlayerStore>()(
                   availability: 'available',
                 },
                 duration: track.durationSeconds,
-                playCount: 1,
+                playCount: 0,
                 lastPlayed: Date.now(),
               };
 
@@ -633,7 +640,7 @@ export const usePlayerStore = create<PlayerStore>()(
                   playbackStatus: 'idle',
                   selectionSerial: state.selectionSerial + 1,
                   selectionReason: 'manual',
-                  topSongs: [...queue].sort((a, b) => b.playCount - a.playCount),
+                  topSongs: sortTopSongs(queue),
                   youtubeImportTask: {
                     requestId,
                     inputUrl,
@@ -752,7 +759,7 @@ export const usePlayerStore = create<PlayerStore>()(
                 playbackStatus: 'idle',
                 selectionSerial: state.selectionSerial + (firstSong ? 1 : 0),
                 selectionReason: 'manual',
-                topSongs: [...queue].sort((a, b) => b.playCount - a.playCount),
+                topSongs: sortTopSongs(queue),
                 isUrlInputOpen: false,
                 isDrawerOpen: shouldOpenResult ? true : state.isDrawerOpen,
                 drawerTab: shouldOpenResult ? 'playlist' : state.drawerTab,
@@ -895,14 +902,14 @@ export const usePlayerStore = create<PlayerStore>()(
               managed: true,
             },
             duration: realDuration,
-            playCount: 1,
+            playCount: 0,
             lastPlayed: Date.now(),
           };
 
           set((state) => {
             const updatedQueue = [...state.queue, newSong];
             const playbackQueue = [...state.playbackQueue, newSong];
-            const updatedTop = [...updatedQueue].sort((a, b) => b.playCount - a.playCount);
+            const updatedTop = sortTopSongs(updatedQueue);
             return {
               queue: updatedQueue,
               playbackQueue,
@@ -957,7 +964,7 @@ export const usePlayerStore = create<PlayerStore>()(
                   managed: true,
                 },
                 duration: realDuration,
-                playCount: 1,
+                playCount: 0,
                 lastPlayed: Date.now(),
               });
             } catch (error) {
@@ -974,7 +981,7 @@ export const usePlayerStore = create<PlayerStore>()(
           set((state) => {
             const updatedQueue = [...state.queue, ...newSongs];
             const playbackQueue = [...state.playbackQueue, ...newSongs];
-            const updatedTop = [...updatedQueue].sort((a, b) => b.playCount - a.playCount);
+            const updatedTop = sortTopSongs(updatedQueue);
             return {
               queue: updatedQueue,
               playbackQueue,
@@ -1008,7 +1015,7 @@ export const usePlayerStore = create<PlayerStore>()(
                 ...playlist,
                 songs: playlist.songs.map(updateSong),
               })),
-              topSongs: [...queue].sort((a, b) => b.playCount - a.playCount),
+              topSongs: sortTopSongs(queue),
               libraryNotice: 'Informasi lagu berhasil diperbarui',
             };
           });
@@ -1030,7 +1037,7 @@ export const usePlayerStore = create<PlayerStore>()(
                 ...playlist,
                 songs: playlist.songs.map(toggleSong),
               })),
-              topSongs: [...queue].sort((a, b) => b.playCount - a.playCount),
+              topSongs: sortTopSongs(queue),
               libraryNotice: changedSong?.isFavorite
                 ? `“${changedSong.title}” ditambahkan ke Favorit`
                 : `“${changedSong?.title ?? 'Lagu'}” dihapus dari Favorit`,
@@ -1157,7 +1164,7 @@ export const usePlayerStore = create<PlayerStore>()(
                 ...playlist,
                 songs: playlist.songs.filter((item) => item.id !== songId),
               })),
-              topSongs: [...queue].sort((a, b) => b.playCount - a.playCount),
+              topSongs: sortTopSongs(queue),
               libraryNotice: `“${song.title}” dihapus dari library`,
             };
           });
@@ -1211,7 +1218,7 @@ export const usePlayerStore = create<PlayerStore>()(
                 : state.playbackError,
               selectionSerial: removedCurrentSong ? state.selectionSerial + 1 : state.selectionSerial,
               selectionReason: removedCurrentSong ? 'auto_skip' : state.selectionReason,
-              topSongs: [...queue].sort((a, b) => b.playCount - a.playCount),
+              topSongs: sortTopSongs(queue),
               libraryNotice: notice,
             };
           });
@@ -1233,7 +1240,32 @@ export const usePlayerStore = create<PlayerStore>()(
             };
             const updatedQueue = state.queue.map(updateSong);
 
-            const updatedTop = [...updatedQueue].sort((a, b) => b.playCount - a.playCount);
+            return {
+              queue: updatedQueue,
+              playbackQueue: state.playbackQueue.map(updateSong),
+              playlists: state.playlists.map((playlist) => ({
+                ...playlist,
+                songs: playlist.songs.map(updateSong),
+              })),
+              topSongs: sortTopSongs(updatedQueue),
+              currentSong: state.currentSong ? updateSong(state.currentSong) : null,
+            };
+          });
+        },
+
+        addListenedTime: (songId: string, seconds: number) => {
+          if (!seconds || seconds <= 0) return;
+          set((state) => {
+            const updateSong = (song: Song): Song => {
+              if (song.id === songId) {
+                return {
+                  ...song,
+                  listenedSeconds: (song.listenedSeconds || 0) + seconds,
+                };
+              }
+              return song;
+            };
+            const updatedQueue = state.queue.map(updateSong);
 
             return {
               queue: updatedQueue,
@@ -1242,7 +1274,7 @@ export const usePlayerStore = create<PlayerStore>()(
                 ...playlist,
                 songs: playlist.songs.map(updateSong),
               })),
-              topSongs: updatedTop,
+              topSongs: sortTopSongs(updatedQueue),
               currentSong: state.currentSong ? updateSong(state.currentSong) : null,
             };
           });

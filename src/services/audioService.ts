@@ -65,6 +65,8 @@ export class AudioService {
   private prefetchedKey: string | null = null;
   private autoSkipVisited = new Set<string>();
   private lastCountedSelection = -1;
+  private lastCountedSongId: string | null = null;
+  private lastRecordedTime = 0;
   private handlingSelection = false;
 
   constructor(dependencies: AudioServiceDependencies = {}) {
@@ -118,6 +120,9 @@ export class AudioService {
 
   private handleSelectionChange() {
     const state = usePlayerStore.getState();
+    if (state.currentSong?.id !== this.lastCountedSongId || state.selectionReason === 'manual') {
+      this.lastCountedSongId = null;
+    }
     this.handlingSelection = true;
     this.loadGeneration += 1;
     this.prefetchGeneration += 1;
@@ -234,11 +239,28 @@ export class AudioService {
       }),
       on('timeupdate', () => {
         if (!isCurrent()) return;
-        usePlayerStore.getState().setCurrentTime(this.audio.currentTime);
+        const currentTime = this.audio.currentTime;
+        if (this.lastRecordedTime > 0 && currentTime > this.lastRecordedTime) {
+          const delta = currentTime - this.lastRecordedTime;
+          if (delta > 0.05 && delta < 3.0) {
+            usePlayerStore.getState().addListenedTime(song.id, delta);
+          }
+        }
+        this.lastRecordedTime = currentTime;
+        usePlayerStore.getState().setCurrentTime(currentTime);
         this.maybePrefetchNext();
+      }),
+      on('seeking', () => {
+        if (!isCurrent()) return;
+        this.lastRecordedTime = this.audio.currentTime;
+      }),
+      on('seeked', () => {
+        if (!isCurrent()) return;
+        this.lastRecordedTime = this.audio.currentTime;
       }),
       on('playing', () => {
         if (!isCurrent()) return;
+        this.lastRecordedTime = this.audio.currentTime;
         const state = usePlayerStore.getState();
         if (!state.playbackIntent) {
           this.audio.pause();
@@ -246,13 +268,15 @@ export class AudioService {
         }
         state.setPlaybackStatus('playing');
         this.autoSkipVisited.clear();
-        if (this.lastCountedSelection !== selectionSerial) {
+        if (this.lastCountedSelection !== selectionSerial && this.lastCountedSongId !== song.id) {
           this.lastCountedSelection = selectionSerial;
+          this.lastCountedSongId = song.id;
           state.incrementPlayCount(song.id);
         }
       }),
       on('pause', () => {
         if (!isCurrent()) return;
+        this.lastRecordedTime = this.audio.currentTime;
         usePlayerStore.getState().setPlaybackStatus('idle');
       }),
       on('waiting', () => {
@@ -298,7 +322,9 @@ export class AudioService {
   private handleEnded() {
     const state = usePlayerStore.getState();
     state.setPlaybackStatus('idle');
+    this.lastRecordedTime = 0;
     if (state.isLooping && state.currentSong) {
+      state.incrementPlayCount(state.currentSong.id);
       this.audio.currentTime = 0;
       void this.playAssignedSource(this.loadGeneration);
     } else if (state.currentIndex < state.playbackQueue.length - 1) {

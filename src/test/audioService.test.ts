@@ -387,4 +387,74 @@ describe('AudioService lazy YouTube playback', () => {
     expect(usePlayerStore.getState().playbackIntent).toBe(true);
     expect(audio.playCalls).toBeGreaterThanOrEqual(3);
   });
+
+  it('accumulates real-time listenedSeconds via timeupdate and ranks topSongs accordingly', async () => {
+    const audio = new FakeAudio();
+    const songA = { ...localSong('song-A'), playCount: 5, listenedSeconds: 10 };
+    const songB = { ...localSong('song-B'), playCount: 1, listenedSeconds: 30 };
+    usePlayerStore.setState({ queue: [songA, songB], currentSong: songA, playbackQueue: [songA, songB] });
+    service = new AudioService({ audio });
+
+    usePlayerStore.getState().playSong(songA);
+    await flush();
+    audio.emit('playing');
+
+    // Simulate timeupdate advancing by 1s intervals
+    audio.currentTime = 1;
+    audio.emit('timeupdate');
+    audio.currentTime = 2;
+    audio.emit('timeupdate');
+
+    const updatedSongA = usePlayerStore.getState().queue.find((s) => s.id === songA.id);
+    expect(updatedSongA?.listenedSeconds).toBeGreaterThanOrEqual(11);
+
+    // Verify songB with higher listenedSeconds (30s) is ranked #1 in topSongs over songA (11s) despite lower playCount
+    const top = usePlayerStore.getState().topSongs;
+    expect(top[0].id).toBe(songB.id);
+    expect(top[1].id).toBe(songA.id);
+  });
+
+  it('increments playCount when song loops', async () => {
+    const audio = new FakeAudio();
+    const song = localSong('loop-test');
+    usePlayerStore.setState({ queue: [song], currentSong: song, playbackQueue: [song], isLooping: true });
+    service = new AudioService({ audio });
+
+    usePlayerStore.getState().playSong(song);
+    await flush();
+    audio.emit('playing');
+    const initialPlayCount = usePlayerStore.getState().queue.find((s) => s.id === song.id)?.playCount ?? 0;
+
+    // Simulate song ended while looping
+    audio.emit('ended');
+    await flush();
+
+    const loopedPlayCount = usePlayerStore.getState().queue.find((s) => s.id === song.id)?.playCount ?? 0;
+    expect(loopedPlayCount).toBe(initialPlayCount + 1);
+  });
+
+  it('increments playCount EXACTLY once per single play action (play -> pause -> resume)', async () => {
+    const audio = new FakeAudio();
+    const song = { ...localSong('single-play-test'), playCount: 0 };
+    usePlayerStore.setState({ queue: [song], currentSong: song, playbackQueue: [song] });
+    service = new AudioService({ audio });
+
+    // Step 1: User plays song
+    usePlayerStore.getState().playSong(song);
+    await flush();
+    audio.emit('playing');
+    expect(usePlayerStore.getState().queue[0].playCount).toBe(1);
+
+    // Step 2: Pause and resume should NOT increment playCount again for same selection
+    usePlayerStore.getState().togglePlayPause();
+    await flush();
+    audio.emit('pause');
+
+    usePlayerStore.getState().togglePlayPause();
+    await flush();
+    audio.emit('playing');
+
+    // playCount must remain EXACTLY 1!
+    expect(usePlayerStore.getState().queue[0].playCount).toBe(1);
+  });
 });
