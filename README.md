@@ -4,6 +4,14 @@ Miles is a lightweight Windows desktop music player built with Tauri, Rust,
 React, and TypeScript. It plays managed local audio files and public YouTube
 videos or playlists through a compact three-mode vinyl interface.
 
+<br>
+
+<p align="center">
+  <img src="./miles.gif" width="100%" alt="Miles Music Player Preview" />
+</p>
+
+<br>
+
 ## Download
 
 [Download the latest Windows installer](https://github.com/syans-OG/Miles-Music-App/releases/latest)
