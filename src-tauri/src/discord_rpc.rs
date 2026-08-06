@@ -54,6 +54,8 @@ impl DiscordRpcState {
 
         let state_text = if artist.trim().is_empty() {
             "Miles Music Player".to_string()
+        } else if artist.contains("Mendengarkan") || artist.contains("Miles") {
+            artist.to_string()
         } else {
             format!("oleh {}", artist)
         };

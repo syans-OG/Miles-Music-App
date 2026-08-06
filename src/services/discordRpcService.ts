@@ -10,7 +10,7 @@ export const syncDiscordActivity = async () => {
   const clientId = state.discordClientId?.trim() || '1534752337543954512';
   const isPlaying = state.isPlaying;
 
-  if (!enabled || !currentSong || !isPlaying) {
+  if (!enabled) {
     if (lastSentKey !== 'disabled') {
       lastSentKey = 'disabled';
       try {
@@ -24,15 +24,15 @@ export const syncDiscordActivity = async () => {
           clientId,
         });
       } catch {
-        // Silently handle if Discord is not open
+        // Silently handle if Discord IPC socket is not open
       }
     }
     return;
   }
 
-  const title = currentSong.title;
-  const artist = currentSong.artist;
-  const duration = Math.floor(state.duration || currentSong.duration || 0);
+  const title = currentSong ? currentSong.title : 'Miles Music Player';
+  const artist = currentSong ? currentSong.artist : 'Mendengarkan Musik';
+  const duration = currentSong ? Math.floor(state.duration || currentSong.duration || 0) : 0;
   const currentTime = Math.floor(state.currentTime);
 
   const currentKey = `${title}|${artist}|${isPlaying}|${currentTime}|${duration}|${clientId}`;
