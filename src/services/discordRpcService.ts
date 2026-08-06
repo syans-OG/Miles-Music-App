@@ -1,0 +1,55 @@
+import { invoke } from '@tauri-apps/api/core';
+import { usePlayerStore } from '../stores/usePlayerStore';
+
+let lastSentKey = '';
+
+export const syncDiscordActivity = async () => {
+  const state = usePlayerStore.getState();
+  const currentSong = state.currentSong;
+  const enabled = state.enableDiscordRpc;
+  const clientId = state.discordClientId?.trim() || '1534752337543954512';
+  const isPlaying = state.isPlaying;
+
+  if (!enabled || !currentSong || !isPlaying) {
+    if (lastSentKey !== 'disabled') {
+      lastSentKey = 'disabled';
+      try {
+        await invoke('set_discord_activity', {
+          title: '',
+          artist: '',
+          isPlaying: false,
+          currentTime: 0,
+          duration: 0,
+          enabled: false,
+          clientId,
+        });
+      } catch {
+        // Silently handle if Discord is not open
+      }
+    }
+    return;
+  }
+
+  const title = currentSong.title;
+  const artist = currentSong.artist;
+  const duration = Math.floor(state.duration || currentSong.duration || 0);
+  const currentTime = Math.floor(state.currentTime);
+
+  const currentKey = `${title}|${artist}|${isPlaying}|${currentTime}|${duration}|${clientId}`;
+  if (currentKey === lastSentKey) return;
+  lastSentKey = currentKey;
+
+  try {
+    await invoke('set_discord_activity', {
+      title,
+      artist,
+      isPlaying,
+      currentTime,
+      duration,
+      enabled: true,
+      clientId,
+    });
+  } catch {
+    // Silently handle if Discord IPC socket is not open
+  }
+};

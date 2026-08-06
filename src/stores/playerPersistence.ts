@@ -205,5 +205,9 @@ export const migratePlayerPersistedState = (persistedState: unknown, _version: n
       ? Math.max(0, playbackQueue.findIndex((song) => song.id === currentSongId))
       : 0,
     resumePosition: resume,
+    enableDiscordRpc: typeof persistedState.enableDiscordRpc === 'boolean'
+      ? persistedState.enableDiscordRpc
+      : true,
+    discordClientId: optionalString(persistedState.discordClientId) || '1534752337543954512',
   };
 };

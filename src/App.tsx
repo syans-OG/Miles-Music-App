@@ -1,6 +1,7 @@
 import React, { lazy, Suspense, useEffect, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { usePlayerStore } from './stores/usePlayerStore';
+import { syncDiscordActivity } from './services/discordRpcService';
 
 import { ControlBar } from './components/ControlBar';
 import { VinylWidget } from './components/VinylWidget';
@@ -35,6 +36,24 @@ export const App: React.FC = () => {
 
   // Hook to automatically resize Tauri OS Window frame to match current mode dimensions
   useWindowResizer();
+
+  useEffect(() => {
+    void syncDiscordActivity();
+    const unsub = usePlayerStore.subscribe(
+      (state) => ({
+        songId: state.currentSong?.id,
+        title: state.currentSong?.title,
+        isPlaying: state.isPlaying,
+        currentTime: Math.floor(state.currentTime),
+        enableDiscordRpc: state.enableDiscordRpc,
+        discordClientId: state.discordClientId,
+      }),
+      () => {
+        void syncDiscordActivity();
+      },
+    );
+    return () => unsub();
+  }, []);
 
   useEffect(() => {
     void import('@tauri-apps/api/window')

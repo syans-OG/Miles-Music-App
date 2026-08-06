@@ -1,5 +1,5 @@
 import React from 'react';
-import { Pin, Repeat2, Settings, Square, Volume2 } from 'lucide-react';
+import { Gamepad2, Pin, Repeat2, Settings, Square, Volume2 } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
 import { usePlayerStore } from '../stores/usePlayerStore';
 import { AppMode } from '../types/player';
@@ -22,6 +22,8 @@ export const SettingsPanel: React.FC = () => {
     setStartupMode,
     queueEndBehavior,
     setQueueEndBehavior,
+    enableDiscordRpc,
+    setEnableDiscordRpc,
   } = usePlayerStore(useShallow((state) => ({
     volume: state.volume,
     setVolume: state.setVolume,
@@ -32,6 +34,8 @@ export const SettingsPanel: React.FC = () => {
     setStartupMode: state.setStartupMode,
     queueEndBehavior: state.queueEndBehavior,
     setQueueEndBehavior: state.setQueueEndBehavior,
+    enableDiscordRpc: state.enableDiscordRpc,
+    setEnableDiscordRpc: state.setEnableDiscordRpc,
   })));
 
   const volumeLabel = isMuted ? 'MUTE' : `${Math.round(volume * 100)}%`;
@@ -44,7 +48,7 @@ export const SettingsPanel: React.FC = () => {
           <h3 id="settings-panel-title" className="flex-shrink-0 text-[12px] font-bold tracking-tight text-white">Setting Miles</h3>
           <span className="truncate text-[8px] text-slate-500">Disimpan otomatis</span>
         </div>
-        <span className="pt-1 font-mono text-[8px] uppercase tracking-[0.14em] text-slate-600">4 preferensi</span>
+        <span className="pt-1 font-mono text-[8px] uppercase tracking-[0.14em] text-slate-600">5 preferensi</span>
       </header>
 
       <div className="divide-y divide-white/10">
@@ -88,6 +92,28 @@ export const SettingsPanel: React.FC = () => {
             aria-pressed={isAlwaysOnTop}
           >
             <span className={`absolute left-0 top-0.5 h-4 w-4 rounded-full shadow-sm transition-transform duration-200 ${isAlwaysOnTop ? 'translate-x-[18px] bg-dark-900' : 'translate-x-0.5 bg-slate-300'}`} />
+          </button>
+        </div>
+
+        <div className="flex h-[48px] items-center gap-3">
+          <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-white/[0.045] text-amber-300">
+            <Gamepad2 className="h-3.5 w-3.5" strokeWidth={1.8} />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-[10px] font-semibold text-white">Status Discord (RPC)</p>
+            <p className="mt-0.5 text-[8px] text-slate-500">Tampilkan lagu yang diputar di Discord</p>
+          </div>
+          <span className={`font-mono text-[8px] font-bold uppercase ${enableDiscordRpc ? 'text-amber-300' : 'text-slate-600'}`}>
+            {enableDiscordRpc ? 'Aktif' : 'Nonaktif'}
+          </span>
+          <button
+            type="button"
+            onClick={() => setEnableDiscordRpc(!enableDiscordRpc)}
+            className={`relative h-5 w-9 flex-shrink-0 rounded-full transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-amber-300/50 active:scale-[0.96] ${enableDiscordRpc ? 'bg-amber-400' : 'bg-slate-700'}`}
+            aria-label="Status Discord"
+            aria-pressed={enableDiscordRpc}
+          >
+            <span className={`absolute left-0 top-0.5 h-4 w-4 rounded-full shadow-sm transition-transform duration-200 ${enableDiscordRpc ? 'translate-x-[18px] bg-dark-900' : 'translate-x-0.5 bg-slate-300'}`} />
           </button>
         </div>
 

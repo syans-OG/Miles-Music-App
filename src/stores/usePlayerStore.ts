@@ -66,6 +66,8 @@ export interface PlayerState {
   startupMode: 'last' | AppMode;
   queueEndBehavior: 'stop' | 'repeat-queue';
   libraryNotice: string | null;
+  enableDiscordRpc: boolean;
+  discordClientId: string;
 }
 
 export interface PlayerActions {
@@ -124,6 +126,8 @@ export interface PlayerActions {
   setSettingsOpen: (isOpen: boolean) => void;
   setStartupMode: (mode: 'last' | AppMode) => void;
   setQueueEndBehavior: (behavior: 'stop' | 'repeat-queue') => void;
+  setEnableDiscordRpc: (enabled: boolean) => void;
+  setDiscordClientId: (clientId: string) => void;
 }
 
 export type PlayerStore = PlayerState & PlayerActions;
@@ -272,6 +276,8 @@ export const usePlayerStore = create<PlayerStore>()(
         startupMode: 'last',
         queueEndBehavior: 'stop',
         libraryNotice: null,
+        enableDiscordRpc: true,
+        discordClientId: '1534752337543954512',
 
         setMode: (mode) => set((state) => ({ prevMode: state.mode, mode, isUrlInputOpen: false })),
         cycleMode: () => {
@@ -1285,6 +1291,8 @@ export const usePlayerStore = create<PlayerStore>()(
         setSettingsOpen: (isSettingsOpen) => set({ isSettingsOpen }),
         setStartupMode: (startupMode) => set({ startupMode }),
         setQueueEndBehavior: (queueEndBehavior) => set({ queueEndBehavior }),
+        setEnableDiscordRpc: (enableDiscordRpc) => set({ enableDiscordRpc }),
+        setDiscordClientId: (discordClientId) => set({ discordClientId }),
       }),
       {
         name: 'aura_music_player_storage',

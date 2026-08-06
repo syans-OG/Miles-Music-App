@@ -10,6 +10,7 @@ use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent}
 use tauri::{AppHandle, Emitter, Manager, PhysicalPosition, Window};
 
 mod sidecar_manifest;
+pub mod discord_rpc;
 pub mod youtube;
 
 const MAX_LOCAL_AUDIO_FILE_BYTES: usize = 128 * 1024 * 1024;
@@ -651,7 +652,9 @@ pub fn run() {
             youtube::commands::import_youtube_playlist,
             youtube::commands::resolve_youtube_track,
             youtube::commands::cancel_youtube_import,
-            youtube::commands::cancel_youtube_resolve
+            youtube::commands::cancel_youtube_resolve,
+            discord_rpc::set_discord_activity,
+            discord_rpc::clear_discord_activity
         ])
         .build(tauri::generate_context!())
         .expect("error while building tauri application");
