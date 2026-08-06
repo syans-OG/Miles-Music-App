@@ -58,11 +58,8 @@ impl DiscordRpcState {
 
         let state_text = if trimmed_artist.is_empty()
             || trimmed_artist.eq_ignore_ascii_case(trimmed_title)
-            || (trimmed_artist.len() > 10 && trimmed_title.contains(trimmed_artist))
         {
-            "Miles Music Player".to_string()
-        } else if trimmed_artist.contains("Mendengarkan") || trimmed_artist.contains("Miles") {
-            trimmed_artist.to_string()
+            String::new()
         } else {
             trimmed_artist.to_string()
         };
@@ -75,26 +72,23 @@ impl DiscordRpcState {
             let img_url = cover_url.unwrap();
             activity::Assets::new()
                 .large_image(img_url)
-                .large_text("Miles Music Player")
-                .small_image("miles_logo")
+                .small_image("miles-logo-master")
                 .small_text("Miles Music Player")
         } else {
-            let mut a = activity::Assets::new()
-                .large_image("miles_logo")
-                .large_text("Miles Music Player");
-            if is_playing {
-                a = a.small_image("play").small_text("Memutar");
-            } else {
-                a = a.small_image("pause").small_text("Di-pause");
-            }
-            a
+            activity::Assets::new()
+                .large_image("miles-logo-master")
+                .large_text("Miles Music Player")
         };
 
         let mut act = activity::Activity::new()
             .activity_type(activity::ActivityType::Listening)
-            .details(title)
-            .state(&state_text)
-            .assets(assets);
+            .details(title);
+
+        if !state_text.is_empty() {
+            act = act.state(&state_text);
+        }
+
+        act = act.assets(assets);
 
         if is_playing && duration > 0 {
             let now = SystemTime::now()

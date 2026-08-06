@@ -33,9 +33,13 @@ export const syncDiscordActivity = async () => {
 
   const title = currentSong ? currentSong.title : 'Miles Music Player';
   const artist = currentSong ? currentSong.artist : 'Mendengarkan Musik';
-  const coverUrl = (currentSong?.coverUrl && (currentSong.coverUrl.startsWith('http://') || currentSong.coverUrl.startsWith('https://')))
-    ? currentSong.coverUrl
-    : null;
+  const rawCover = currentSong?.coverUrl ?? '';
+  const isPublicWebCover =
+    (rawCover.startsWith('http://') || rawCover.startsWith('https://')) &&
+    !rawCover.includes('localhost') &&
+    !rawCover.includes('127.0.0.1') &&
+    !rawCover.includes('asset.localhost');
+  const coverUrl = isPublicWebCover ? rawCover : null;
   const duration = currentSong ? Math.floor(state.duration || currentSong.duration || 0) : 0;
   const currentTime = Math.floor(state.currentTime);
 
