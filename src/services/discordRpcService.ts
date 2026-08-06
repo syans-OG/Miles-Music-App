@@ -17,6 +17,7 @@ export const syncDiscordActivity = async () => {
         await invoke('set_discord_activity', {
           title: '',
           artist: '',
+          coverUrl: null,
           isPlaying: false,
           currentTime: 0,
           duration: 0,
@@ -32,10 +33,13 @@ export const syncDiscordActivity = async () => {
 
   const title = currentSong ? currentSong.title : 'Miles Music Player';
   const artist = currentSong ? currentSong.artist : 'Mendengarkan Musik';
+  const coverUrl = (currentSong?.coverUrl && (currentSong.coverUrl.startsWith('http://') || currentSong.coverUrl.startsWith('https://')))
+    ? currentSong.coverUrl
+    : null;
   const duration = currentSong ? Math.floor(state.duration || currentSong.duration || 0) : 0;
   const currentTime = Math.floor(state.currentTime);
 
-  const currentKey = `${title}|${artist}|${isPlaying}|${currentTime}|${duration}|${clientId}`;
+  const currentKey = `${title}|${artist}|${coverUrl}|${isPlaying}|${currentTime}|${duration}|${clientId}`;
   if (currentKey === lastSentKey) return;
   lastSentKey = currentKey;
 
@@ -43,6 +47,7 @@ export const syncDiscordActivity = async () => {
     await invoke('set_discord_activity', {
       title,
       artist,
+      coverUrl,
       isPlaying,
       currentTime,
       duration,

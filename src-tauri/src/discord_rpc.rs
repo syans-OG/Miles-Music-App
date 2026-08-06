@@ -42,6 +42,7 @@ impl DiscordRpcState {
         &mut self,
         title: &str,
         artist: &str,
+        cover_url: Option<&str>,
         is_playing: bool,
         current_time: u64,
         duration: u64,
@@ -52,25 +53,45 @@ impl DiscordRpcState {
             Err(err) => return Err(err),
         };
 
-        let state_text = if artist.trim().is_empty() {
+        let trimmed_artist = artist.trim();
+        let trimmed_title = title.trim();
+
+        let state_text = if trimmed_artist.is_empty()
+            || trimmed_artist.eq_ignore_ascii_case(trimmed_title)
+            || (trimmed_artist.len() > 10 && trimmed_title.contains(trimmed_artist))
+        {
             "Miles Music Player".to_string()
-        } else if artist.contains("Mendengarkan") || artist.contains("Miles") {
-            artist.to_string()
+        } else if trimmed_artist.contains("Mendengarkan") || trimmed_artist.contains("Miles") {
+            trimmed_artist.to_string()
         } else {
-            format!("oleh {}", artist)
+            trimmed_artist.to_string()
         };
 
-        let mut assets = activity::Assets::new()
-            .large_image("miles_logo")
-            .large_text("Miles Music Player");
+        let has_http_cover = cover_url
+            .map(|url| url.starts_with("http://") || url.starts_with("https://"))
+            .unwrap_or(false);
 
-        if is_playing {
-            assets = assets.small_image("play").small_text("Memutar");
+        let assets = if has_http_cover {
+            let img_url = cover_url.unwrap();
+            activity::Assets::new()
+                .large_image(img_url)
+                .large_text("Miles Music Player")
+                .small_image("miles_logo")
+                .small_text("Miles Music Player")
         } else {
-            assets = assets.small_image("pause").small_text("Di-pause");
-        }
+            let mut a = activity::Assets::new()
+                .large_image("miles_logo")
+                .large_text("Miles Music Player");
+            if is_playing {
+                a = a.small_image("play").small_text("Memutar");
+            } else {
+                a = a.small_image("pause").small_text("Di-pause");
+            }
+            a
+        };
 
         let mut act = activity::Activity::new()
+            .activity_type(activity::ActivityType::Listening)
             .details(title)
             .state(&state_text)
             .assets(assets);
@@ -111,6 +132,7 @@ use once_cell::sync::Lazy;
 pub fn set_discord_activity(
     title: String,
     artist: String,
+    cover_url: Option<String>,
     is_playing: bool,
     current_time: u64,
     duration: u64,
@@ -126,6 +148,7 @@ pub fn set_discord_activity(
     rpc.update_activity(
         &title,
         &artist,
+        cover_url.as_deref(),
         is_playing,
         current_time,
         duration,
