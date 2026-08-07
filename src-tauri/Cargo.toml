@@ -1,6 +1,6 @@
 [package]
 name = "miles-music-player"
-version = "1.0.2"
+version = "1.0.3"
 description = "A lightweight Windows music player for local audio and public YouTube links."
 authors = ["syans-OG"]
 license = "MIT"
