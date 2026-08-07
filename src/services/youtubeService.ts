@@ -32,25 +32,25 @@ const runtimeResolutions = new Map<string, YoutubeRuntimeResolution>();
 let nextRequestToken = 1;
 
 const errorMessages: Record<YoutubeErrorCode, string> = {
-  invalid_url: 'URL YouTube tidak valid.',
-  https_required: 'Link YouTube harus menggunakan HTTPS.',
-  unsupported_host: 'Host link tidak didukung.',
-  unsupported_url: 'Jenis link YouTube tidak didukung.',
-  invalid_video_id: 'ID video YouTube tidak valid.',
-  invalid_playlist_id: 'ID playlist YouTube tidak valid.',
-  live_unsupported: 'Live Stream tidak didukung.',
-  upcoming_unsupported: 'Video yang belum tayang tidak didukung.',
-  private_video: 'Video privat tidak dapat diimpor.',
-  age_restricted: 'Video dengan batasan usia tidak dapat diakses.',
-  unavailable: 'Video tidak tersedia.',
-  invalid_metadata: 'Metadata YouTube tidak valid.',
-  audio_stream_unavailable: 'Audio video tidak tersedia.',
-  dependency_unavailable: 'Komponen YouTube Miles tidak tersedia atau rusak.',
-  busy: 'Proses YouTube sedang sibuk.',
-  cancelled: 'Proses YouTube dibatalkan.',
-  timeout: 'YouTube terlalu lama merespons. Silakan coba lagi.',
-  process_failed: 'Gagal memproses link YouTube.',
-  output_too_large: 'Data playlist melebihi batas aman.',
+  invalid_url: 'Invalid YouTube URL.',
+  https_required: 'YouTube link must use HTTPS.',
+  unsupported_host: 'Link host is not supported.',
+  unsupported_url: 'YouTube link type is not supported.',
+  invalid_video_id: 'Invalid YouTube video ID.',
+  invalid_playlist_id: 'Invalid YouTube playlist ID.',
+  live_unsupported: 'Live Streams are not supported.',
+  upcoming_unsupported: 'Upcoming videos are not supported.',
+  private_video: 'Private videos cannot be imported.',
+  age_restricted: 'Age-restricted videos cannot be accessed.',
+  unavailable: 'Video is unavailable.',
+  invalid_metadata: 'Invalid YouTube metadata.',
+  audio_stream_unavailable: 'Audio stream is unavailable.',
+  dependency_unavailable: 'Miles YouTube component is unavailable.',
+  busy: 'YouTube service is busy.',
+  cancelled: 'YouTube task cancelled.',
+  timeout: 'YouTube request timed out. Please try again.',
+  process_failed: 'Failed to process YouTube link.',
+  output_too_large: 'Playlist data exceeds safety limit.',
 };
 
 export const getYoutubeErrorMessage = (code: YoutubeErrorCode): string => errorMessages[code];
@@ -191,7 +191,7 @@ export const resolveYoutubeTrack = async (
   purpose: YoutubeResolvePurpose = 'explicit_selection',
   shouldCommit: () => boolean = () => true,
 ): Promise<ResolvedYoutubeTrack> => {
-  if (!VIDEO_ID_PATTERN.test(videoId)) {
+  if (!VIDEO_ID_PATTERN.test(videoId) && !videoId.startsWith('ytsearch1:')) {
     throw new YoutubeServiceError({ code: 'invalid_video_id', retryable: false });
   }
 

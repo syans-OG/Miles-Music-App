@@ -26,6 +26,7 @@ import {
 
 import { usePlayerStore } from '../stores/usePlayerStore';
 import { audioService } from '../services/audioService';
+import { isSpotifyUrl } from '../services/spotifyService';
 
 import { handleMagneticSnapOnRelease } from '../hooks/useWindowResizer';
 import { detectYoutubeResource } from '../services/youtubeService';
@@ -54,7 +55,7 @@ export const ControlBar: React.FC = () => {
     toggleTopControl,
     cycleMode,
     youtubeImportTask,
-    importYoutubeUrl,
+    addSongFromUrl,
     cancelYoutubeTask,
     retryYoutubeTask,
     dismissYoutubeTask,
@@ -90,7 +91,7 @@ export const ControlBar: React.FC = () => {
     toggleTopControl: state.toggleTopControl,
     cycleMode: state.cycleMode,
     youtubeImportTask: state.youtubeImportTask,
-    importYoutubeUrl: state.importYoutubeUrl,
+    addSongFromUrl: state.addSongFromUrl,
     cancelYoutubeTask: state.cancelYoutubeTask,
     retryYoutubeTask: state.retryYoutubeTask,
     dismissYoutubeTask: state.dismissYoutubeTask,
@@ -106,15 +107,16 @@ export const ControlBar: React.FC = () => {
 
   const [inputUrl, setInputUrl] = useState('');
   const [isReportOpen, setReportOpen] = useState(false);
+  const detectedSpotify = inputUrl.trim() ? isSpotifyUrl(inputUrl) : false;
   const detectedResource = inputUrl.trim() ? detectYoutubeResource(inputUrl) : null;
   const isYoutubeTaskActive = youtubeImportTask?.status === 'importing' || youtubeImportTask?.status === 'resolving';
   const isPlaybackPending = playbackStatus === 'resolving' || playbackStatus === 'loading' || playbackStatus === 'buffering';
   const playbackLabel = playbackError
-    ? 'COBA LAGI'
+    ? 'RETRY'
     : playbackStatus === 'resolving'
-      ? 'MENYIAPKAN AUDIO…'
+      ? 'PREPARING AUDIO…'
       : playbackStatus === 'loading'
-        ? 'MEMUAT LAGU…'
+        ? 'LOADING SONG…'
         : playbackStatus === 'buffering'
           ? 'BUFFERING…'
           : isPlaying ? 'PLAY' : 'READY';
@@ -134,7 +136,7 @@ export const ControlBar: React.FC = () => {
     e.preventDefault();
     if (!inputUrl.trim() || isYoutubeTaskActive) return;
     setReportOpen(false);
-    void importYoutubeUrl(inputUrl);
+    void addSongFromUrl(inputUrl);
   };
 
   const closeYoutubeLedger = () => {
@@ -222,7 +224,7 @@ export const ControlBar: React.FC = () => {
         <form
           onSubmit={handleUrlSubmit}
           className="youtube-signal-ledger z-30 mb-4 w-[420px] glass-panel backdrop-blur-xl rounded-2xl overflow-hidden p-1 animate-fade-in motion-reduce:animate-none"
-          aria-label="Tambah link YouTube"
+          aria-label="Add YouTube or Spotify link"
         >
           <div className="flex items-center p-2">
             <div className="flex flex-col justify-center pl-3 pr-2">
@@ -240,7 +242,7 @@ export const ControlBar: React.FC = () => {
             <div className="flex-1 flex flex-col justify-center">
               <input
                 type="text"
-                placeholder={detectedResource?.kind === 'playlist' ? 'Playlist terdeteksi...' : detectedResource?.kind === 'video' ? 'Video terdeteksi...' : 'Paste link video atau playlist YouTube...'}
+                placeholder={detectedSpotify ? 'Spotify link detected...' : detectedResource?.kind === 'playlist' ? 'YouTube playlist detected...' : detectedResource?.kind === 'video' ? 'YouTube video detected...' : 'Paste link YouTube or Spotify'}
                 value={inputUrl}
                 onChange={(event) => setInputUrl(event.target.value)}
                 onKeyDown={(event) => {
@@ -258,14 +260,14 @@ export const ControlBar: React.FC = () => {
               className="h-8 px-4 ml-2 bg-white/10 hover:bg-white/20 disabled:hover:bg-white/5 border border-white/5 transition-all rounded-xl text-white text-[11px] font-semibold flex flex-shrink-0 items-center gap-1.5 shadow-sm active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isYoutubeTaskActive ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : detectedResource?.kind === 'playlist' ? <ListMusic className="h-3.5 w-3.5" /> : <Plus className="h-3.5 w-3.5" />}
-              {detectedResource?.kind === 'playlist' ? 'Impor' : 'Tambah'}
+              {detectedResource?.kind === 'playlist' ? 'Import' : 'Add'}
             </button>
             <button
               type="button"
               onClick={closeYoutubeLedger}
               className="w-8 h-8 flex-shrink-0 flex items-center justify-center ml-1 text-white/40 hover:text-white transition-colors rounded-full hover:bg-white/10 active:scale-95"
-              title={isYoutubeTaskActive ? 'Sembunyikan proses' : 'Tutup input link'}
-              aria-label={isYoutubeTaskActive ? 'Sembunyikan proses' : 'Tutup input link'}
+              title={isYoutubeTaskActive ? 'Hide process' : 'Close link input'}
+              aria-label={isYoutubeTaskActive ? 'Hide process' : 'Close link input'}
             >
               <X className="h-4 w-4" />
             </button>
@@ -355,12 +357,6 @@ export const ControlBar: React.FC = () => {
         {/* Left Side: Prominent Spinning Vinyl Record Turntable */}
         <div className="relative flex h-32 w-32 flex-shrink-0 items-center justify-center">
 
-          {/* Hi-Fi LED Power Indicator */}
-          <div className="absolute top-0 left-0 flex items-center gap-1">
-            <div className={`w-1.5 h-1.5 rounded-full transition-all duration-300 ${isPlaying ? 'hi-fi-led-on' : 'hi-fi-led-off'}`} />
-            <span className="text-[9px] font-mono text-slate-400 uppercase tracking-widest">{playbackLabel}</span>
-          </div>
-
           {/* Metallic Tonearm Needle */}
           <div className="pointer-events-none absolute -top-1 right-0 z-20 flex flex-col items-center">
             <div className="h-3.5 w-3.5 rounded-full border border-slate-300 bg-gradient-to-tr from-slate-600 to-slate-400 shadow-md" />
@@ -372,7 +368,6 @@ export const ControlBar: React.FC = () => {
               <div className="w-2 h-3 bg-slate-700 border border-slate-300 absolute -bottom-1 -left-0.75 rounded-xs" />
             </div>
           </div>
-
 
           {/* Vinyl Record Disc */}
           <div className="vinyl-grooves relative flex h-[124px] w-[124px] items-center justify-center rounded-full border-2 border-neutral-800 shadow-2xl">
@@ -395,16 +390,22 @@ export const ControlBar: React.FC = () => {
         </div>
 
         {/* Right Side: Song Info, Controls, Progress, & Drawer Button */}
-        <div className="flex-1 min-w-0 flex flex-col justify-between h-28 py-0.5">
+        <div className="flex-1 min-w-0 flex flex-col justify-between h-[126px] pt-1.5 pb-0.5">
 
           {/* Top Row: Track Details & Dock/Window Actions */}
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0 flex-1">
+              {/* Hi-Fi LED Digital Display Readout */}
+              <div className="flex items-center gap-1.5 mb-0.5">
+                <div className={`w-1.5 h-1.5 rounded-full transition-all duration-300 ${isPlaying ? 'hi-fi-led-on' : 'hi-fi-led-off'}`} />
+                <span className="text-[9px] font-mono font-bold tracking-widest text-amber-400 uppercase">{playbackLabel}</span>
+              </div>
+
               <h4 className="text-sm font-bold text-white truncate tracking-wide font-sans">
                 {currentSong?.title || 'No track playing'}
               </h4>
               <p className="text-xs text-slate-400 truncate mt-0.5 font-sans">
-                {currentSong?.artist || 'Select from Laci Musik'}
+                {currentSong?.artist || 'Select from Music Drawer'}
               </p>
             </div>
 

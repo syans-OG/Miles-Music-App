@@ -5,9 +5,9 @@ import { usePlayerStore } from '../stores/usePlayerStore';
 import { AppMode } from '../types/player';
 
 const startupOptions: Array<{ value: 'last' | AppMode; label: string }> = [
-  { value: 'last', label: 'Terakhir' },
+  { value: 'last', label: 'Last Used' },
   { value: 'control-bar', label: 'Full' },
-  { value: 'vinyl-widget', label: 'Kotak' },
+  { value: 'vinyl-widget', label: 'Widget' },
   { value: 'micro-bubble', label: 'Mini' },
 ];
 
@@ -45,10 +45,10 @@ export const SettingsPanel: React.FC = () => {
       <header className="flex h-[37px] items-center justify-between border-b border-white/10">
         <div className="flex min-w-0 items-center gap-2">
           <Settings className="h-3.5 w-3.5 flex-shrink-0 text-amber-300" strokeWidth={1.8} />
-          <h3 id="settings-panel-title" className="flex-shrink-0 text-[12px] font-bold tracking-tight text-white">Setting Miles</h3>
-          <span className="truncate text-[8px] text-slate-500">Disimpan otomatis</span>
+          <h3 id="settings-panel-title" className="flex-shrink-0 text-[12px] font-bold tracking-tight text-white">Miles Settings</h3>
+          <span className="truncate text-[8px] text-slate-500">Auto-saved</span>
         </div>
-        <span className="pt-1 font-mono text-[8px] uppercase tracking-[0.14em] text-slate-600">5 preferensi</span>
+        <span className="pt-1 font-mono text-[8px] uppercase tracking-[0.14em] text-slate-600">5 preferences</span>
       </header>
 
       <div className="divide-y divide-white/10">
@@ -58,7 +58,7 @@ export const SettingsPanel: React.FC = () => {
           </div>
           <div className="w-[82px] flex-shrink-0">
             <p className="text-[10px] font-semibold text-white">Volume</p>
-            <p className="mt-0.5 text-[8px] text-slate-500">Level tersimpan</p>
+            <p className="mt-0.5 text-[8px] text-slate-500">Saved level</p>
           </div>
           <input
             type="range"
@@ -67,7 +67,7 @@ export const SettingsPanel: React.FC = () => {
             step="0.01"
             value={volume}
             onChange={(event) => setVolume(Number(event.target.value))}
-            aria-label="Volume tersimpan"
+            aria-label="Saved volume"
             className="h-1 min-w-0 flex-1 cursor-pointer accent-amber-400 focus-visible:ring-2 focus-visible:ring-amber-300/50"
           />
           <span className="w-9 text-right font-mono text-[9px] font-bold text-amber-300">{volumeLabel}</span>
@@ -79,10 +79,10 @@ export const SettingsPanel: React.FC = () => {
           </div>
           <div className="min-w-0 flex-1">
             <p className="text-[10px] font-semibold text-white">Always on top</p>
-            <p className="mt-0.5 text-[8px] text-slate-500">Miles tetap di atas aplikasi lain</p>
+            <p className="mt-0.5 text-[8px] text-slate-500">Keep Miles above other windows</p>
           </div>
           <span className={`font-mono text-[8px] font-bold uppercase ${isAlwaysOnTop ? 'text-amber-300' : 'text-slate-600'}`}>
-            {isAlwaysOnTop ? 'Aktif' : 'Nonaktif'}
+            {isAlwaysOnTop ? 'ON' : 'OFF'}
           </span>
           <button
             type="button"
@@ -100,17 +100,17 @@ export const SettingsPanel: React.FC = () => {
             <Gamepad2 className="h-3.5 w-3.5" strokeWidth={1.8} />
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-[10px] font-semibold text-white">Status Discord (RPC)</p>
-            <p className="mt-0.5 text-[8px] text-slate-500">Tampilkan lagu yang diputar di Discord</p>
+            <p className="text-[10px] font-semibold text-white">Discord Presence (RPC)</p>
+            <p className="mt-0.5 text-[8px] text-slate-500">Display current track on Discord</p>
           </div>
           <span className={`font-mono text-[8px] font-bold uppercase ${enableDiscordRpc ? 'text-amber-300' : 'text-slate-600'}`}>
-            {enableDiscordRpc ? 'Aktif' : 'Nonaktif'}
+            {enableDiscordRpc ? 'ON' : 'OFF'}
           </span>
           <button
             type="button"
             onClick={() => setEnableDiscordRpc(!enableDiscordRpc)}
             className={`relative h-5 w-9 flex-shrink-0 rounded-full transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-amber-300/50 active:scale-[0.96] ${enableDiscordRpc ? 'bg-amber-400' : 'bg-slate-700'}`}
-            aria-label="Status Discord"
+            aria-label="Discord Presence"
             aria-pressed={enableDiscordRpc}
           >
             <span className={`absolute left-0 top-0.5 h-4 w-4 rounded-full shadow-sm transition-transform duration-200 ${enableDiscordRpc ? 'translate-x-[18px] bg-dark-900' : 'translate-x-0.5 bg-slate-300'}`} />
@@ -119,10 +119,10 @@ export const SettingsPanel: React.FC = () => {
 
         <div className="flex h-[58px] items-center gap-3">
           <div className="w-[109px] flex-shrink-0">
-            <p className="text-[10px] font-semibold text-white">Mode saat startup</p>
-            <p className="mt-0.5 text-[8px] text-slate-500">Tampilan pertama Miles</p>
+            <p className="text-[10px] font-semibold text-white">Startup Mode</p>
+            <p className="mt-0.5 text-[8px] text-slate-500">Default view on launch</p>
           </div>
-          <div className="grid min-w-0 flex-1 grid-cols-4 gap-1 rounded-xl bg-white/[0.045] p-1" role="group" aria-label="Mode saat startup">
+          <div className="grid min-w-0 flex-1 grid-cols-4 gap-1 rounded-xl bg-white/[0.045] p-1" role="group" aria-label="Startup Mode">
             {startupOptions.map((option) => {
               const isActive = startupMode === option.value;
               return (
@@ -142,17 +142,17 @@ export const SettingsPanel: React.FC = () => {
 
         <div className="flex h-[58px] items-center gap-3">
           <div className="w-[109px] flex-shrink-0">
-            <p className="text-[10px] font-semibold text-white">Saat antrean selesai</p>
-            <p className="mt-0.5 text-[8px] text-slate-500">Perilaku playback</p>
+            <p className="text-[10px] font-semibold text-white">When Queue Ends</p>
+            <p className="mt-0.5 text-[8px] text-slate-500">Playback behavior</p>
           </div>
-          <div className="grid min-w-0 flex-1 grid-cols-2 gap-1 rounded-xl bg-white/[0.045] p-1" role="group" aria-label="Perilaku saat antrean selesai">
+          <div className="grid min-w-0 flex-1 grid-cols-2 gap-1 rounded-xl bg-white/[0.045] p-1" role="group" aria-label="Playback behavior when queue ends">
             <button
               type="button"
               onClick={() => setQueueEndBehavior('stop')}
               className={`flex items-center justify-center gap-1.5 rounded-lg px-2 py-1.5 text-[8px] font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-amber-300/50 active:scale-[0.97] ${queueEndBehavior === 'stop' ? 'bg-white text-dark-900 shadow-sm' : 'text-slate-500 hover:bg-white/5 hover:text-white'}`}
               aria-pressed={queueEndBehavior === 'stop'}
             >
-              <Square className="h-2.5 w-2.5 fill-current" /> Berhenti
+              <Square className="h-2.5 w-2.5 fill-current" /> Stop
             </button>
             <button
               type="button"
@@ -160,7 +160,7 @@ export const SettingsPanel: React.FC = () => {
               className={`flex items-center justify-center gap-1.5 rounded-lg px-2 py-1.5 text-[8px] font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-amber-300/50 active:scale-[0.97] ${queueEndBehavior === 'repeat-queue' ? 'bg-white text-dark-900 shadow-sm' : 'text-slate-500 hover:bg-white/5 hover:text-white'}`}
               aria-pressed={queueEndBehavior === 'repeat-queue'}
             >
-              <Repeat2 className="h-3 w-3" /> Ulang Queue
+              <Repeat2 className="h-3 w-3" /> Repeat Queue
             </button>
           </div>
         </div>

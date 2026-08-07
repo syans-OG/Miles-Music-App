@@ -86,7 +86,16 @@ pub fn normalize_playlist_json(
 }
 
 pub fn normalize_track_json(contents: &str) -> Result<ResolvedYoutubeTrack, YoutubeError> {
-    let raw: RawEntry = serde_json::from_str(contents)
+    let value: serde_json::Value = serde_json::from_str(contents)
+        .map_err(|_| YoutubeError::new(YoutubeErrorCode::InvalidMetadata))?;
+
+    let raw_val = if let Some(entries) = value.get("entries").and_then(|e| e.as_array()) {
+        entries.first().ok_or_else(|| YoutubeError::new(YoutubeErrorCode::Unavailable))?
+    } else {
+        &value
+    };
+
+    let raw: RawEntry = serde_json::from_value(raw_val.clone())
         .map_err(|_| YoutubeError::new(YoutubeErrorCode::InvalidMetadata))?;
     let video_id = raw
         .id

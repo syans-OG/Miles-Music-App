@@ -116,7 +116,12 @@ impl YoutubeCommandService {
         executables: YoutubeExecutables,
     ) -> Result<ResolvedYoutubeTrack, YoutubeError> {
         validate_video_id(&video_id)?;
-        let canonical_url = format!("https://www.youtube.com/watch?v={video_id}");
+        let is_search = video_id.starts_with("ytsearch1:");
+        let target_url = if is_search {
+            video_id.clone()
+        } else {
+            format!("https://www.youtube.com/watch?v={video_id}")
+        };
         let cancellation = CancellationToken::default();
         let permit = self
             .scheduler
@@ -127,10 +132,10 @@ impl YoutubeCommandService {
             &cancellation,
             &executables,
             &TRACK_ARGUMENTS,
-            &canonical_url,
+            &target_url,
         )?;
         let track = normalize_track_json(as_utf8(&output.stdout)?)?;
-        if track.video_id != video_id {
+        if !is_search && track.video_id != video_id {
             return Err(YoutubeError::new(YoutubeErrorCode::InvalidMetadata));
         }
         if !permit.is_current() {

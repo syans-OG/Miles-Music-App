@@ -31,7 +31,13 @@ export interface YoutubeSongSource {
   availability: YoutubeAvailability;
 }
 
-export type SongSource = LocalSongSource | YoutubeSongSource;
+export interface SpotifySongSource {
+  kind: 'spotify';
+  spotifyId: string;
+  searchQuery: string;
+}
+
+export type SongSource = LocalSongSource | YoutubeSongSource | SpotifySongSource;
 
 export interface LocalPlaylistSource {
   kind: 'local';
@@ -43,7 +49,12 @@ export interface YoutubePlaylistSource {
   canonicalUrl: string;
 }
 
-export type PlaylistSource = LocalPlaylistSource | YoutubePlaylistSource;
+export interface SpotifyPlaylistSource {
+  kind: 'spotify';
+  spotifyId: string;
+}
+
+export type PlaylistSource = LocalPlaylistSource | YoutubePlaylistSource | SpotifyPlaylistSource;
 
 export interface Song {
   id: string;

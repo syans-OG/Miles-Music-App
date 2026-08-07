@@ -11,8 +11,8 @@ interface LocalAudioCandidate {
 
 export const getLocalAudioRejection = (file: LocalAudioCandidate): string | null => {
   const hasSupportedType = file.type.startsWith('audio/') || SUPPORTED_AUDIO_EXTENSION.test(file.name);
-  if (!hasSupportedType) return 'format tidak didukung';
-  if (file.size > MAX_LOCAL_AUDIO_FILE_BYTES) return 'ukuran melebihi 128 MB';
+  if (!hasSupportedType) return 'unsupported format';
+  if (file.size > MAX_LOCAL_AUDIO_FILE_BYTES) return 'size exceeds 128 MB';
   return null;
 };
 
@@ -27,9 +27,9 @@ export const selectLocalAudioFiles = <T extends LocalAudioCandidate>(files: T[])
 
 export const formatLocalImportNotice = (added: number, duplicates: number, rejected: number) => {
   const details = [
-    duplicates > 0 ? `${duplicates} duplikat` : null,
-    rejected > 0 ? `${rejected} ditolak` : null,
+    duplicates > 0 ? `${duplicates} duplicate(s)` : null,
+    rejected > 0 ? `${rejected} rejected` : null,
   ].filter(Boolean);
-  if (added === 0) return details.length > 0 ? details.join(', ') : 'Tidak ada lagu yang ditambahkan';
-  return `${added} lagu ditambahkan${details.length > 0 ? `, ${details.join(', ')}` : ''}`;
+  if (added === 0) return details.length > 0 ? details.join(', ') : 'No songs added';
+  return `${added} song(s) added${details.length > 0 ? `, ${details.join(', ')}` : ''}`;
 };

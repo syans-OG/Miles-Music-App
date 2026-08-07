@@ -17,9 +17,9 @@ describe('local audio import policy', () => {
 
   it('rejects oversized and unsupported files', () => {
     expect(getLocalAudioRejection(audioFile(MAX_LOCAL_AUDIO_FILE_BYTES + 1)))
-      .toBe('ukuran melebihi 128 MB');
+      .toBe('size exceeds 128 MB');
     expect(getLocalAudioRejection({ name: 'notes.txt', size: 12, type: 'text/plain' }))
-      .toBe('format tidak didukung');
+      .toBe('unsupported format');
   });
 
   it('accepts no more than 50 files from one selection', () => {

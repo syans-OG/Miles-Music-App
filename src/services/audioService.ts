@@ -173,12 +173,16 @@ export class AudioService {
       return;
     }
 
-    if (song.source.availability !== 'available') {
+    const resolveId = song.source.kind === 'spotify'
+      ? `ytsearch1:${song.source.searchQuery || `${song.artist} ${song.title}`}`
+      : song.source.videoId;
+
+    if (song.source.kind === 'youtube' && song.source.availability !== 'available') {
       this.purgeAndSkipUnavailableSong(song, `${song.title} dihapus: tidak tersedia`);
       return;
     }
 
-    const cached = this.getCachedStream(song.source.videoId);
+    const cached = this.getCachedStream(resolveId);
     if (cached) {
       usePlayerStore.getState().setPlaybackStatus('loading');
       this.assignSource(song, cached.url, generation, selectionSerial);
@@ -192,11 +196,14 @@ export class AudioService {
       : 'explicit_selection';
     try {
       const track = await this.resolveTrack(
-        song.source.videoId,
+        resolveId,
         purpose,
         () => this.isCurrentSelection(generation, selectionSerial, song.id) && usePlayerStore.getState().playbackIntent,
       );
       if (!this.isCurrentSelection(generation, selectionSerial, song.id) || !usePlayerStore.getState().playbackIntent) return;
+      if (track.thumbnailUrl && (song.source.kind === 'spotify' || !song.coverUrl)) {
+        usePlayerStore.getState().updateSongMetadata(song.id, { coverUrl: track.thumbnailUrl });
+      }
       usePlayerStore.getState().setPlaybackStatus('loading');
       this.assignSource(song, track.stream.url, generation, selectionSerial);
       await this.playAssignedSource(generation);

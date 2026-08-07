@@ -32,8 +32,8 @@ const EditSongDialog: React.FC<EditSongDialogProps> = ({ song, onClose, onSave }
         <div className="mb-4 flex items-center gap-3">
           <img src={getDisplayCoverUrl(song.coverUrl, 96)} alt="" loading="lazy" decoding="async" className="h-12 w-12 rounded-full object-cover" />
           <div className="min-w-0 flex-1">
-            <h4 className="truncate text-sm font-bold text-white">Edit informasi</h4>
-            <p className="truncate text-[10px] text-slate-400">Perubahan disimpan tanpa mengubah file audio asli</p>
+            <h4 className="truncate text-sm font-bold text-white">Edit Song Info</h4>
+            <p className="truncate text-[10px] text-slate-400">Changes are saved without modifying original audio files</p>
           </div>
           <button type="button" onClick={onClose} className="rounded-lg p-1.5 text-slate-400 hover:bg-white/10 hover:text-white">
             <X className="h-4 w-4" />
@@ -42,11 +42,11 @@ const EditSongDialog: React.FC<EditSongDialogProps> = ({ song, onClose, onSave }
 
         <div className="space-y-2.5">
           <label className="block text-[10px] font-semibold uppercase tracking-wider text-slate-400">
-            Judul
+            Title
             <input value={title} onChange={(event) => setTitle(event.target.value)} maxLength={120} autoFocus className="mt-1 w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-normal normal-case tracking-normal text-white outline-none focus:border-amber-400/60" />
           </label>
           <label className="block text-[10px] font-semibold uppercase tracking-wider text-slate-400">
-            Artis
+            Artist
             <input value={artist} onChange={(event) => setArtist(event.target.value)} maxLength={120} className="mt-1 w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-normal normal-case tracking-normal text-white outline-none focus:border-amber-400/60" />
           </label>
           <label className="block text-[10px] font-semibold uppercase tracking-wider text-slate-400">
@@ -56,9 +56,9 @@ const EditSongDialog: React.FC<EditSongDialogProps> = ({ song, onClose, onSave }
         </div>
 
         <div className="mt-4 flex justify-end gap-2">
-          <button type="button" onClick={onClose} className="rounded-xl bg-white/5 px-3 py-2 text-xs font-semibold text-slate-300 hover:bg-white/10">Batal</button>
+          <button type="button" onClick={onClose} className="rounded-xl bg-white/5 px-3 py-2 text-xs font-semibold text-slate-300 hover:bg-white/10">Cancel</button>
           <button type="submit" disabled={!title.trim() || !artist.trim()} className="flex items-center gap-1.5 rounded-xl bg-amber-400 px-3 py-2 text-xs font-bold text-dark-900 hover:bg-amber-300 disabled:cursor-not-allowed disabled:opacity-40">
-            <Save className="h-3.5 w-3.5" /> Simpan
+            <Save className="h-3.5 w-3.5" /> Save
           </button>
         </div>
       </form>
@@ -73,15 +73,15 @@ const CreatePlaylistDialog: React.FC<{ onClose: () => void; onCreate: (name: str
       <form onSubmit={(event) => { event.preventDefault(); if (name.trim()) onCreate(name); }} className="w-full rounded-2xl border border-indigo-400/20 bg-[#11141c] p-5 shadow-2xl">
         <div className="mb-4 flex items-center justify-between">
           <div>
-            <h4 className="text-sm font-bold text-white">Playlist baru</h4>
-            <p className="mt-0.5 text-[10px] text-slate-400">Buat koleksi tanpa menyalin file musik</p>
+            <h4 className="text-sm font-bold text-white">New Playlist</h4>
+            <p className="mt-0.5 text-[10px] text-slate-400">Create a playlist without copying audio files</p>
           </div>
           <button type="button" onClick={onClose} className="rounded-lg p-1.5 text-slate-400 hover:bg-white/10 hover:text-white"><X className="h-4 w-4" /></button>
         </div>
-        <input value={name} onChange={(event) => setName(event.target.value)} maxLength={60} autoFocus placeholder="Nama playlist" className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2.5 text-xs text-white outline-none placeholder:text-slate-500 focus:border-indigo-400/60" />
+        <input value={name} onChange={(event) => setName(event.target.value)} maxLength={60} autoFocus placeholder="Playlist Name" className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2.5 text-xs text-white outline-none placeholder:text-slate-500 focus:border-indigo-400/60" />
         <div className="mt-4 flex justify-end gap-2">
-          <button type="button" onClick={onClose} className="rounded-xl bg-white/5 px-3 py-2 text-xs font-semibold text-slate-300 hover:bg-white/10">Batal</button>
-          <button type="submit" disabled={!name.trim()} className="flex items-center gap-1.5 rounded-xl bg-indigo-400 px-3 py-2 text-xs font-bold text-dark-900 hover:bg-indigo-300 disabled:opacity-40"><Plus className="h-3.5 w-3.5" /> Buat</button>
+          <button type="button" onClick={onClose} className="rounded-xl bg-white/5 px-3 py-2 text-xs font-semibold text-slate-300 hover:bg-white/10">Cancel</button>
+          <button type="submit" disabled={!name.trim()} className="flex items-center gap-1.5 rounded-xl bg-indigo-400 px-3 py-2 text-xs font-bold text-dark-900 hover:bg-indigo-300 disabled:opacity-40"><Plus className="h-3.5 w-3.5" /> Create</button>
         </div>
       </form>
     </div>
@@ -101,7 +101,7 @@ const SongPlaylistDialog: React.FC<SongPlaylistDialogProps> = ({ song, playlists
     <div className="w-full rounded-2xl border border-white/10 bg-[#11141c] p-4 shadow-2xl">
       <div className="mb-3 flex items-center gap-3">
         <img src={getDisplayCoverUrl(song.coverUrl, 96)} alt="" loading="lazy" decoding="async" className="h-10 w-10 rounded-full object-cover" />
-        <div className="min-w-0 flex-1"><h4 className="truncate text-sm font-bold text-white">Tambahkan ke playlist</h4><p className="truncate text-[10px] text-slate-400">{song.title}</p></div>
+        <div className="min-w-0 flex-1"><h4 className="truncate text-sm font-bold text-white">Add to Playlist</h4><p className="truncate text-[10px] text-slate-400">{song.title}</p></div>
         <button type="button" onClick={onClose} className="rounded-lg p-1.5 text-slate-400 hover:bg-white/10 hover:text-white"><X className="h-4 w-4" /></button>
       </div>
       <div className="max-h-[190px] space-y-1 overflow-y-auto pr-1">
@@ -115,9 +115,9 @@ const SongPlaylistDialog: React.FC<SongPlaylistDialogProps> = ({ song, playlists
             </button>
           );
         })}
-        {playlists.length === 0 && <p className="py-5 text-center text-[11px] text-slate-500">Belum ada playlist.</p>}
+        {playlists.length === 0 && <p className="py-5 text-center text-[11px] text-slate-500">No playlists created yet.</p>}
       </div>
-      <button type="button" onClick={onCreate} className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-indigo-400/30 py-2 text-[11px] font-semibold text-indigo-300 hover:bg-indigo-400/10"><Plus className="h-3.5 w-3.5" /> Playlist baru</button>
+      <button type="button" onClick={onCreate} className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-indigo-400/30 py-2 text-[11px] font-semibold text-indigo-300 hover:bg-indigo-400/10"><Plus className="h-3.5 w-3.5" /> New Playlist</button>
     </div>
   </div>
 );
@@ -138,11 +138,11 @@ const PlaylistManagerDialog: React.FC<PlaylistManagerDialogProps> = ({ playlist,
       <div className="flex max-h-[360px] w-full flex-col rounded-2xl border border-white/10 bg-[#11141c] p-4 shadow-2xl">
         <div className="mb-3 flex items-center gap-3">
           <img src={getDisplayCoverUrl(playlist.coverUrl, 96)} alt="" loading="lazy" decoding="async" className="h-11 w-11 rounded-xl object-cover" />
-          <div className="min-w-0 flex-1"><h4 className="truncate text-sm font-bold text-white">{playlist.name}</h4><p className="text-[10px] text-slate-400">{playlist.songs.length} lagu</p></div>
-          <button type="button" onClick={() => setConfirmDelete(true)} className="rounded-lg p-1.5 text-slate-500 hover:bg-rose-500/10 hover:text-rose-300" title="Hapus playlist"><Trash2 className="h-4 w-4" /></button>
+          <div className="min-w-0 flex-1"><h4 className="truncate text-sm font-bold text-white">{playlist.name}</h4><p className="text-[10px] text-slate-400">{playlist.songs.length} songs</p></div>
+          <button type="button" onClick={() => setConfirmDelete(true)} className="rounded-lg p-1.5 text-slate-500 hover:bg-rose-500/10 hover:text-rose-300" title="Delete playlist"><Trash2 className="h-4 w-4" /></button>
           <button type="button" onClick={onClose} className="rounded-lg p-1.5 text-slate-400 hover:bg-white/10 hover:text-white"><X className="h-4 w-4" /></button>
         </div>
-        <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-slate-500">Pilih lagu</p>
+        <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-slate-500">Select songs</p>
         <div className="min-h-0 flex-1 space-y-1 overflow-y-auto pr-1">
           {library.map((song) => {
             const included = playlist.songs.some((item) => item.id === song.id);
@@ -154,12 +154,12 @@ const PlaylistManagerDialog: React.FC<PlaylistManagerDialogProps> = ({ playlist,
               </div>
             );
           })}
-          {library.length === 0 && <p className="py-8 text-center text-[11px] text-slate-500">Library masih kosong.</p>}
+          {library.length === 0 && <p className="py-8 text-center text-[11px] text-slate-500">Library is empty.</p>}
         </div>
         {confirmDelete && (
           <div className="mt-3 flex items-center justify-between rounded-xl border border-rose-400/20 bg-rose-500/10 p-2">
-            <span className="text-[10px] text-rose-200">Hapus playlist ini?</span>
-            <div className="flex gap-1"><button type="button" onClick={() => setConfirmDelete(false)} className="rounded-lg px-2 py-1 text-[10px] text-slate-300 hover:bg-white/10">Batal</button><button type="button" onClick={onDelete} className="rounded-lg bg-rose-500 px-2 py-1 text-[10px] font-bold text-white">Hapus</button></div>
+            <span className="text-[10px] text-rose-200">Delete this playlist?</span>
+            <div className="flex gap-1"><button type="button" onClick={() => setConfirmDelete(false)} className="rounded-lg px-2 py-1 text-[10px] text-slate-300 hover:bg-white/10">Cancel</button><button type="button" onClick={onDelete} className="rounded-lg bg-rose-500 px-2 py-1 text-[10px] font-bold text-white">Delete</button></div>
           </div>
         )}
       </div>
@@ -302,19 +302,19 @@ export const MusicDrawer: React.FC = () => {
     }
   };
 
-  // Helper to format real-time total listened seconds into "Xs didengar", "Xm didengar", or "Xj Ym didengar"
+  // Helper to format real-time total listened seconds into "Xs listened", "Xm listened", or "Xh Ym listened"
   const formatListeningTime = (listenedSec: number = 0) => {
     const totalSec = Math.floor(listenedSec);
     if (totalSec < 60) {
-      return `${totalSec}s didengar`;
+      return `${totalSec}s listened`;
     }
     const totalMin = Math.floor(totalSec / 60);
     const hours = Math.floor(totalMin / 60);
     const mins = totalMin % 60;
     if (hours > 0) {
-      return `${hours}j ${mins}m didengar`;
+      return `${hours}h ${mins}m listened`;
     }
-    return `${mins}m didengar`;
+    return `${mins}m listened`;
   };
 
   return (
@@ -332,14 +332,14 @@ export const MusicDrawer: React.FC = () => {
           <div className="flex items-center border-b border-white/10 px-3 py-2">
             <Check className="mr-2 h-3.5 w-3.5 text-emerald-300" />
             <p className="min-w-0 flex-1 truncate text-[10px] font-semibold text-white">{youtubeImportTask.message}</p>
-            <button type="button" onClick={dismissYoutubeTask} className="rounded p-1 text-slate-500 hover:bg-white/10 hover:text-white" aria-label="Tutup laporan impor"><X className="h-3.5 w-3.5" /></button>
+            <button type="button" onClick={dismissYoutubeTask} className="rounded p-1 text-slate-500 hover:bg-white/10 hover:text-white" aria-label="Close import report"><X className="h-3.5 w-3.5" /></button>
           </div>
           <div className="grid grid-cols-4 divide-x divide-white/10 border-b border-white/10">
             {[
-              ['Masuk', youtubeImportTask.report.added],
-              ['Duplikat', youtubeImportTask.report.duplicates],
-              ['Dilewati', youtubeImportTask.report.skipped],
-              ['Batas 100', youtubeImportTask.report.truncated ? 'Ya' : '—'],
+              ['Added', youtubeImportTask.report.added],
+              ['Duplicates', youtubeImportTask.report.duplicates],
+              ['Skipped', youtubeImportTask.report.skipped],
+              ['100 Limit', youtubeImportTask.report.truncated ? 'Yes' : '—'],
             ].map(([label, value]) => (
               <div key={label} className="px-2 py-1.5">
                 <strong className="block font-mono text-[11px] text-white">{value}</strong>
@@ -428,14 +428,12 @@ export const MusicDrawer: React.FC = () => {
             <span>TOP</span>
           </button>
 
-        </div>
-
-        <button
+        </div>        <button
           type="button"
           onClick={() => setSettingsOpen(true)}
           className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl border transition-colors focus-visible:ring-2 focus-visible:ring-amber-300/50 active:scale-[0.96] ${isSettingsOpen ? 'border-white bg-white text-dark-900 shadow-md' : 'border-white/10 bg-white/5 text-slate-400 hover:border-white/20 hover:bg-white/10 hover:text-white'}`}
-          title="Buka Setting"
-          aria-label="Buka Setting"
+          title="Open Settings"
+          aria-label="Open Settings"
           aria-pressed={isSettingsOpen}
         >
           <Settings className={`h-4 w-4 ${isSettingsOpen ? 'text-amber-500' : ''}`} strokeWidth={1.8} />
@@ -444,8 +442,8 @@ export const MusicDrawer: React.FC = () => {
         <button
           onClick={() => { setSettingsOpen(false); toggleDrawer(); }}
           className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl text-slate-400 transition-colors hover:bg-white/10 hover:text-white focus-visible:ring-2 focus-visible:ring-amber-300/50 active:scale-[0.96]"
-          title="Tutup Laci"
-          aria-label="Tutup Laci"
+          title="Close Drawer"
+          aria-label="Close Drawer"
         >
           <X className="w-4 h-4" />
         </button>
@@ -464,12 +462,12 @@ export const MusicDrawer: React.FC = () => {
                 <input
                   value={searchQuery}
                   onChange={(event) => setSearchQuery(event.target.value)}
-                  placeholder="Cari judul, artis, atau album..."
+                  placeholder="Search title, artist, or album..."
                   autoFocus
                   className="min-w-0 flex-1 bg-transparent text-[11px] text-white outline-none placeholder:text-slate-500"
                 />
                 {searchQuery && <span className="text-[9px] text-slate-500">{filteredCDs.length}</span>}
-                <button type="button" onClick={() => { setSearchQuery(''); setIsSearchOpen(false); }} className="rounded p-0.5 text-slate-400 hover:text-white" aria-label="Tutup pencarian">
+                <button type="button" onClick={() => { setSearchQuery(''); setIsSearchOpen(false); }} className="rounded p-0.5 text-slate-400 hover:text-white" aria-label="Close search">
                   <X className="h-3.5 w-3.5" />
                 </button>
               </div>
@@ -477,16 +475,16 @@ export const MusicDrawer: React.FC = () => {
               <>
                 <div className="flex items-center gap-1.5">
                   <button onClick={() => setCdSubTab('all')} className={`px-2.5 py-0.5 rounded-lg text-[11px] font-medium transition-all ${cdSubTab === 'all' ? 'bg-amber-400/20 text-amber-300 border border-amber-400/40 font-semibold' : 'bg-white/5 text-slate-400 hover:text-slate-200'}`}>ALL</button>
-                  <button onClick={() => setCdSubTab('recent')} className={`px-2.5 py-0.5 rounded-lg text-[11px] font-medium transition-all ${cdSubTab === 'recent' ? 'bg-amber-400/20 text-amber-300 border border-amber-400/40 font-semibold' : 'bg-white/5 text-slate-400 hover:text-slate-200'}`}>Baru Diputar</button>
-                  <button onClick={() => setCdSubTab('favorites')} className={`px-2.5 py-0.5 rounded-lg text-[11px] font-medium transition-all ${cdSubTab === 'favorites' ? 'bg-amber-400/20 text-amber-300 border border-amber-400/40 font-semibold' : 'bg-white/5 text-slate-400 hover:text-slate-200'}`}>Favorit</button>
+                  <button onClick={() => setCdSubTab('recent')} className={`px-2.5 py-0.5 rounded-lg text-[11px] font-medium transition-all ${cdSubTab === 'recent' ? 'bg-amber-400/20 text-amber-300 border border-amber-400/40 font-semibold' : 'bg-white/5 text-slate-400 hover:text-slate-200'}`}>Recent</button>
+                  <button onClick={() => setCdSubTab('favorites')} className={`px-2.5 py-0.5 rounded-lg text-[11px] font-medium transition-all ${cdSubTab === 'favorites' ? 'bg-amber-400/20 text-amber-300 border border-amber-400/40 font-semibold' : 'bg-white/5 text-slate-400 hover:text-slate-200'}`}>Favorites</button>
                 </div>
                 <div className="flex items-center gap-1">
-                  <button type="button" onClick={() => setIsSearchOpen(true)} className="rounded-lg border border-white/10 bg-white/5 p-1 text-slate-400 transition-colors hover:text-white" title="Cari lagu">
+                  <button type="button" onClick={() => setIsSearchOpen(true)} className="rounded-lg border border-white/10 bg-white/5 p-1 text-slate-400 transition-colors hover:text-white" title="Search songs">
                     <Search className="h-3.5 w-3.5" />
                   </button>
-                  <button onClick={() => fileInputRef.current?.click()} className="flex items-center gap-1 rounded-lg border border-amber-500/30 bg-amber-500/20 px-1.5 py-1 text-[10px] font-semibold text-amber-300 transition-all hover:bg-amber-500/30 active:scale-95" title="Tambah lagu dari komputer">
+                  <button onClick={() => fileInputRef.current?.click()} className="flex items-center gap-1 rounded-lg border border-amber-500/30 bg-amber-500/20 px-1.5 py-1 text-[10px] font-semibold text-amber-300 transition-all hover:bg-amber-500/30 active:scale-95" title="Add local music files">
                     <FolderPlus className="h-3.5 w-3.5 text-amber-400" />
-                    <span>Impor</span>
+                    <span>Import</span>
                   </button>
                 </div>
               </>
@@ -498,8 +496,8 @@ export const MusicDrawer: React.FC = () => {
             {filteredCDs.length === 0 && (
               <div className="flex h-[250px] flex-col items-center justify-center text-center">
                 {cdSubTab === 'favorites' && !searchQuery ? <Heart className="mb-2 h-7 w-7 text-slate-600" /> : <Search className="mb-2 h-7 w-7 text-slate-600" />}
-                <p className="text-xs font-semibold text-slate-300">{cdSubTab === 'favorites' && !searchQuery ? 'Belum ada lagu favorit' : 'Lagu tidak ditemukan'}</p>
-                <p className="mt-1 max-w-[220px] text-[10px] text-slate-500">{cdSubTab === 'favorites' && !searchQuery ? 'Tekan ikon hati pada CD untuk menyimpannya di sini.' : 'Coba kata kunci judul, artis, atau album yang lain.'}</p>
+                <p className="text-xs font-semibold text-slate-300">{cdSubTab === 'favorites' && !searchQuery ? 'No favorite songs yet' : 'No songs found'}</p>
+                <p className="mt-1 max-w-[220px] text-[10px] text-slate-500">{cdSubTab === 'favorites' && !searchQuery ? 'Click the heart icon on any CD to save it here.' : 'Try searching for another title, artist, or album.'}</p>
               </div>
             )}
             {filteredCDs.length > 0 && (
@@ -520,7 +518,7 @@ export const MusicDrawer: React.FC = () => {
                   type="button"
                   onClick={(event) => { event.stopPropagation(); toggleFavorite(song.id); }}
                   className={`absolute left-0 top-0 z-40 rounded-lg p-1 shadow-md transition-all ${song.isFavorite ? 'bg-rose-500 text-white opacity-100' : 'bg-black/60 text-slate-300 opacity-0 hover:bg-rose-500 hover:text-white group-hover/cd:opacity-100'}`}
-                  aria-label={song.isFavorite ? `Hapus ${song.title} dari Favorit` : `Tambahkan ${song.title} ke Favorit`}
+                  aria-label={song.isFavorite ? `Remove ${song.title} from Favorites` : `Add ${song.title} to Favorites`}
                 >
                   <Heart className={`h-3.5 w-3.5 ${song.isFavorite ? 'fill-current' : ''}`} />
                 </button>
@@ -542,16 +540,16 @@ export const MusicDrawer: React.FC = () => {
                       <Pencil className="h-3 w-3 text-amber-300" /> Edit
                     </button>
                     <button type="button" onClick={() => { setPlaylistSong(song); setMenuSongId(null); }} className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-[10px] font-semibold text-indigo-200 hover:bg-indigo-400/10">
-                      <ListMusic className="h-3 w-3 text-indigo-300" /> Ke Playlist
+                      <ListMusic className="h-3 w-3 text-indigo-300" /> To Playlist
                     </button>
                     <button type="button" onClick={() => { playNextFromQueue(song.id); setMenuSongId(null); }} className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-[10px] font-semibold text-emerald-200 hover:bg-emerald-400/10">
-                      <Play className="h-3 w-3 text-emerald-300" /> Berikutnya
+                      <Play className="h-3 w-3 text-emerald-300" /> Play Next
                     </button>
                     <button type="button" onClick={() => { addToPlaybackQueue(song.id); setMenuSongId(null); }} className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-[10px] font-semibold text-sky-200 hover:bg-sky-400/10">
-                      <ListPlus className="h-3 w-3 text-sky-300" /> Ke Queue
+                      <ListPlus className="h-3 w-3 text-sky-300" /> To Queue
                     </button>
                     <button type="button" onClick={() => { setDeletingSong(song); setMenuSongId(null); }} className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-[10px] font-semibold text-rose-300 hover:bg-rose-500/10">
-                      <Trash2 className="h-3 w-3" /> Hapus
+                      <Trash2 className="h-3 w-3" /> Delete
                     </button>
                   </div>
                 )}
@@ -600,8 +598,8 @@ export const MusicDrawer: React.FC = () => {
       {!isSettingsOpen && drawerTab === 'playlist' && (
         <div className="h-[317px] space-y-3">
           <div className="flex items-center justify-between px-1">
-            <div><p className="text-[11px] font-semibold text-slate-300">Koleksi kamu</p><p className="text-[9px] text-slate-500">{playlists.length} playlist</p></div>
-            <button type="button" onClick={() => { setPlaylistSong(null); setIsCreatePlaylistOpen(true); }} className="flex items-center gap-1 rounded-lg border border-indigo-400/30 bg-indigo-400/10 px-2 py-1 text-[10px] font-semibold text-indigo-300 hover:bg-indigo-400/20"><Plus className="h-3.5 w-3.5" /> Playlist baru</button>
+            <div><p className="text-[11px] font-semibold text-slate-300">Your Collection</p><p className="text-[9px] text-slate-500">{playlists.length} playlists</p></div>
+            <button type="button" onClick={() => { setPlaylistSong(null); setIsCreatePlaylistOpen(true); }} className="flex items-center gap-1 rounded-lg border border-indigo-400/30 bg-indigo-400/10 px-2 py-1 text-[10px] font-semibold text-indigo-300 hover:bg-indigo-400/20"><Plus className="h-3.5 w-3.5" /> New Playlist</button>
           </div>
           <div className="grid h-[280px] grid-cols-2 auto-rows-[66px] gap-2.5 overflow-y-auto overscroll-contain pr-1">
             {playlists.map((playlist) => (
@@ -617,13 +615,13 @@ export const MusicDrawer: React.FC = () => {
                 </div>
                 <div className="min-w-0 flex-1">
                   <h5 className="truncate text-[11px] font-bold text-white transition-colors group-hover/playlist:text-indigo-300">{playlist.name}</h5>
-                  <p className="mt-0.5 truncate text-[9px] text-slate-500">{playlist.songs.length} lagu · {playlist.curator}</p>
-                  <span className="mt-1 inline-flex items-center gap-1 text-[9px] text-slate-400"><ListMusic className="h-2.5 w-2.5" /> Kelola</span>
+                  <p className="mt-0.5 truncate text-[9px] text-slate-500">{playlist.songs.length} songs · {playlist.curator}</p>
+                  <span className="mt-1 inline-flex items-center gap-1 text-[9px] text-slate-400"><ListMusic className="h-2.5 w-2.5" /> Manage</span>
                 </div>
               </button>
             ))}
             {playlists.length === 0 && (
-              <div className="col-span-2 flex h-[250px] flex-col items-center justify-center text-center"><ListMusic className="mb-2 h-8 w-8 text-slate-600" /><p className="text-xs font-semibold text-slate-300">Belum ada playlist</p><p className="mt-1 text-[10px] text-slate-500">Buat playlist pertama untuk mengelompokkan musik.</p></div>
+              <div className="col-span-2 flex h-[250px] flex-col items-center justify-center text-center"><ListMusic className="mb-2 h-8 w-8 text-slate-600" /><p className="text-xs font-semibold text-slate-300">No playlists yet</p><p className="mt-1 text-[10px] text-slate-500">Create your first playlist to organize your music.</p></div>
             )}
           </div>
         </div>
@@ -633,8 +631,8 @@ export const MusicDrawer: React.FC = () => {
       {!isSettingsOpen && drawerTab === 'queue' && (
         <div className="h-[317px] space-y-3">
           <div className="flex items-center justify-between px-1">
-            <div><p className="text-[11px] font-semibold text-slate-300">Sekarang & berikutnya</p><p className="text-[9px] text-slate-500">{playbackQueue.length} lagu dalam antrean</p></div>
-            <button type="button" onClick={clearPlaybackQueue} disabled={playbackQueue.length <= (currentSong ? 1 : 0)} className="rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-[10px] font-semibold text-slate-400 hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-35">Bersihkan</button>
+            <div><p className="text-[11px] font-semibold text-slate-300">Now Playing & Up Next</p><p className="text-[9px] text-slate-500">{playbackQueue.length} songs in queue</p></div>
+            <button type="button" onClick={clearPlaybackQueue} disabled={playbackQueue.length <= (currentSong ? 1 : 0)} className="rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-[10px] font-semibold text-slate-400 hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-35">Clear</button>
           </div>
           <div ref={queueScrollRef} className="h-[280px] overflow-y-auto overscroll-contain pr-1">
             {playbackQueue.length > 0 && (
@@ -657,9 +655,9 @@ export const MusicDrawer: React.FC = () => {
                   <img src={getDisplayCoverUrl(song.coverUrl, 96)} alt="" loading="lazy" decoding="async" className="h-8 w-8 flex-shrink-0 rounded-lg object-cover" />
                   <div className="min-w-0 flex-1"><p className={`truncate text-[11px] font-semibold ${isCurrent ? 'text-emerald-200' : 'text-white'}`}>{song.title}</p><p className="truncate text-[9px] text-slate-500">{song.artist}</p></div>
                   <div onClick={(event) => event.stopPropagation()} className="flex items-center opacity-0 transition-opacity group-hover/queue:opacity-100">
-                    <button type="button" onClick={() => movePlaybackQueueItem(song.id, 'up')} disabled={index === 0} className="rounded p-1 text-slate-500 hover:bg-white/10 hover:text-white disabled:opacity-20" title="Naikkan"><ChevronUp className="h-3 w-3" /></button>
-                    <button type="button" onClick={() => movePlaybackQueueItem(song.id, 'down')} disabled={index === playbackQueue.length - 1} className="rounded p-1 text-slate-500 hover:bg-white/10 hover:text-white disabled:opacity-20" title="Turunkan"><ChevronDown className="h-3 w-3" /></button>
-                    <button type="button" onClick={() => removeFromPlaybackQueue(song.id)} disabled={isCurrent} className="rounded p-1 text-slate-500 hover:bg-rose-500/10 hover:text-rose-300 disabled:cursor-not-allowed disabled:opacity-20" title={isCurrent ? 'Sedang diputar' : 'Keluarkan'}><X className="h-3 w-3" /></button>
+                    <button type="button" onClick={() => movePlaybackQueueItem(song.id, 'up')} disabled={index === 0} className="rounded p-1 text-slate-500 hover:bg-white/10 hover:text-white disabled:opacity-20" title="Move Up"><ChevronUp className="h-3 w-3" /></button>
+                    <button type="button" onClick={() => movePlaybackQueueItem(song.id, 'down')} disabled={index === playbackQueue.length - 1} className="rounded p-1 text-slate-500 hover:bg-white/10 hover:text-white disabled:opacity-20" title="Move Down"><ChevronDown className="h-3 w-3" /></button>
+                    <button type="button" onClick={() => removeFromPlaybackQueue(song.id)} disabled={isCurrent} className="rounded p-1 text-slate-500 hover:bg-rose-500/10 hover:text-rose-300 disabled:cursor-not-allowed disabled:opacity-20" title={isCurrent ? 'Now playing' : 'Remove'}><X className="h-3 w-3" /></button>
                   </div>
                     </div>
                   );
@@ -667,7 +665,7 @@ export const MusicDrawer: React.FC = () => {
               </div>
             )}
             {playbackQueue.length === 0 && (
-              <div className="flex h-[250px] flex-col items-center justify-center text-center"><ListOrdered className="mb-2 h-8 w-8 text-slate-600" /><p className="text-xs font-semibold text-slate-300">Antrean masih kosong</p><p className="mt-1 max-w-[220px] text-[10px] text-slate-500">Gunakan menu CD untuk menambahkan lagu ke Queue.</p></div>
+              <div className="flex h-[250px] flex-col items-center justify-center text-center"><ListOrdered className="mb-2 h-8 w-8 text-slate-600" /><p className="text-xs font-semibold text-slate-300">Queue is empty</p><p className="mt-1 max-w-[220px] text-[10px] text-slate-500">Double click any song or use the CD menu to add songs to Queue.</p></div>
             )}
           </div>
         </div>
@@ -736,7 +734,7 @@ export const MusicDrawer: React.FC = () => {
                   <div className="flex flex-shrink-0 flex-col items-end gap-1 font-mono text-[10px]">
                     <div className="flex items-center gap-1 rounded-full border border-amber-500/20 bg-amber-500/10 px-2 py-0.5 text-amber-300 font-semibold">
                       <Flame className="h-3 w-3 fill-amber-400/30 text-amber-400" />
-                      <span>{song.playCount}x diputar</span>
+                      <span>{song.playCount} plays</span>
                     </div>
 
                     <span className="flex items-center gap-1 text-[9px] text-slate-400">
@@ -750,8 +748,8 @@ export const MusicDrawer: React.FC = () => {
           ) : (
             <div className="flex h-full flex-col items-center justify-center text-center">
               <Flame className="mb-2 h-8 w-8 text-slate-600" />
-              <p className="text-xs font-semibold text-slate-300">Belum ada Top Songs</p>
-              <p className="mt-1 max-w-[220px] text-[10px] text-slate-500">Putar lagu untuk melihat statistik musik terfavorit Anda.</p>
+              <p className="text-xs font-semibold text-slate-300">No Top Songs yet</p>
+              <p className="mt-1 max-w-[220px] text-[10px] text-slate-500">Play songs to view your most listened tracks analytics.</p>
             </div>
           )}
         </div>
@@ -813,14 +811,14 @@ export const MusicDrawer: React.FC = () => {
             <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-rose-500/10 text-rose-300">
               <AlertTriangle className="h-5 w-5" />
             </div>
-            <h4 className="text-sm font-bold text-white">Hapus lagu?</h4>
+            <h4 className="text-sm font-bold text-white">Delete song?</h4>
             <p className="mt-1 text-[11px] leading-relaxed text-slate-400">
-              “{deletingSong.title}” akan dihapus dari library{deletingSong.source.kind === 'local' && deletingSong.source.managed ? ' beserta file audio dan cover yang disimpan aplikasi.' : '.'}
+              “{deletingSong.title}” will be removed from your library{deletingSong.source.kind === 'local' && deletingSong.source.managed ? ' along with application storage files.' : '.'}
             </p>
             <div className="mt-4 flex justify-center gap-2">
-              <button type="button" onClick={() => setDeletingSong(null)} className="rounded-xl bg-white/5 px-3 py-2 text-xs font-semibold text-slate-300 hover:bg-white/10">Batal</button>
+              <button type="button" onClick={() => setDeletingSong(null)} className="rounded-xl bg-white/5 px-3 py-2 text-xs font-semibold text-slate-300 hover:bg-white/10">Cancel</button>
               <button type="button" onClick={async () => { await deleteSong(deletingSong.id); setDeletingSong(null); }} className="flex items-center gap-1.5 rounded-xl bg-rose-500 px-3 py-2 text-xs font-bold text-white hover:bg-rose-400">
-                <Trash2 className="h-3.5 w-3.5" /> Hapus
+                <Trash2 className="h-3.5 w-3.5" /> Delete
               </button>
             </div>
           </div>

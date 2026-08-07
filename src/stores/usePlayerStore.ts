@@ -16,7 +16,6 @@ import {
   cancelYoutubeImport,
   cancelYoutubeResolve,
   detectYoutubeResource,
-  extractYoutubeVideoId,
   getYoutubeErrorMessage,
   importYoutubePlaylist,
   resolveYoutubeTrack,
@@ -27,6 +26,7 @@ import {
   getLocalAudioRejection,
   selectLocalAudioFiles,
 } from '../services/localImportPolicy';
+import { isSpotifyUrl, importSpotifyResource } from '../services/spotifyService';
 import type { YoutubePlaylistEntry } from '../types/youtube';
 import { SUNFLOWER_DEFAULT_SONG } from '../data/defaultLibrary';
 import { migratePlayerPersistedState } from './playerPersistence';
@@ -105,13 +105,14 @@ export interface PlayerActions {
   clearPlaybackQueue: () => void;
   addSongFromUrl: (url: string) => Promise<void>;
   importYoutubeUrl: (url: string) => Promise<void>;
+  importSpotifyUrl: (url: string) => Promise<void>;
   cancelYoutubeTask: () => Promise<void>;
   retryYoutubeTask: () => Promise<void>;
   dismissYoutubeTask: () => void;
   selectPlaylist: (playlistId: string | null) => void;
   addLocalSong: (file: File) => Promise<void>;
   addMultipleLocalSongs: (files: FileList | File[]) => Promise<void>;
-  updateSongMetadata: (songId: string, updates: Pick<Song, 'title' | 'artist' | 'album'>) => void;
+  updateSongMetadata: (songId: string, updates: Partial<Pick<Song, 'title' | 'artist' | 'album' | 'coverUrl'>>) => void;
   toggleFavorite: (songId: string) => void;
   createPlaylist: (name: string) => string;
   toggleSongInPlaylist: (playlistId: string, songId: string) => void;
@@ -234,9 +235,11 @@ const restoreSong = (song: Song): Song => {
   };
 };
 
-const isRestorableSong = (song: Song) => song.source.kind === 'youtube'
-  ? song.source.availability === 'available'
-  : !song.source.managed || Boolean(song.source.filePath);
+const isRestorableSong = (song: Song) => {
+  if (song.source.kind === 'youtube') return song.source.availability === 'available';
+  if (song.source.kind === 'local') return !song.source.managed || Boolean(song.source.filePath);
+  return true;
+};
 
 export const usePlayerStore = create<PlayerStore>()(
   subscribeWithSelector(
@@ -505,66 +508,114 @@ export const usePlayerStore = create<PlayerStore>()(
           set((state) => ({
             playbackQueue: state.currentSong ? [state.currentSong] : [],
             currentIndex: 0,
-            libraryNotice: 'Antrean berikutnya dibersihkan',
+            libraryNotice: 'Up next queue cleared',
           }));
         },
 
         addSongFromUrl: async (url: string) => {
-          const videoId = extractYoutubeVideoId(url);
-          if (!videoId) {
-            set({ libraryNotice: 'Link video YouTube tidak valid atau belum didukung' });
+          if (isSpotifyUrl(url)) {
+            await get().importSpotifyUrl(url);
+          } else {
+            await get().importYoutubeUrl(url);
+          }
+        },
+
+        importSpotifyUrl: async (url: string) => {
+          const cleanUrl = url.trim();
+          if (!isSpotifyUrl(cleanUrl)) {
+            set({ libraryNotice: 'Invalid Spotify link. Use Spotify playlist, album, or track format.' });
             return;
           }
-          try {
-            const track = await resolveYoutubeTrack(videoId);
-            const newSong: Song = {
-            id: `yt-${track.videoId}`,
-            title: track.title,
-            artist: track.artist,
-            album: 'YouTube',
-            coverUrl: track.thumbnailUrl || 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=600&auto=format&fit=crop&q=80',
-            source: {
-              kind: 'youtube',
-              videoId: track.videoId,
-              canonicalUrl: track.canonicalUrl,
-              availability: 'available',
+
+          set({
+            youtubeImportTask: {
+              requestId: Date.now(),
+              inputUrl: cleanUrl,
+              kind: 'playlist',
+              status: 'importing',
+              message: 'Importing from Spotify...',
+              retryable: false,
             },
-            duration: track.durationSeconds,
-            playCount: 0,
-            lastPlayed: Date.now(),
-            };
+          });
+
+          try {
+            const data = await importSpotifyResource(cleanUrl);
+            if (!data.tracks || data.tracks.length === 0) {
+              set({
+                youtubeImportTask: null,
+                libraryNotice: 'No tracks found in the provided Spotify link.',
+              });
+              return;
+            }
+
+            const spotifySongs: Song[] = data.tracks.map((track) => ({
+              id: `spotify-${track.id}`,
+              title: track.title,
+              artist: track.artist,
+              album: track.album || data.title,
+              coverUrl: track.cover_url || data.cover_url || 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=600&auto=format&fit=crop&q=80',
+              source: {
+                kind: 'spotify',
+                spotifyId: track.id,
+                searchQuery: track.search_query,
+              },
+              duration: track.duration_seconds,
+              playCount: 0,
+              lastPlayed: Date.now(),
+            }));
 
             set((state) => {
-            const existingSong = state.queue.find((song) => song.id === newSong.id);
-            const song = existingSong ?? newSong;
-            const updatedQueue = existingSong ? state.queue : [...state.queue, song];
-            const playbackQueue = state.playbackQueue.some((item) => item.id === song.id)
-              ? state.playbackQueue
-              : [...state.playbackQueue, song];
-            const updatedTop = sortTopSongs(updatedQueue);
-            return {
-              queue: updatedQueue,
-              playbackQueue,
-              currentSong: song,
-              currentIndex: playbackQueue.findIndex((item) => item.id === song.id),
-              currentTime: 0,
-              resumePosition: { songId: song.id, time: 0 },
-              playbackIntent: true,
-              playbackError: null,
-              playbackStatus: 'idle',
-              selectionSerial: state.selectionSerial + 1,
-              selectionReason: 'manual',
-              topSongs: updatedTop,
-              libraryNotice: existingSong
-                ? `“${song.title}” sudah tersedia`
-                : `“${song.title}” berhasil diimpor`,
-            };
+              const existingQueueIds = new Set(state.queue.map((s) => s.id));
+              const newSongs = spotifySongs.filter((s) => !existingQueueIds.has(s.id));
+              const updatedQueue = [...state.queue, ...newSongs];
+
+              const playlistId = `spotify-playlist-${data.id}`;
+              const newPlaylist: Playlist = {
+                id: playlistId,
+                name: `${data.title} (Spotify)`,
+                curator: data.owner,
+                coverUrl: data.cover_url || spotifySongs[0]?.coverUrl || 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=600&auto=format&fit=crop&q=80',
+                songs: spotifySongs,
+                source: {
+                  kind: 'spotify',
+                  spotifyId: data.id,
+                },
+              };
+
+              const existingPlaylistIndex = state.playlists.findIndex((p) => p.id === playlistId);
+              const updatedPlaylists = existingPlaylistIndex >= 0
+                ? state.playlists.map((p, i) => i === existingPlaylistIndex ? newPlaylist : p)
+                : [...state.playlists, newPlaylist];
+
+              const firstSong = spotifySongs[0];
+
+              return {
+                queue: updatedQueue,
+                playlists: updatedPlaylists,
+                playbackQueue: spotifySongs,
+                currentSong: firstSong,
+                currentIndex: 0,
+                currentTime: 0,
+                resumePosition: firstSong ? { songId: firstSong.id, time: 0 } : null,
+                playbackIntent: true,
+                playbackError: null,
+                playbackStatus: 'idle',
+                selectionSerial: state.selectionSerial + 1,
+                selectionReason: 'manual',
+                topSongs: sortTopSongs(updatedQueue),
+                isUrlInputOpen: false,
+                isDrawerOpen: true,
+                drawerTab: 'playlist',
+                selectedPlaylistId: playlistId,
+                youtubeImportTask: null,
+                libraryNotice: `Spotify Playlist “${data.title}” imported successfully (${spotifySongs.length} songs)`,
+              };
             });
-          } catch (error) {
-            const message = error instanceof YoutubeServiceError
-              ? error.message
-              : 'Gagal memproses link YouTube.';
-            set({ libraryNotice: message });
+          } catch (error: any) {
+            set({
+              youtubeImportTask: null,
+              libraryNotice: error.message || 'Failed to import from Spotify',
+            });
           }
         },
 
@@ -1022,7 +1073,7 @@ export const usePlayerStore = create<PlayerStore>()(
                 songs: playlist.songs.map(updateSong),
               })),
               topSongs: sortTopSongs(queue),
-              libraryNotice: 'Informasi lagu berhasil diperbarui',
+              libraryNotice: (updates.title || updates.artist || updates.album) ? 'Song metadata updated successfully' : state.libraryNotice,
             };
           });
         },
@@ -1045,8 +1096,8 @@ export const usePlayerStore = create<PlayerStore>()(
               })),
               topSongs: sortTopSongs(queue),
               libraryNotice: changedSong?.isFavorite
-                ? `“${changedSong.title}” ditambahkan ke Favorit`
-                : `“${changedSong?.title ?? 'Lagu'}” dihapus dari Favorit`,
+                ? `“${changedSong.title}” added to Favorites`
+                : `“${changedSong?.title ?? 'Song'}” removed from Favorites`,
             };
           });
         },
@@ -1068,7 +1119,7 @@ export const usePlayerStore = create<PlayerStore>()(
                 source: { kind: 'local' },
               },
             ],
-            libraryNotice: `Playlist “${cleanName}” dibuat`,
+            libraryNotice: `Playlist “${cleanName}” created`,
           }));
           return playlistId;
         },
@@ -1086,8 +1137,8 @@ export const usePlayerStore = create<PlayerStore>()(
                 ? playlist.songs.filter((item) => item.id !== songId)
                 : [...playlist.songs, song];
               notice = alreadyAdded
-                ? `“${song.title}” dikeluarkan dari ${playlist.name}`
-                : `“${song.title}” ditambahkan ke ${playlist.name}`;
+                ? `“${song.title}” removed from ${playlist.name}`
+                : `“${song.title}” added to ${playlist.name}`;
               return {
                 ...playlist,
                 songs,
@@ -1106,7 +1157,7 @@ export const usePlayerStore = create<PlayerStore>()(
             return {
               playlists: state.playlists.filter((item) => item.id !== playlistId),
               selectedPlaylistId: state.selectedPlaylistId === playlistId ? null : state.selectedPlaylistId,
-              libraryNotice: `Playlist “${playlist.name}” dihapus`,
+              libraryNotice: `Playlist “${playlist.name}” deleted`,
             };
           });
         },
@@ -1135,8 +1186,8 @@ export const usePlayerStore = create<PlayerStore>()(
               });
             }
           } catch (error) {
-            console.error(`Gagal menghapus ${song.title}:`, error);
-            set({ libraryNotice: `Gagal menghapus “${song.title}”` });
+            console.error(`Failed to delete ${song.title}:`, error);
+            set({ libraryNotice: `Failed to delete “${song.title}”` });
             return;
           }
 
@@ -1171,7 +1222,7 @@ export const usePlayerStore = create<PlayerStore>()(
                 songs: playlist.songs.filter((item) => item.id !== songId),
               })),
               topSongs: sortTopSongs(queue),
-              libraryNotice: `“${song.title}” dihapus dari library`,
+              libraryNotice: `“${song.title}” removed from library`,
             };
           });
         },

@@ -187,7 +187,7 @@ export const VinylWidget: React.FC = () => {
             <button
               onClick={() => togglePlayPause()}
               className={`w-9 h-9 rounded-full flex items-center justify-center shadow-xl hover:scale-105 transition-transform ${playbackError ? 'bg-rose-400 text-white' : 'bg-white text-dark-900'}`}
-              title={playbackError ? `${playbackError.message} Coba lagi` : playbackIntent ? 'Pause' : 'Play'}
+              title={playbackError ? `${playbackError.message} Retry` : playbackIntent ? 'Pause' : 'Play'}
             >
               {playbackError
                 ? <RotateCcw className="w-4 h-4" />
@@ -216,7 +216,7 @@ export const VinylWidget: React.FC = () => {
                   ? 'bg-amber-400/20 text-amber-300 border border-amber-400/40 shadow-sm scale-105'
                   : 'bg-white/5 hover:bg-white/15 text-slate-400 hover:text-white border border-white/5'
               }`}
-              title={isLooping ? 'Loop Mode: AKTIF' : 'Loop Mode: NONAKTIF'}
+              title={isLooping ? 'Repeat Track: ON' : 'Repeat Track: OFF'}
             >
               <Repeat className="w-3 h-3" />
             </button>
@@ -224,7 +224,7 @@ export const VinylWidget: React.FC = () => {
             <button
               onClick={cycleMode}
               className="p-1.5 rounded-lg bg-white/5 hover:bg-white/15 text-slate-300 hover:text-white border border-white/5 transition-all shadow-sm hover:scale-105"
-              title="Pindah ke Mode Berikutnya"
+              title="Switch View Mode"
             >
               <Layers className="w-3 h-3" />
             </button>

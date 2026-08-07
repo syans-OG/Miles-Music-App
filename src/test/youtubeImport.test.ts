@@ -94,7 +94,7 @@ describe('YouTube import UX state', () => {
     expect(state.drawerTab).toBe('playlist');
     expect(state.selectedPlaylistId).toBe(`yt-playlist-${playlistId}`);
     expect(state.youtubeImportTask?.report).toMatchObject({ added: 2, duplicates: 0, skipped: 1 });
-    expect(state.youtubeImportTask?.report?.skippedItems[0].reason).toBe('Live Stream tidak didukung.');
+    expect(state.youtubeImportTask?.report?.skippedItems[0].reason).toBe('Live Streams are not supported.');
   });
 
   it('syncs only new video ids and rejects a no-op reimport', async () => {

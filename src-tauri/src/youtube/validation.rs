@@ -33,7 +33,7 @@ pub fn parse_youtube_url(input: &str) -> Result<YoutubeResource, YoutubeError> {
 }
 
 pub fn validate_video_id(video_id: &str) -> Result<(), YoutubeError> {
-    if video_id.len() == 11 && has_only_id_characters(video_id) {
+    if (video_id.len() == 11 && has_only_id_characters(video_id)) || video_id.starts_with("ytsearch1:") {
         Ok(())
     } else {
         Err(YoutubeError::new(YoutubeErrorCode::InvalidVideoId))

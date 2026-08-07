@@ -11,6 +11,7 @@ use tauri::{AppHandle, Emitter, Manager, PhysicalPosition, Window};
 
 mod sidecar_manifest;
 pub mod discord_rpc;
+pub mod spotify;
 pub mod youtube;
 
 const MAX_LOCAL_AUDIO_FILE_BYTES: usize = 128 * 1024 * 1024;
@@ -654,7 +655,8 @@ pub fn run() {
             youtube::commands::cancel_youtube_import,
             youtube::commands::cancel_youtube_resolve,
             discord_rpc::set_discord_activity,
-            discord_rpc::clear_discord_activity
+            discord_rpc::clear_discord_activity,
+            spotify::fetch_spotify_playlist
         ])
         .build(tauri::generate_context!())
         .expect("error while building tauri application");
