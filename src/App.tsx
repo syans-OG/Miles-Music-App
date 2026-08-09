@@ -1,4 +1,5 @@
 import React, { lazy, Suspense, useEffect, useState } from 'react';
+import { shallow } from 'zustand/shallow';
 import { useShallow } from 'zustand/react/shallow';
 import { usePlayerStore } from './stores/usePlayerStore';
 import { syncDiscordActivity } from './services/discordRpcService';
@@ -43,14 +44,17 @@ export const App: React.FC = () => {
       (state) => ({
         songId: state.currentSong?.id,
         title: state.currentSong?.title,
+        artist: state.currentSong?.artist,
+        coverUrl: state.currentSong?.coverUrl,
         isPlaying: state.isPlaying,
-        currentTime: Math.floor(state.currentTime),
+        duration: Math.floor(state.duration),
         enableDiscordRpc: state.enableDiscordRpc,
         discordClientId: state.discordClientId,
       }),
       () => {
         void syncDiscordActivity();
       },
+      { equalityFn: shallow },
     );
     return () => unsub();
   }, []);

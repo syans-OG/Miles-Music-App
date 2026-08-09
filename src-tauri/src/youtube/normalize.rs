@@ -90,7 +90,9 @@ pub fn normalize_track_json(contents: &str) -> Result<ResolvedYoutubeTrack, Yout
         .map_err(|_| YoutubeError::new(YoutubeErrorCode::InvalidMetadata))?;
 
     let raw_val = if let Some(entries) = value.get("entries").and_then(|e| e.as_array()) {
-        entries.first().ok_or_else(|| YoutubeError::new(YoutubeErrorCode::Unavailable))?
+        entries
+            .first()
+            .ok_or_else(|| YoutubeError::new(YoutubeErrorCode::Unavailable))?
     } else {
         &value
     };

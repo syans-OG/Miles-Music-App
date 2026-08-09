@@ -26,7 +26,11 @@ import {
   getLocalAudioRejection,
   selectLocalAudioFiles,
 } from '../services/localImportPolicy';
-import { isSpotifyUrl, importSpotifyResource } from '../services/spotifyService';
+import {
+  detectSpotifyResource,
+  isSpotifyUrl,
+  importSpotifyResource,
+} from '../services/spotifyService';
 import type { YoutubePlaylistEntry } from '../types/youtube';
 import { SUNFLOWER_DEFAULT_SONG } from '../data/defaultLibrary';
 import { migratePlayerPersistedState } from './playerPersistence';
@@ -522,7 +526,8 @@ export const usePlayerStore = create<PlayerStore>()(
 
         importSpotifyUrl: async (url: string) => {
           const cleanUrl = url.trim();
-          if (!isSpotifyUrl(cleanUrl)) {
+          const resource = detectSpotifyResource(cleanUrl);
+          if (!resource) {
             set({ libraryNotice: 'Invalid Spotify link. Use Spotify playlist, album, or track format.' });
             return;
           }
@@ -531,7 +536,7 @@ export const usePlayerStore = create<PlayerStore>()(
             youtubeImportTask: {
               requestId: Date.now(),
               inputUrl: cleanUrl,
-              kind: 'playlist',
+              kind: resource.resourceType === 'track' ? 'video' : 'playlist',
               status: 'importing',
               message: 'Importing from Spotify...',
               retryable: false,
@@ -568,6 +573,35 @@ export const usePlayerStore = create<PlayerStore>()(
               const existingQueueIds = new Set(state.queue.map((s) => s.id));
               const newSongs = spotifySongs.filter((s) => !existingQueueIds.has(s.id));
               const updatedQueue = [...state.queue, ...newSongs];
+
+              if (data.resource_type === 'track') {
+                const importedSong = spotifySongs[0];
+                const existingSong = state.queue.find((song) => song.id === importedSong.id);
+                const song = existingSong ?? importedSong;
+                const playbackQueue = state.playbackQueue.some((item) => item.id === song.id)
+                  ? state.playbackQueue
+                  : [...state.playbackQueue, song];
+
+                return {
+                  queue: updatedQueue,
+                  playbackQueue,
+                  currentSong: song,
+                  currentIndex: Math.max(0, playbackQueue.findIndex((item) => item.id === song.id)),
+                  currentTime: 0,
+                  resumePosition: { songId: song.id, time: 0 },
+                  playbackIntent: true,
+                  playbackError: null,
+                  playbackStatus: 'idle',
+                  selectionSerial: state.selectionSerial + 1,
+                  selectionReason: 'manual',
+                  topSongs: sortTopSongs(updatedQueue),
+                  isUrlInputOpen: false,
+                  youtubeImportTask: null,
+                  libraryNotice: existingSong
+                    ? `"${song.title}" is already available`
+                    : `"${song.title}" imported successfully`,
+                };
+              }
 
               const playlistId = `spotify-playlist-${data.id}`;
               const newPlaylist: Playlist = {
@@ -1427,6 +1461,8 @@ export const usePlayerStore = create<PlayerStore>()(
             startupMode: state.startupMode,
             queueEndBehavior: state.queueEndBehavior,
             isAlwaysOnTop: state.isAlwaysOnTop,
+            enableDiscordRpc: state.enableDiscordRpc,
+            discordClientId: state.discordClientId,
             currentSong,
             currentIndex: currentSong
               ? Math.max(0, playbackQueue.findIndex((song) => song.id === currentSong.id))

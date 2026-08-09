@@ -3,7 +3,7 @@ import { usePlayerStore } from '../stores/usePlayerStore';
 
 let lastSentKey = '';
 
-export const syncDiscordActivity = async () => {
+export const syncDiscordActivity = async (force = false) => {
   const state = usePlayerStore.getState();
   const currentSong = state.currentSong;
   const enabled = state.enableDiscordRpc;
@@ -43,8 +43,8 @@ export const syncDiscordActivity = async () => {
   const duration = currentSong ? Math.floor(state.duration || currentSong.duration || 0) : 0;
   const currentTime = Math.floor(state.currentTime);
 
-  const currentKey = `${title}|${artist}|${coverUrl}|${isPlaying}|${currentTime}|${duration}|${clientId}`;
-  if (currentKey === lastSentKey) return;
+  const currentKey = `${title}|${artist}|${coverUrl}|${isPlaying}|${duration}|${clientId}`;
+  if (!force && currentKey === lastSentKey) return;
   lastSentKey = currentKey;
 
   try {

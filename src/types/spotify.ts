@@ -1,3 +1,5 @@
+export type SpotifyResourceType = 'track' | 'album' | 'playlist';
+
 export interface SpotifyTrackEntry {
   id: string;
   title: string;
@@ -9,6 +11,7 @@ export interface SpotifyTrackEntry {
 }
 
 export interface SpotifyPlaylistImport {
+  resource_type: SpotifyResourceType;
   id: string;
   title: string;
   owner: string;

@@ -7,6 +7,7 @@ import {
   YoutubeServiceError,
   type YoutubeResolvePurpose,
 } from './youtubeService';
+import { syncDiscordActivity } from './discordRpcService';
 
 interface MediaErrorLike {
   code: number;
@@ -426,6 +427,8 @@ export class AudioService {
 
   public seek(time: number) {
     this.audio.currentTime = time;
+    usePlayerStore.getState().setCurrentTime(time);
+    void syncDiscordActivity(true);
   }
 
   public destroy() {

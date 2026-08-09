@@ -1,10 +1,12 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { AlertTriangle, Check, ChevronDown, ChevronUp, Clock, Disc, Flame, FolderHeart, FolderPlus, Heart, ListMusic, ListOrdered, ListPlus, MoreHorizontal, Pencil, Play, Plus, Save, Search, Settings, Sparkles, Trash2, X } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
 import { usePlayerStore } from '../stores/usePlayerStore';
 import { Playlist, Song } from '../types/player';
 import { getDisplayCoverUrl } from '../utils/coverImage';
+import { getFloatingMenuPosition } from '../utils/floatingMenuPosition';
 import { SettingsPanel } from './SettingsDialog';
 
 interface EditSongDialogProps {
@@ -167,9 +169,106 @@ const PlaylistManagerDialog: React.FC<PlaylistManagerDialogProps> = ({ playlist,
   );
 };
 
+interface CdActionMenuProps {
+  song: Song;
+  anchor: HTMLButtonElement;
+  onClose: () => void;
+  onEdit: () => void;
+  onAddToPlaylist: () => void;
+  onPlayNext: () => void;
+  onAddToQueue: () => void;
+  onDelete: () => void;
+}
+
+const CdActionMenu: React.FC<CdActionMenuProps> = ({
+  song,
+  anchor,
+  onClose,
+  onEdit,
+  onAddToPlaylist,
+  onPlayNext,
+  onAddToQueue,
+  onDelete,
+}) => {
+  const menuRef = useRef<HTMLDivElement>(null);
+  const [position, setPosition] = useState<{ left: number; top: number } | null>(null);
+
+  useLayoutEffect(() => {
+    const menu = menuRef.current;
+    if (!menu) return;
+
+    const bounds = menu.getBoundingClientRect();
+    setPosition(getFloatingMenuPosition(
+      anchor.getBoundingClientRect(),
+      { width: bounds.width, height: bounds.height },
+      { width: window.innerWidth, height: window.innerHeight },
+    ));
+    menu.querySelector<HTMLButtonElement>('[role="menuitem"]')?.focus();
+  }, [anchor]);
+
+  useEffect(() => {
+    const handlePointerDown = (event: PointerEvent) => {
+      const target = event.target as Node;
+      if (!menuRef.current?.contains(target) && !anchor.contains(target)) onClose();
+    };
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      onClose();
+      window.requestAnimationFrame(() => anchor.focus());
+    };
+
+    document.addEventListener('pointerdown', handlePointerDown);
+    document.addEventListener('scroll', onClose, true);
+    window.addEventListener('resize', onClose);
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown);
+      document.removeEventListener('scroll', onClose, true);
+      window.removeEventListener('resize', onClose);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [anchor, onClose]);
+
+  const runAction = (action: () => void) => {
+    action();
+    onClose();
+  };
+
+  return createPortal(
+    <div
+      ref={menuRef}
+      role="menu"
+      aria-label={`Actions for ${song.title}`}
+      className="fixed z-[120] w-28 overflow-hidden rounded-xl border border-white/10 bg-[#171923] p-1 text-left shadow-2xl"
+      style={{
+        left: position?.left ?? 0,
+        top: position?.top ?? 0,
+        visibility: position ? 'visible' : 'hidden',
+      }}
+    >
+      <button role="menuitem" type="button" onClick={() => runAction(onEdit)} className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-[10px] font-semibold text-slate-200 hover:bg-white/10 focus-visible:bg-white/10 focus-visible:outline-none">
+        <Pencil className="h-3 w-3 text-amber-300" /> Edit
+      </button>
+      <button role="menuitem" type="button" onClick={() => runAction(onAddToPlaylist)} className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-[10px] font-semibold text-indigo-200 hover:bg-indigo-400/10 focus-visible:bg-indigo-400/10 focus-visible:outline-none">
+        <ListMusic className="h-3 w-3 text-indigo-300" /> To Playlist
+      </button>
+      <button role="menuitem" type="button" onClick={() => runAction(onPlayNext)} className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-[10px] font-semibold text-emerald-200 hover:bg-emerald-400/10 focus-visible:bg-emerald-400/10 focus-visible:outline-none">
+        <Play className="h-3 w-3 text-emerald-300" /> Play Next
+      </button>
+      <button role="menuitem" type="button" onClick={() => runAction(onAddToQueue)} className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-[10px] font-semibold text-sky-200 hover:bg-sky-400/10 focus-visible:bg-sky-400/10 focus-visible:outline-none">
+        <ListPlus className="h-3 w-3 text-sky-300" /> To Queue
+      </button>
+      <button role="menuitem" type="button" onClick={() => runAction(onDelete)} className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-[10px] font-semibold text-rose-300 hover:bg-rose-500/10 focus-visible:bg-rose-500/10 focus-visible:outline-none">
+        <Trash2 className="h-3 w-3" /> Delete
+      </button>
+    </div>,
+    document.body,
+  );
+};
+
 export const MusicDrawer: React.FC = () => {
 
-  const [menuSongId, setMenuSongId] = useState<string | null>(null);
+  const [cdMenu, setCdMenu] = useState<{ song: Song; anchor: HTMLButtonElement } | null>(null);
   const [editingSong, setEditingSong] = useState<Song | null>(null);
   const [deletingSong, setDeletingSong] = useState<Song | null>(null);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -254,6 +353,10 @@ export const MusicDrawer: React.FC = () => {
     const timeout = window.setTimeout(clearLibraryNotice, 2800);
     return () => window.clearTimeout(timeout);
   }, [libraryNotice, clearLibraryNotice]);
+
+  useEffect(() => {
+    setCdMenu(null);
+  }, [drawerTab, isSettingsOpen, cdSubTab]);
 
   const filteredCDs = useMemo(() => {
     let songs = cdSubTab === 'favorites'
@@ -526,33 +629,16 @@ export const MusicDrawer: React.FC = () => {
                   type="button"
                   onClick={(event) => {
                     event.stopPropagation();
-                    setMenuSongId((current) => current === song.id ? null : song.id);
+                    const anchor = event.currentTarget;
+                    setCdMenu((current) => current?.song.id === song.id ? null : { song, anchor });
                   }}
-                  className="absolute right-0 top-0 z-40 rounded-lg bg-black/60 p-1 text-slate-300 opacity-0 shadow-md transition-all hover:bg-white hover:text-dark-900 group-hover/cd:opacity-100"
+                  className={`absolute right-0 top-0 z-40 rounded-lg bg-black/60 p-1 text-slate-300 shadow-md transition-all hover:bg-white hover:text-dark-900 group-hover/cd:opacity-100 ${cdMenu?.song.id === song.id ? 'opacity-100' : 'opacity-0'}`}
                   aria-label={`Menu ${song.title}`}
+                  aria-haspopup="menu"
+                  aria-expanded={cdMenu?.song.id === song.id}
                 >
                   <MoreHorizontal className="h-3.5 w-3.5" />
                 </button>
-
-                {menuSongId === song.id && (
-                  <div onClick={(event) => event.stopPropagation()} className="absolute right-0 top-7 z-50 w-28 overflow-hidden rounded-xl border border-white/10 bg-[#171923] p-1 text-left shadow-2xl">
-                    <button type="button" onClick={() => { setEditingSong(song); setMenuSongId(null); }} className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-[10px] font-semibold text-slate-200 hover:bg-white/10">
-                      <Pencil className="h-3 w-3 text-amber-300" /> Edit
-                    </button>
-                    <button type="button" onClick={() => { setPlaylistSong(song); setMenuSongId(null); }} className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-[10px] font-semibold text-indigo-200 hover:bg-indigo-400/10">
-                      <ListMusic className="h-3 w-3 text-indigo-300" /> To Playlist
-                    </button>
-                    <button type="button" onClick={() => { playNextFromQueue(song.id); setMenuSongId(null); }} className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-[10px] font-semibold text-emerald-200 hover:bg-emerald-400/10">
-                      <Play className="h-3 w-3 text-emerald-300" /> Play Next
-                    </button>
-                    <button type="button" onClick={() => { addToPlaybackQueue(song.id); setMenuSongId(null); }} className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-[10px] font-semibold text-sky-200 hover:bg-sky-400/10">
-                      <ListPlus className="h-3 w-3 text-sky-300" /> To Queue
-                    </button>
-                    <button type="button" onClick={() => { setDeletingSong(song); setMenuSongId(null); }} className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-[10px] font-semibold text-rose-300 hover:bg-rose-500/10">
-                      <Trash2 className="h-3 w-3" /> Delete
-                    </button>
-                  </div>
-                )}
 
                 {/* TOP: Pure Circular CD Disc */}
                 <div className="pure-cd-disc vinyl-grooves relative flex items-center justify-center shadow-xl">
@@ -802,6 +888,19 @@ export const MusicDrawer: React.FC = () => {
             updateSongMetadata(editingSong.id, updates);
             setEditingSong(null);
           }}
+        />
+      )}
+
+      {cdMenu && (
+        <CdActionMenu
+          song={cdMenu.song}
+          anchor={cdMenu.anchor}
+          onClose={() => setCdMenu(null)}
+          onEdit={() => setEditingSong(cdMenu.song)}
+          onAddToPlaylist={() => setPlaylistSong(cdMenu.song)}
+          onPlayNext={() => playNextFromQueue(cdMenu.song.id)}
+          onAddToQueue={() => addToPlaybackQueue(cdMenu.song.id)}
+          onDelete={() => setDeletingSong(cdMenu.song)}
         />
       )}
 

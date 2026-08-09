@@ -9,8 +9,8 @@ use tauri::menu::{Menu, MenuItem};
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
 use tauri::{AppHandle, Emitter, Manager, PhysicalPosition, Window};
 
-mod sidecar_manifest;
 pub mod discord_rpc;
+mod sidecar_manifest;
 pub mod spotify;
 pub mod youtube;
 
