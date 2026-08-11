@@ -102,3 +102,42 @@ pub struct YoutubeAudioStream {
     pub average_bitrate_kbps: Option<f64>,
     pub expires_at_unix: Option<u64>,
 }
+
+#[derive(Clone, Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SpotifyTrackMatchRequest {
+    pub spotify_id: String,
+    pub title: String,
+    pub artist: String,
+    pub duration_seconds: u64,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum SpotifyMatchSkipReason {
+    NoCandidates,
+    LiveUnsupported,
+    DurationMismatch,
+    WeakMatch,
+}
+
+#[derive(Clone, Debug, Serialize)]
+#[serde(rename_all = "camelCase", tag = "status")]
+pub enum SpotifyTrackMatchResult {
+    #[serde(rename = "matched")]
+    Matched {
+        spotify_id: String,
+        video_id: String,
+        title: String,
+        artist: String,
+        duration_seconds: u64,
+        thumbnail_url: Option<String>,
+        canonical_url: String,
+        score: u8,
+    },
+    #[serde(rename = "skipped")]
+    Skipped {
+        spotify_id: String,
+        reason: SpotifyMatchSkipReason,
+    },
+}

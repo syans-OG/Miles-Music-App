@@ -1,5 +1,10 @@
 import { invoke } from '@tauri-apps/api/core';
-import type { SpotifyPlaylistImport, SpotifyResourceType } from '../types/spotify';
+import type {
+  SpotifyPlaylistImport,
+  SpotifyResourceType,
+  SpotifyTrackMatchRequest,
+  SpotifyTrackMatchResult,
+} from '../types/spotify';
 
 const SPOTIFY_RESOURCE_TYPES = new Set(['playlist', 'album', 'track']);
 const SPOTIFY_ID_PATTERN = /^[A-Za-z0-9]{22}$/;
@@ -43,10 +48,39 @@ export const importSpotifyResource = async (url: string): Promise<SpotifyPlaylis
   try {
     const result = await invoke<SpotifyPlaylistImport>('fetch_spotify_playlist', { url: url.trim() });
     return result;
-  } catch (error: any) {
-    if (typeof error === 'object' && error !== null && error.message) {
+  } catch (error: unknown) {
+    if (typeof error === 'object' && error !== null && 'message' in error && typeof error.message === 'string') {
       throw new Error(error.message);
     }
     throw new Error('Failed to import Spotify data. Please make sure the link is valid and public.');
   }
+};
+
+export class SpotifyMatchError extends Error {
+  constructor(
+    public readonly code: string,
+    public readonly retryable: boolean,
+  ) {
+    super(code);
+    this.name = 'SpotifyMatchError';
+  }
+}
+
+export const matchSpotifyTrack = async (
+  request: SpotifyTrackMatchRequest,
+): Promise<SpotifyTrackMatchResult> => {
+  try {
+    return await invoke<SpotifyTrackMatchResult>('match_spotify_track', { request });
+  } catch (error: unknown) {
+    if (typeof error === 'object' && error !== null && 'code' in error) {
+      const code = typeof error.code === 'string' ? error.code : 'process_failed';
+      const retryable = 'retryable' in error && error.retryable === true;
+      throw new SpotifyMatchError(code, retryable);
+    }
+    throw new SpotifyMatchError('process_failed', true);
+  }
+};
+
+export const cancelSpotifyMatch = async (): Promise<void> => {
+  await invoke('cancel_spotify_match');
 };

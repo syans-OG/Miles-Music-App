@@ -27,13 +27,23 @@ import {
   selectLocalAudioFiles,
 } from '../services/localImportPolicy';
 import {
+  cancelSpotifyMatch,
   detectSpotifyResource,
   isSpotifyUrl,
   importSpotifyResource,
+  matchSpotifyTrack,
+  SpotifyMatchError,
 } from '../services/spotifyService';
+import type {
+  SpotifyImportReport,
+  SpotifyImportTask,
+  SpotifyPlaylistImport,
+  SpotifyTrackEntry,
+  SpotifyTrackMatchResult,
+} from '../types/spotify';
 import type { YoutubePlaylistEntry } from '../types/youtube';
 import { SUNFLOWER_DEFAULT_SONG } from '../data/defaultLibrary';
-import { migratePlayerPersistedState } from './playerPersistence';
+import { migratePlayerPersistedState, normalizeRestoredSong } from './playerPersistence';
 
 export interface PlayerState {
   mode: AppMode;
@@ -63,6 +73,7 @@ export interface PlayerState {
   playlists: Playlist[];
   selectedPlaylistId: string | null;
   youtubeImportTask: YoutubeImportTask | null;
+  spotifyImportTask: SpotifyImportTask | null;
   topSongs: Song[];
   isAlwaysOnTop: boolean;
   isTopControlOpen: boolean;
@@ -110,6 +121,9 @@ export interface PlayerActions {
   addSongFromUrl: (url: string) => Promise<void>;
   importYoutubeUrl: (url: string) => Promise<void>;
   importSpotifyUrl: (url: string) => Promise<void>;
+  cancelSpotifyTask: () => Promise<void>;
+  retrySpotifyTask: () => Promise<void>;
+  dismissSpotifyTask: () => void;
   cancelYoutubeTask: () => Promise<void>;
   retryYoutubeTask: () => Promise<void>;
   dismissYoutubeTask: () => void;
@@ -140,7 +154,76 @@ export type PlayerStore = PlayerState & PlayerActions;
 const storageValueCache = new Map<string, string>();
 let nextYoutubeImportRequestId = 1;
 let activeYoutubeImportRequestId = 0;
+let nextSpotifyImportRequestId = 1;
+let activeSpotifyImportRequestId = 0;
 const YOUTUBE_COVER_FALLBACK = 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=600&auto=format&fit=crop&q=80';
+const SPOTIFY_IMPORT_LIMIT = 100;
+const SPOTIFY_ID_PATTERN = /^[A-Za-z0-9]{22}$/;
+const VIDEO_ID_PATTERN = /^[A-Za-z0-9_-]{11}$/;
+
+const spotifySkipReason = (reason: string) => ({
+  no_candidates: 'No YouTube candidates found',
+  live_unsupported: 'Live Stream tidak didukung',
+  duration_mismatch: 'Candidate duration does not match',
+  weak_match: 'No sufficiently close YouTube match',
+  timeout: 'YouTube search timed out',
+  dependency_unavailable: 'YouTube matcher is unavailable',
+  process_failed: 'YouTube search failed',
+}[reason] ?? 'YouTube match failed');
+
+const createSpotifyReport = (
+  playlistName: string,
+  total: number,
+  truncated: boolean,
+): SpotifyImportReport => ({
+  playlistName,
+  added: 0,
+  duplicates: 0,
+  skipped: 0,
+  processed: 0,
+  total,
+  truncated,
+  skippedItems: [],
+});
+
+const matchedSpotifySong = (
+  track: SpotifyTrackEntry,
+  resource: SpotifyPlaylistImport,
+  match: Extract<SpotifyTrackMatchResult, { status: 'matched' }>,
+): Song => ({
+  id: `spotify-${track.id}`,
+  title: track.title,
+  artist: track.artist,
+  album: track.album || resource.title,
+  coverUrl: track.cover_url
+    || resource.cover_url
+    || match.thumbnailUrl
+    || YOUTUBE_COVER_FALLBACK,
+  source: {
+    kind: 'spotify',
+    spotifyId: track.id,
+    searchQuery: track.search_query,
+    matchedVideoId: match.videoId,
+    canonicalUrl: match.canonicalUrl,
+  },
+  duration: track.duration_seconds,
+  playCount: 0,
+  lastPlayed: Date.now(),
+});
+
+const isVerifiedSpotifySong = (song: Song | undefined) => song?.source.kind === 'spotify'
+  && SPOTIFY_ID_PATTERN.test(song.source.spotifyId)
+  && VIDEO_ID_PATTERN.test(song.source.matchedVideoId);
+
+const waitForPlaybackResolution = async (requestId: number, getState: () => PlayerStore) => {
+  await new Promise((resolve) => window.setTimeout(resolve, 75));
+  while (
+    activeSpotifyImportRequestId === requestId
+    && ['resolving', 'loading', 'buffering'].includes(getState().playbackStatus)
+  ) {
+    await new Promise((resolve) => window.setTimeout(resolve, 100));
+  }
+};
 
 const sortTopSongs = (songs: Song[]): Song[] => [...songs].sort((a, b) => {
   const durationDiff = (b.listenedSeconds || 0) - (a.listenedSeconds || 0);
@@ -228,14 +311,17 @@ const saveAudioPermanently = async (file: File) => {
 };
 
 const restoreSong = (song: Song): Song => {
-  if (!isLocalSong(song) || !song.source.managed) return song;
+  const normalizedSong = normalizeRestoredSong(song);
+  if (!isLocalSong(normalizedSong) || !normalizedSong.source.managed) return normalizedSong;
   return {
-    ...song,
+    ...normalizedSong,
     source: {
-      ...song.source,
-      audioUrl: convertFileSrc(song.source.filePath),
+      ...normalizedSong.source,
+      audioUrl: convertFileSrc(normalizedSong.source.filePath),
     },
-    coverUrl: song.source.coverPath ? convertFileSrc(song.source.coverPath) : song.coverUrl,
+    coverUrl: normalizedSong.source.coverPath
+      ? convertFileSrc(normalizedSong.source.coverPath)
+      : normalizedSong.coverUrl,
   };
 };
 
@@ -276,6 +362,7 @@ export const usePlayerStore = create<PlayerStore>()(
         playlists: initialPlaylists,
         selectedPlaylistId: null,
         youtubeImportTask: null,
+        spotifyImportTask: null,
         topSongs: sortTopSongs(initialSongs),
         isAlwaysOnTop: true,
         isTopControlOpen: false,
@@ -338,7 +425,7 @@ export const usePlayerStore = create<PlayerStore>()(
             }
             return;
           }
-          const targetIntent = !state.isPlaying;
+          const targetIntent = !state.playbackIntent;
           set((s) => ({
             playbackIntent: targetIntent,
             ...(targetIntent ? { playbackError: null, playbackRetryToken: s.playbackRetryToken + 1 } : {}),
@@ -525,130 +612,248 @@ export const usePlayerStore = create<PlayerStore>()(
         },
 
         importSpotifyUrl: async (url: string) => {
-          const cleanUrl = url.trim();
-          const resource = detectSpotifyResource(cleanUrl);
+          const inputUrl = url.trim();
+          const resource = detectSpotifyResource(inputUrl);
+          const requestId = nextSpotifyImportRequestId++;
+          activeSpotifyImportRequestId = requestId;
           if (!resource) {
-            set({ libraryNotice: 'Invalid Spotify link. Use Spotify playlist, album, or track format.' });
+            set({
+              spotifyImportTask: null,
+              libraryNotice: 'Invalid Spotify link. Use Spotify playlist, album, or track format.',
+            });
             return;
           }
 
           set({
-            youtubeImportTask: {
-              requestId: Date.now(),
-              inputUrl: cleanUrl,
-              kind: resource.resourceType === 'track' ? 'video' : 'playlist',
-              status: 'importing',
-              message: 'Importing from Spotify...',
-              retryable: false,
+            spotifyImportTask: {
+              requestId,
+              inputUrl,
+              resourceType: resource.resourceType,
+              status: 'fetching',
+              message: 'Mengambil metadata Spotify...',
+              retryable: true,
+              report: createSpotifyReport('Spotify', 0, false),
             },
           });
 
           try {
-            const data = await importSpotifyResource(cleanUrl);
-            if (!data.tracks || data.tracks.length === 0) {
+            const data = await importSpotifyResource(inputUrl);
+            if (activeSpotifyImportRequestId !== requestId) return;
+            const tracks = data.tracks.slice(0, SPOTIFY_IMPORT_LIMIT);
+            const truncated = data.tracks.length > tracks.length;
+            const targetPlaylistId = data.resource_type === 'track'
+              ? undefined
+              : `spotify-${data.resource_type}-${data.id}`;
+            let report = createSpotifyReport(data.title || 'Spotify', tracks.length, truncated);
+            let startedPlayback = false;
+
+            if (tracks.length === 0) {
               set({
-                youtubeImportTask: null,
-                libraryNotice: 'No tracks found in the provided Spotify link.',
+                spotifyImportTask: {
+                  requestId,
+                  inputUrl,
+                  resourceType: data.resource_type,
+                  status: 'error',
+                  message: 'Tidak ada lagu yang ditemukan pada link Spotify ini.',
+                  retryable: true,
+                  report,
+                },
+                libraryNotice: 'Tidak ada lagu yang ditemukan pada link Spotify ini.',
               });
               return;
             }
 
-            const spotifySongs: Song[] = data.tracks.map((track) => ({
-              id: `spotify-${track.id}`,
-              title: track.title,
-              artist: track.artist,
-              album: track.album || data.title,
-              coverUrl: track.cover_url || data.cover_url || 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=600&auto=format&fit=crop&q=80',
-              source: {
-                kind: 'spotify',
-                spotifyId: track.id,
-                searchQuery: track.search_query,
-              },
-              duration: track.duration_seconds,
-              playCount: 0,
-              lastPlayed: Date.now(),
-            }));
-
-            set((state) => {
-              const existingQueueIds = new Set(state.queue.map((s) => s.id));
-              const newSongs = spotifySongs.filter((s) => !existingQueueIds.has(s.id));
-              const updatedQueue = [...state.queue, ...newSongs];
-
-              if (data.resource_type === 'track') {
-                const importedSong = spotifySongs[0];
-                const existingSong = state.queue.find((song) => song.id === importedSong.id);
-                const song = existingSong ?? importedSong;
-                const playbackQueue = state.playbackQueue.some((item) => item.id === song.id)
-                  ? state.playbackQueue
-                  : [...state.playbackQueue, song];
-
-                return {
-                  queue: updatedQueue,
-                  playbackQueue,
-                  currentSong: song,
-                  currentIndex: Math.max(0, playbackQueue.findIndex((item) => item.id === song.id)),
-                  currentTime: 0,
-                  resumePosition: { songId: song.id, time: 0 },
-                  playbackIntent: true,
-                  playbackError: null,
-                  playbackStatus: 'idle',
-                  selectionSerial: state.selectionSerial + 1,
-                  selectionReason: 'manual',
-                  topSongs: sortTopSongs(updatedQueue),
-                  isUrlInputOpen: false,
-                  youtubeImportTask: null,
-                  libraryNotice: existingSong
-                    ? `"${song.title}" is already available`
-                    : `"${song.title}" imported successfully`,
+            if (targetPlaylistId) {
+              set((state) => {
+                const existing = state.playlists.find((playlist) => playlist.id === targetPlaylistId);
+                const draft: Playlist = existing ?? {
+                  id: targetPlaylistId,
+                  name: `${data.title} (Spotify)`,
+                  curator: data.owner,
+                  coverUrl: data.cover_url || YOUTUBE_COVER_FALLBACK,
+                  songs: [],
+                  source: { kind: 'spotify', spotifyId: data.id },
                 };
+                return {
+                  playlists: existing ? state.playlists : [...state.playlists, draft],
+                  drawerTab: 'playlist',
+                  selectedPlaylistId: targetPlaylistId,
+                };
+              });
+            }
+
+            set({
+              spotifyImportTask: {
+                requestId,
+                inputUrl,
+                resourceType: data.resource_type,
+                status: 'matching',
+                message: `Mencocokkan 0 dari ${tracks.length} lagu...`,
+                retryable: true,
+                targetPlaylistId,
+                report,
+              },
+            });
+
+            for (const track of tracks) {
+              if (activeSpotifyImportRequestId !== requestId) return;
+              const existingSong = get().queue.find((song) => song.id === `spotify-${track.id}`);
+              let song: Song | null = existingSong && isVerifiedSpotifySong(existingSong)
+                ? existingSong
+                : null;
+              const duplicate = song !== null;
+              let skippedInCatch = false;
+
+              if (!song) {
+                let match: SpotifyTrackMatchResult;
+                for (;;) {
+                  try {
+                    match = await matchSpotifyTrack({
+                      spotifyId: track.id,
+                      title: track.title,
+                      artist: track.artist,
+                      durationSeconds: track.duration_seconds,
+                    });
+                    break;
+                  } catch (error) {
+                    if (error instanceof SpotifyMatchError
+                      && error.code === 'cancelled'
+                      && activeSpotifyImportRequestId === requestId) {
+                      await waitForPlaybackResolution(requestId, get);
+                      continue;
+                    }
+                    const reason = error instanceof SpotifyMatchError
+                      ? spotifySkipReason(error.code)
+                      : 'YouTube match failed';
+                    match = { status: 'skipped', spotifyId: track.id, reason: 'no_candidates' };
+                    skippedInCatch = true;
+                    report = {
+                      ...report,
+                      skipped: report.skipped + 1,
+                      processed: report.processed + 1,
+                      skippedItems: [...report.skippedItems, { title: track.title, reason }],
+                    };
+                    break;
+                  }
+                }
+
+                if (match.status === 'matched') {
+                  song = matchedSpotifySong(track, data, match);
+                } else if (!skippedInCatch) {
+                  report = {
+                    ...report,
+                    skipped: report.skipped + 1,
+                    processed: report.processed + 1,
+                    skippedItems: [
+                      ...report.skippedItems,
+                      { title: track.title, reason: spotifySkipReason(match.reason) },
+                    ],
+                  };
+                }
               }
 
-              const playlistId = `spotify-playlist-${data.id}`;
-              const newPlaylist: Playlist = {
-                id: playlistId,
-                name: `${data.title} (Spotify)`,
-                curator: data.owner,
-                coverUrl: data.cover_url || spotifySongs[0]?.coverUrl || 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=600&auto=format&fit=crop&q=80',
-                songs: spotifySongs,
-                source: {
-                  kind: 'spotify',
-                  spotifyId: data.id,
+              if (song) {
+                report = {
+                  ...report,
+                  added: report.added + (duplicate ? 0 : 1),
+                  duplicates: report.duplicates + (duplicate ? 1 : 0),
+                  processed: report.processed + 1,
+                };
+                const committedSong = song;
+                set((state) => {
+                  const queue = duplicate ? state.queue : [...state.queue, committedSong];
+                  const playlists = targetPlaylistId
+                    ? state.playlists.map((playlist) => playlist.id === targetPlaylistId
+                      ? {
+                          ...playlist,
+                          coverUrl: playlist.songs[0]?.coverUrl ?? committedSong.coverUrl,
+                          songs: playlist.songs.some((item) => item.id === committedSong.id)
+                            ? playlist.songs
+                            : [...playlist.songs, committedSong],
+                        }
+                      : playlist)
+                    : state.playlists;
+                  const shouldStart = !startedPlayback;
+                  const playbackQueue = shouldStart
+                    ? [committedSong]
+                    : state.playbackQueue.some((item) => item.id === committedSong.id)
+                      ? state.playbackQueue
+                      : [...state.playbackQueue, committedSong];
+                  return {
+                    queue,
+                    playlists,
+                    playbackQueue,
+                    currentSong: shouldStart ? committedSong : state.currentSong,
+                    currentIndex: shouldStart ? 0 : state.currentIndex,
+                    currentTime: shouldStart ? 0 : state.currentTime,
+                    resumePosition: shouldStart ? { songId: committedSong.id, time: 0 } : state.resumePosition,
+                    playbackIntent: shouldStart || state.playbackIntent,
+                    playbackError: shouldStart ? null : state.playbackError,
+                    playbackStatus: shouldStart ? 'idle' : state.playbackStatus,
+                    selectionSerial: shouldStart ? state.selectionSerial + 1 : state.selectionSerial,
+                    selectionReason: shouldStart ? 'manual' : state.selectionReason,
+                    topSongs: sortTopSongs(queue),
+                    isUrlInputOpen: false,
+                  };
+                });
+                startedPlayback = true;
+              }
+
+              if (activeSpotifyImportRequestId !== requestId) return;
+              set({
+                spotifyImportTask: {
+                  requestId,
+                  inputUrl,
+                  resourceType: data.resource_type,
+                  status: 'matching',
+                  message: `Mencocokkan ${report.processed} dari ${report.total} lagu...`,
+                  retryable: true,
+                  targetPlaylistId,
+                  report,
                 },
-              };
+              });
+            }
 
-              const existingPlaylistIndex = state.playlists.findIndex((p) => p.id === playlistId);
-              const updatedPlaylists = existingPlaylistIndex >= 0
-                ? state.playlists.map((p, i) => i === existingPlaylistIndex ? newPlaylist : p)
-                : [...state.playlists, newPlaylist];
-
-              const firstSong = spotifySongs[0];
-
-              return {
-                queue: updatedQueue,
-                playlists: updatedPlaylists,
-                playbackQueue: spotifySongs,
-                currentSong: firstSong,
-                currentIndex: 0,
-                currentTime: 0,
-                resumePosition: firstSong ? { songId: firstSong.id, time: 0 } : null,
-                playbackIntent: true,
-                playbackError: null,
-                playbackStatus: 'idle',
-                selectionSerial: state.selectionSerial + 1,
-                selectionReason: 'manual',
-                topSongs: sortTopSongs(updatedQueue),
-                isUrlInputOpen: false,
-                isDrawerOpen: true,
-                drawerTab: 'playlist',
-                selectedPlaylistId: playlistId,
-                youtubeImportTask: null,
-                libraryNotice: `Spotify Playlist “${data.title}” imported successfully (${spotifySongs.length} songs)`,
-              };
-            });
-          } catch (error: any) {
+            if (activeSpotifyImportRequestId !== requestId) return;
+            const importedCount = report.added + report.duplicates;
+            const status = importedCount === 0 ? 'error' : report.skipped > 0 ? 'partial' : 'completed';
+            if (targetPlaylistId && importedCount === 0) {
+              set((state) => ({
+                playlists: state.playlists.filter((playlist) => playlist.id !== targetPlaylistId),
+                selectedPlaylistId: state.selectedPlaylistId === targetPlaylistId ? null : state.selectedPlaylistId,
+              }));
+            }
             set({
-              youtubeImportTask: null,
-              libraryNotice: error.message || 'Failed to import from Spotify',
+              spotifyImportTask: {
+                requestId,
+                inputUrl,
+                resourceType: data.resource_type,
+                status,
+                message: status === 'error'
+                  ? 'Tidak ada lagu Spotify yang berhasil dicocokkan.'
+                  : `${report.added} lagu ditambahkan${report.skipped ? `, ${report.skipped} dilewati` : ''}.`,
+                retryable: status === 'error',
+                targetPlaylistId,
+                report,
+              },
+              libraryNotice: status === 'error'
+                ? 'Tidak ada lagu Spotify yang dapat diimpor.'
+                : `Import Spotify selesai: ${report.added} lagu ditambahkan.`,
+            });
+          } catch (error: unknown) {
+            if (activeSpotifyImportRequestId !== requestId) return;
+            const message = error instanceof Error ? error.message : 'Failed to import from Spotify';
+            set({
+              spotifyImportTask: {
+                requestId,
+                inputUrl,
+                resourceType: resource.resourceType,
+                status: 'error',
+                message,
+                retryable: true,
+                report: get().spotifyImportTask?.report ?? createSpotifyReport('Spotify', 0, false),
+              },
+              libraryNotice: message,
             });
           }
         },
@@ -892,6 +1097,38 @@ export const usePlayerStore = create<PlayerStore>()(
               libraryNotice: mapped?.message ?? 'Gagal memproses link YouTube.',
             });
           }
+        },
+
+        cancelSpotifyTask: async () => {
+          const task = get().spotifyImportTask;
+          if (!task || !['fetching', 'matching'].includes(task.status)) return;
+          activeSpotifyImportRequestId = nextSpotifyImportRequestId++;
+          set({
+            spotifyImportTask: {
+              ...task,
+              status: 'cancelled',
+              message: 'Import Spotify dibatalkan. Lagu yang sudah cocok tetap tersimpan.',
+              retryable: true,
+            },
+          });
+          try {
+            await cancelSpotifyMatch();
+          } catch {
+            // The request-id guard prevents stale results from being committed.
+          }
+        },
+
+        retrySpotifyTask: async () => {
+          const task = get().spotifyImportTask;
+          if (!task) return;
+          set({ isUrlInputOpen: true });
+          await get().importSpotifyUrl(task.inputUrl);
+        },
+
+        dismissSpotifyTask: () => {
+          const task = get().spotifyImportTask;
+          if (!task || ['fetching', 'matching'].includes(task.status)) return;
+          set({ spotifyImportTask: null, isUrlInputOpen: false });
         },
 
         cancelYoutubeTask: async () => {
@@ -1381,7 +1618,7 @@ export const usePlayerStore = create<PlayerStore>()(
       }),
       {
         name: 'aura_music_player_storage',
-        version: 3,
+        version: 5,
         migrate: migratePlayerPersistedState,
         merge: (persistedState, currentState) => {
           const savedState = persistedState as Partial<PlayerStore>;
@@ -1437,6 +1674,8 @@ export const usePlayerStore = create<PlayerStore>()(
             playbackStatus: 'idle',
             playbackError: null,
             selectionReason: 'restore',
+            youtubeImportTask: null,
+            spotifyImportTask: null,
             topSongs: [...queue].sort((a, b) => b.playCount - a.playCount),
           };
         },
@@ -1450,10 +1689,12 @@ export const usePlayerStore = create<PlayerStore>()(
           return {
             queue,
             playbackQueue,
-            playlists: state.playlists.map((playlist) => ({
-              ...playlist,
-              songs: playlist.songs.filter((song) => persistedIds.has(song.id)),
-            })),
+            playlists: state.playlists
+              .map((playlist) => ({
+                ...playlist,
+                songs: playlist.songs.filter((song) => persistedIds.has(song.id)),
+              }))
+              .filter((playlist) => playlist.source?.kind !== 'spotify' || playlist.songs.length > 0),
             volume: state.volume,
             isMuted: state.isMuted,
             isLooping: state.isLooping,

@@ -16,6 +16,9 @@ switch (scenario) {
   case 'track-success':
     emitFixture('track-success.json');
     break;
+  case 'spotify-match-success':
+    emitFixture('spotify-match-success.json');
+    break;
   case 'malformed':
     process.stdout.write('{"broken":');
     break;

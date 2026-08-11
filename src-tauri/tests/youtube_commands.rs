@@ -1,6 +1,7 @@
 use miles_music_player_lib::youtube::commands::{YoutubeCommandService, YoutubeExecutables};
 use miles_music_player_lib::youtube::error::YoutubeErrorCode;
 use miles_music_player_lib::youtube::scheduler::ResolvePriority;
+use miles_music_player_lib::youtube::types::{SpotifyTrackMatchRequest, SpotifyTrackMatchResult};
 use std::ffi::OsString;
 use std::path::PathBuf;
 
@@ -103,4 +104,28 @@ fn playlist_command_rejects_video_url_before_spawning() {
         .expect_err("video URL must not enter playlist command");
 
     assert_eq!(error.code, YoutubeErrorCode::UnsupportedUrl);
+}
+
+#[test]
+fn spotify_match_command_selects_the_verified_candidate() {
+    let result = YoutubeCommandService::default()
+        .match_spotify_track_with(
+            SpotifyTrackMatchRequest {
+                spotify_id: "4xF4ZBGPZKxECeDFrqSAG4".to_string(),
+                title: "Sunflower".to_string(),
+                artist: "Post Malone Swae Lee".to_string(),
+                duration_seconds: 158,
+            },
+            fixture_executables("spotify-match-success"),
+        )
+        .expect("Spotify matcher fixture should succeed");
+
+    assert!(matches!(
+        result,
+        SpotifyTrackMatchResult::Matched {
+            video_id,
+            score: 70..=100,
+            ..
+        } if video_id == "ApXoWvfEYVU"
+    ));
 }

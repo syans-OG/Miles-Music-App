@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import fixture from './fixtures/persistence-v1.json';
 import { SUNFLOWER_DEFAULT_SONG } from '../data/defaultLibrary';
-import { migratePlayerPersistedState } from '../stores/playerPersistence';
+import { migratePlayerPersistedState, normalizeRestoredSong } from '../stores/playerPersistence';
 import type { Playlist, Song } from '../types/player';
 
 describe('Zustand persistence V1 fixture', () => {
@@ -39,7 +39,7 @@ describe('Zustand persistence V1 fixture', () => {
   });
 });
 
-describe('Zustand persistence V3 migration', () => {
+describe('Zustand persistence V5 migration', () => {
   const migrateFixture = () => migratePlayerPersistedState(fixture.state, fixture.version) as {
     queue: Song[];
     playbackQueue: Song[];
@@ -128,5 +128,94 @@ describe('Zustand persistence V3 migration', () => {
     expect(migrated.queue).toEqual([SUNFLOWER_DEFAULT_SONG]);
     expect(migrated.playlists).toEqual([]);
     expect(migrated.currentSong).toEqual(SUNFLOWER_DEFAULT_SONG);
+  });
+
+  it('preserves verified Spotify matches and their playlist membership', () => {
+    const spotifySong = {
+      id: 'spotify-4xF4ZBGPZKxECeDFrqSAG4',
+      title: 'Verified track',
+      artist: 'Verified artist',
+      coverUrl: 'https://example.com/spotify.jpg',
+      source: {
+        kind: 'spotify',
+        spotifyId: '4xF4ZBGPZKxECeDFrqSAG4',
+        searchQuery: 'Verified artist Verified track',
+        matchedVideoId: 'dQw4w9WgXcQ',
+        canonicalUrl: 'https://tampered.example/video',
+      },
+      duration: 180,
+      playCount: 4,
+    };
+    const migrated = migratePlayerPersistedState({
+      queue: [spotifySong],
+      playbackQueue: [spotifySong],
+      playlists: [{
+        id: 'spotify-playlist-37i9dQZF1DXcBWIGoYBM5M',
+        name: 'Verified playlist',
+        curator: 'Spotify',
+        coverUrl: 'https://example.com/playlist.jpg',
+        songs: [spotifySong],
+        source: { kind: 'spotify', spotifyId: '37i9dQZF1DXcBWIGoYBM5M' },
+      }],
+      currentSong: spotifySong,
+    }, 3) as { queue: Song[]; playlists: Playlist[] };
+
+    expect(migrated.queue.find((song) => song.id === spotifySong.id)?.source).toEqual({
+      kind: 'spotify',
+      spotifyId: '4xF4ZBGPZKxECeDFrqSAG4',
+      searchQuery: 'Verified artist Verified track',
+      matchedVideoId: 'dQw4w9WgXcQ',
+      canonicalUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+    });
+    expect(migrated.queue.find((song) => song.id === spotifySong.id)?.coverUrl)
+      .toBe('https://example.com/spotify.jpg');
+    expect(migrated.playlists[0]).toMatchObject({
+      source: { kind: 'spotify', spotifyId: '37i9dQZF1DXcBWIGoYBM5M' },
+      songs: [{ id: spotifySong.id }],
+    });
+  });
+
+  it('removes legacy Spotify items that do not have a valid matched video ID', () => {
+    const migrated = migratePlayerPersistedState({
+      queue: [{
+        id: 'spotify-legacy',
+        title: 'Legacy track',
+        artist: 'Legacy artist',
+        coverUrl: 'https://example.com/legacy.jpg',
+        source: {
+          kind: 'spotify',
+          spotifyId: '4xF4ZBGPZKxECeDFrqSAG4',
+          searchQuery: 'Legacy artist Legacy track',
+        },
+        duration: 180,
+        playCount: 0,
+      }],
+      playbackQueue: [],
+      playlists: [],
+      currentSong: null,
+    }, 3) as { queue: Song[] };
+
+    expect(migrated.queue).toEqual([SUNFLOWER_DEFAULT_SONG]);
+  });
+
+  it('preserves a Spotify cover when persisted storage is already on the current version', () => {
+    const song: Song = {
+      id: 'spotify-current-version',
+      title: 'Current version track',
+      artist: 'Current artist',
+      coverUrl: 'https://i.scdn.co/image/playlist-cover',
+      source: {
+        kind: 'spotify',
+        spotifyId: '4xF4ZBGPZKxECeDFrqSAG4',
+        searchQuery: 'Current artist Current version track',
+        matchedVideoId: 'dQw4w9WgXcQ',
+        canonicalUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+      },
+      duration: 180,
+      playCount: 0,
+    };
+
+    expect(normalizeRestoredSong(song).coverUrl)
+      .toBe('https://i.scdn.co/image/playlist-cover');
   });
 });

@@ -40,6 +40,18 @@ fn is_valid_spotify_id(value: &str) -> bool {
     value.len() == SPOTIFY_ID_LENGTH && value.bytes().all(|byte| byte.is_ascii_alphanumeric())
 }
 
+fn extract_spotify_track_id(track: &serde_json::Value) -> Option<&str> {
+    track["id"]
+        .as_str()
+        .filter(|id| is_valid_spotify_id(id))
+        .or_else(|| {
+            track["uri"]
+                .as_str()?
+                .strip_prefix("spotify:track:")
+                .filter(|id| is_valid_spotify_id(id))
+        })
+}
+
 pub fn parse_spotify_url(url: &str) -> Option<(String, String)> {
     let clean = url.trim();
 
@@ -213,7 +225,7 @@ pub async fn fetch_spotify_playlist(
                         .or_else(|| entity.pointer("/tracks/items").and_then(|v| v.as_array()));
 
                     if let Some(item_list) = raw_track_list {
-                        for (idx, item) in item_list.iter().enumerate() {
+                        for item in item_list {
                             let track_obj = if item.get("track").is_some() {
                                 &item["track"]
                             } else {
@@ -264,8 +276,9 @@ pub async fn fetch_spotify_playlist(
                                 .or_else(|| track_obj["duration_ms"].as_u64())
                                 .unwrap_or(180000);
 
-                            let fallback_tid = format!("sp_{}_{}", resource_id, idx);
-                            let tid = track_obj["id"].as_str().unwrap_or(&fallback_tid);
+                            let Some(tid) = extract_spotify_track_id(track_obj) else {
+                                continue;
+                            };
 
                             let search_q = format!("{} {}", artist_str, title_str);
 
@@ -341,7 +354,7 @@ pub async fn fetch_spotify_playlist(
 
 #[cfg(test)]
 mod tests {
-    use super::{append_bounded, parse_spotify_url};
+    use super::{append_bounded, extract_spotify_track_id, parse_spotify_url};
 
     #[test]
     fn accepts_supported_spotify_urls_and_uris() {
@@ -352,6 +365,26 @@ mod tests {
         assert_eq!(
             parse_spotify_url("spotify:playlist:37i9dQZF1DXcBWIGoYBM5M"),
             Some(("playlist".to_string(), "37i9dQZF1DXcBWIGoYBM5M".to_string()))
+        );
+    }
+
+    #[test]
+    fn extracts_playlist_track_id_from_spotify_uri() {
+        let track = serde_json::json!({
+            "uri": "spotify:track:3USxtqRwSYz57Ewm6wWRMp",
+            "id": null
+        });
+
+        assert_eq!(
+            extract_spotify_track_id(&track),
+            Some("3USxtqRwSYz57Ewm6wWRMp")
+        );
+        assert_eq!(extract_spotify_track_id(&serde_json::json!({})), None);
+        assert_eq!(
+            extract_spotify_track_id(
+                &serde_json::json!({ "uri": "spotify:album:4eLPsYPBmXABThSJ8zWzBB" })
+            ),
+            None
         );
     }
 

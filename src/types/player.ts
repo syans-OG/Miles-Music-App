@@ -35,6 +35,8 @@ export interface SpotifySongSource {
   kind: 'spotify';
   spotifyId: string;
   searchQuery: string;
+  matchedVideoId: string;
+  canonicalUrl: string;
 }
 
 export type SongSource = LocalSongSource | YoutubeSongSource | SpotifySongSource;

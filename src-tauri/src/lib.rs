@@ -654,6 +654,8 @@ pub fn run() {
             youtube::commands::resolve_youtube_track,
             youtube::commands::cancel_youtube_import,
             youtube::commands::cancel_youtube_resolve,
+            youtube::commands::match_spotify_track,
+            youtube::commands::cancel_spotify_match,
             discord_rpc::set_discord_activity,
             discord_rpc::clear_discord_activity,
             spotify::fetch_spotify_playlist

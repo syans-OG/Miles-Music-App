@@ -55,10 +55,14 @@ export const ControlBar: React.FC = () => {
     toggleTopControl,
     cycleMode,
     youtubeImportTask,
+    spotifyImportTask,
     addSongFromUrl,
     cancelYoutubeTask,
     retryYoutubeTask,
     dismissYoutubeTask,
+    cancelSpotifyTask,
+    retrySpotifyTask,
+    dismissSpotifyTask,
     isUrlInputOpen,
     setUrlInputOpen,
     setDrawerOpen,
@@ -91,10 +95,14 @@ export const ControlBar: React.FC = () => {
     toggleTopControl: state.toggleTopControl,
     cycleMode: state.cycleMode,
     youtubeImportTask: state.youtubeImportTask,
+    spotifyImportTask: state.spotifyImportTask,
     addSongFromUrl: state.addSongFromUrl,
     cancelYoutubeTask: state.cancelYoutubeTask,
     retryYoutubeTask: state.retryYoutubeTask,
     dismissYoutubeTask: state.dismissYoutubeTask,
+    cancelSpotifyTask: state.cancelSpotifyTask,
+    retrySpotifyTask: state.retrySpotifyTask,
+    dismissSpotifyTask: state.dismissSpotifyTask,
     isUrlInputOpen: state.isUrlInputOpen,
     setUrlInputOpen: state.setUrlInputOpen,
     setDrawerOpen: state.setDrawerOpen,
@@ -110,6 +118,14 @@ export const ControlBar: React.FC = () => {
   const detectedSpotify = inputUrl.trim() ? isSpotifyUrl(inputUrl) : false;
   const detectedResource = inputUrl.trim() ? detectYoutubeResource(inputUrl) : null;
   const isYoutubeTaskActive = youtubeImportTask?.status === 'importing' || youtubeImportTask?.status === 'resolving';
+  const isSpotifyTaskActive = spotifyImportTask?.status === 'fetching' || spotifyImportTask?.status === 'matching';
+  const isImportTaskActive = isYoutubeTaskActive || isSpotifyTaskActive;
+  const importTask = spotifyImportTask ?? youtubeImportTask;
+  const showingSpotifyTask = spotifyImportTask !== null;
+  const isImportSuccess = importTask?.status === 'success'
+    || importTask?.status === 'completed'
+    || importTask?.status === 'partial';
+  const isImportFailure = importTask?.status === 'error' || importTask?.status === 'cancelled';
   const isPlaybackPending = playbackStatus === 'resolving' || playbackStatus === 'loading' || playbackStatus === 'buffering';
   const playbackLabel = playbackError
     ? 'RETRY'
@@ -134,26 +150,37 @@ export const ControlBar: React.FC = () => {
 
   const handleUrlSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!inputUrl.trim() || isYoutubeTaskActive) return;
+    if (!inputUrl.trim() || isImportTaskActive) return;
     setReportOpen(false);
     void addSongFromUrl(inputUrl);
   };
 
-  const closeYoutubeLedger = () => {
-    dismissYoutubeTask();
-    if (!isYoutubeTaskActive) {
+  const closeImportLedger = () => {
+    if (showingSpotifyTask) dismissSpotifyTask();
+    else dismissYoutubeTask();
+    if (!isImportTaskActive) {
       setInputUrl('');
       setReportOpen(false);
+    } else {
+      setUrlInputOpen(false);
     }
   };
 
   const openImportedPlaylist = () => {
-    if (!youtubeImportTask?.targetPlaylistId) return;
+    if (!importTask?.targetPlaylistId) return;
     setUrlInputOpen(false);
     setDrawerOpen(true);
     setDrawerTab('playlist');
-    selectPlaylist(youtubeImportTask.targetPlaylistId);
+    selectPlaylist(importTask.targetPlaylistId);
   };
+
+  const cancelImportTask = () => showingSpotifyTask
+    ? cancelSpotifyTask()
+    : cancelYoutubeTask();
+
+  const retryImportTask = () => showingSpotifyTask
+    ? retrySpotifyTask()
+    : retryYoutubeTask();
 
   const handleMinimize = async () => {
     try {
@@ -228,11 +255,11 @@ export const ControlBar: React.FC = () => {
         >
           <div className="flex items-center p-2">
             <div className="flex flex-col justify-center pl-3 pr-2">
-              {isYoutubeTaskActive ? (
+              {isImportTaskActive ? (
                 <Loader2 className="h-3 w-3 animate-spin text-amber-400" />
-              ) : youtubeImportTask?.status === 'success' ? (
+              ) : isImportSuccess ? (
                 <Check className="h-3 w-3 text-emerald-400" />
-              ) : (youtubeImportTask?.status === 'error' || youtubeImportTask?.status === 'cancelled') ? (
+              ) : isImportFailure ? (
                 <AlertTriangle className="h-3 w-3 text-rose-400" />
               ) : (
                 <div className="w-1.5 h-1.5 rounded-full bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.8)] animate-pulse" />
@@ -246,9 +273,9 @@ export const ControlBar: React.FC = () => {
                 value={inputUrl}
                 onChange={(event) => setInputUrl(event.target.value)}
                 onKeyDown={(event) => {
-                  if (event.key === 'Escape') closeYoutubeLedger();
+                  if (event.key === 'Escape') closeImportLedger();
                 }}
-                disabled={isYoutubeTaskActive}
+                disabled={isImportTaskActive}
                 autoFocus
                 className="w-full min-w-0 bg-transparent border-none outline-none text-white text-xs placeholder-white/40 font-medium disabled:text-white/30"
               />
@@ -256,47 +283,47 @@ export const ControlBar: React.FC = () => {
 
             <button
               type="submit"
-              disabled={!inputUrl.trim() || isYoutubeTaskActive}
+              disabled={!inputUrl.trim() || isImportTaskActive}
               className="h-8 px-4 ml-2 bg-white/10 hover:bg-white/20 disabled:hover:bg-white/5 border border-white/5 transition-all rounded-xl text-white text-[11px] font-semibold flex flex-shrink-0 items-center gap-1.5 shadow-sm active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isYoutubeTaskActive ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : detectedResource?.kind === 'playlist' ? <ListMusic className="h-3.5 w-3.5" /> : <Plus className="h-3.5 w-3.5" />}
+              {isImportTaskActive ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : detectedResource?.kind === 'playlist' ? <ListMusic className="h-3.5 w-3.5" /> : <Plus className="h-3.5 w-3.5" />}
               {detectedResource?.kind === 'playlist' ? 'Import' : 'Add'}
             </button>
             <button
               type="button"
-              onClick={closeYoutubeLedger}
+              onClick={closeImportLedger}
               className="w-8 h-8 flex-shrink-0 flex items-center justify-center ml-1 text-white/40 hover:text-white transition-colors rounded-full hover:bg-white/10 active:scale-95"
-              title={isYoutubeTaskActive ? 'Hide process' : 'Close link input'}
-              aria-label={isYoutubeTaskActive ? 'Hide process' : 'Close link input'}
+              title={isImportTaskActive ? 'Hide process' : 'Close link input'}
+              aria-label={isImportTaskActive ? 'Hide process' : 'Close link input'}
             >
               <X className="h-4 w-4" />
             </button>
           </div>
 
-          {youtubeImportTask && (
+          {importTask && (
             <div className="px-3 pb-2 pt-1">
               <div className="flex items-center justify-between">
-                <p className="truncate text-[10px] text-white/60 pl-6">{youtubeImportTask.message}</p>
+                <p className="truncate text-[10px] text-white/60 pl-6">{importTask.message}</p>
                 <div className="flex items-center gap-2">
-                  {isYoutubeTaskActive && (
-                    <button type="button" onClick={() => void cancelYoutubeTask()} className="text-[10px] font-semibold text-rose-400 hover:text-rose-300 transition-colors">Batalkan</button>
+                  {isImportTaskActive && (
+                    <button type="button" onClick={() => void cancelImportTask()} className="text-[10px] font-semibold text-rose-400 hover:text-rose-300 transition-colors">Batalkan</button>
                   )}
-                  {(youtubeImportTask.status === 'error' || youtubeImportTask.status === 'cancelled') && youtubeImportTask.retryable && (
-                    <button type="button" onClick={() => void retryYoutubeTask()} className="flex items-center gap-1 text-[10px] font-semibold text-amber-400 hover:text-amber-300 transition-colors"><RotateCcw className="h-3 w-3" /> Coba lagi</button>
+                  {isImportFailure && importTask.retryable && (
+                    <button type="button" onClick={() => void retryImportTask()} className="flex items-center gap-1 text-[10px] font-semibold text-amber-400 hover:text-amber-300 transition-colors"><RotateCcw className="h-3 w-3" /> Coba lagi</button>
                   )}
-                  {youtubeImportTask.status === 'success' && youtubeImportTask.targetPlaylistId && (
+                  {isImportSuccess && importTask.targetPlaylistId && (
                     <button type="button" onClick={openImportedPlaylist} className="text-[10px] font-semibold text-amber-400 hover:text-amber-300 transition-colors">Buka playlist</button>
                   )}
                 </div>
               </div>
 
-              {isYoutubeTaskActive && (
+              {isImportTaskActive && (
                 <div className="mt-2 h-0.5 overflow-hidden rounded-full bg-white/5 mx-1" aria-hidden="true">
                   <div className="h-full w-1/3 animate-[signal-scan_1.15s_ease-in-out_infinite] bg-amber-400 rounded-full" />
                 </div>
               )}
 
-              {youtubeImportTask.report && (
+              {importTask.report && (
                 <div className="mt-2 rounded-xl bg-black/20 overflow-hidden border border-white/5">
                   <button
                     type="button"
@@ -306,10 +333,10 @@ export const ControlBar: React.FC = () => {
                   >
                     <span className="flex gap-4">
                       {[
-                        ['Masuk', youtubeImportTask.report.added],
-                        ['Duplikat', youtubeImportTask.report.duplicates],
-                        ['Dilewati', youtubeImportTask.report.skipped],
-                        ['Batas 100', youtubeImportTask.report.truncated ? 'Ya' : '—'],
+                        ['Masuk', importTask.report.added],
+                        ['Duplikat', importTask.report.duplicates],
+                        ['Dilewati', importTask.report.skipped],
+                        ['Batas 100', importTask.report.truncated ? 'Ya' : '—'],
                       ].map(([label, value]) => (
                         <span key={label} className="flex flex-col">
                           <strong className="font-mono text-[11px] text-white/90">{value}</strong>
@@ -321,9 +348,9 @@ export const ControlBar: React.FC = () => {
                       {isReportOpen ? 'Tutup' : 'Detail'}
                     </span>
                   </button>
-                  {isReportOpen && youtubeImportTask.report.skippedItems.length > 0 && (
+                  {isReportOpen && importTask.report.skippedItems.length > 0 && (
                     <div className="max-h-24 overflow-y-auto border-t border-white/5 px-3 py-2 space-y-1.5">
-                      {youtubeImportTask.report.skippedItems.map((item, index) => (
+                      {importTask.report.skippedItems.map((item, index) => (
                         <div key={`${item.title}-${index}`} className="flex items-start gap-2 text-[10px]">
                           <span className="min-w-0 flex-1 truncate text-white/60">{item.title}</span>
                           <span className="flex-shrink-0 text-rose-400/80">{item.reason}</span>
@@ -414,14 +441,14 @@ export const ControlBar: React.FC = () => {
               {/* Always visible Add YT Link (+) */}
               <button
                 onClick={() => {
-                  if (!isUrlInputOpen && !inputUrl && youtubeImportTask) setInputUrl(youtubeImportTask.inputUrl);
+                  if (!isUrlInputOpen && !inputUrl && importTask) setInputUrl(importTask.inputUrl);
                   setUrlInputOpen(!isUrlInputOpen);
                 }}
-                title="Add YouTube Link"
-                className={`relative rounded-lg p-1 transition-colors hover:bg-white/10 ${youtubeImportTask && !isUrlInputOpen ? 'text-amber-300' : 'text-slate-400 hover:text-white'}`}
+                title="Add YouTube or Spotify link"
+                className={`relative rounded-lg p-1 transition-colors hover:bg-white/10 ${importTask && !isUrlInputOpen ? 'text-amber-300' : 'text-slate-400 hover:text-white'}`}
               >
                 <Plus className="w-3.5 h-3.5" />
-                {isYoutubeTaskActive && !isUrlInputOpen && <span className="absolute -right-0.5 -top-0.5 h-1.5 w-1.5 rounded-full bg-amber-300" />}
+                {isImportTaskActive && !isUrlInputOpen && <span className="absolute -right-0.5 -top-0.5 h-1.5 w-1.5 rounded-full bg-amber-300" />}
               </button>
 
               {/* Expandable Window Actions (Minimize & Close) */}

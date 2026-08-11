@@ -2,6 +2,7 @@ import type {
   LocalSongSource,
   Playlist,
   Song,
+  SpotifySongSource,
   YoutubeAvailability,
   YoutubeSongSource,
 } from '../types/player';
@@ -12,6 +13,7 @@ import {
 } from '../data/defaultLibrary';
 
 const VIDEO_ID_PATTERN = /^[A-Za-z0-9_-]{11}$/;
+const SPOTIFY_ID_PATTERN = /^[A-Za-z0-9]{22}$/;
 const PLAYLIST_ID_PATTERN = /^[A-Za-z0-9_-]{10,80}$/;
 const YOUTUBE_HOSTS = new Set(['youtube.com', 'www.youtube.com', 'm.youtube.com', 'music.youtube.com']);
 const YOUTUBE_AVAILABILITY = new Set<YoutubeAvailability>([
@@ -33,6 +35,8 @@ const optionalString = (value: unknown) => typeof value === 'string' && value.le
 const validNumber = (value: unknown, fallback: number) =>
   typeof value === 'number' && Number.isFinite(value) ? value : fallback;
 
+export const normalizeRestoredSong = (song: Song): Song => song;
+
 const extractYoutubeVideoId = (value: unknown): string | null => {
   if (typeof value !== 'string') return null;
   try {
@@ -50,7 +54,7 @@ const extractYoutubeVideoId = (value: unknown): string | null => {
   }
 };
 
-const migrateSource = (song: UnknownRecord): LocalSongSource | YoutubeSongSource | null => {
+const migrateSource = (song: UnknownRecord): LocalSongSource | YoutubeSongSource | SpotifySongSource | null => {
   const source = isRecord(song.source) ? song.source : null;
   if (source?.kind === 'youtube') {
     const videoId = optionalString(source.videoId);
@@ -76,6 +80,23 @@ const migrateSource = (song: UnknownRecord): LocalSongSource | YoutubeSongSource
       fileHash: optionalString(source.fileHash),
       coverPath: optionalString(source.coverPath),
       managed: source.managed === true,
+    };
+  }
+  if (source?.kind === 'spotify') {
+    const spotifyId = optionalString(source.spotifyId);
+    const matchedVideoId = optionalString(source.matchedVideoId);
+    const searchQuery = optionalString(source.searchQuery);
+    if (!spotifyId || !SPOTIFY_ID_PATTERN.test(spotifyId)
+      || !matchedVideoId || !VIDEO_ID_PATTERN.test(matchedVideoId)
+      || !searchQuery || searchQuery.length > 320 || /[\u0000-\u001F\u007F]/.test(searchQuery)) {
+      return null;
+    }
+    return {
+      kind: 'spotify',
+      spotifyId,
+      searchQuery,
+      matchedVideoId,
+      canonicalUrl: `https://www.youtube.com/watch?v=${matchedVideoId}`,
     };
   }
 
@@ -114,7 +135,7 @@ export const migrateSongToV2 = (value: unknown): Song | null => {
   const source = migrateSource(value);
   if (!id || !title || !artist || !coverUrl || !source) return null;
 
-  return {
+  return normalizeRestoredSong({
     id,
     title,
     artist,
@@ -128,7 +149,7 @@ export const migrateSongToV2 = (value: unknown): Song | null => {
     lastPlayed: typeof value.lastPlayed === 'number' && Number.isFinite(value.lastPlayed)
       ? value.lastPlayed
       : undefined,
-  };
+  });
 };
 
 const migrateSongList = (value: unknown) => Array.isArray(value)
@@ -149,13 +170,18 @@ const migratePlaylists = (value: unknown, libraryById: Map<string, Song>): Playl
     const youtubePlaylistId = rawSource?.kind === 'youtube'
       ? optionalString(rawSource.playlistId)
       : undefined;
+    const spotifyPlaylistId = rawSource?.kind === 'spotify'
+      ? optionalString(rawSource.spotifyId)
+      : undefined;
     const source = youtubePlaylistId && PLAYLIST_ID_PATTERN.test(youtubePlaylistId)
       ? {
           kind: 'youtube' as const,
           playlistId: youtubePlaylistId,
           canonicalUrl: `https://www.youtube.com/playlist?list=${youtubePlaylistId}`,
         }
-      : { kind: 'local' as const };
+      : spotifyPlaylistId && SPOTIFY_ID_PATTERN.test(spotifyPlaylistId)
+        ? { kind: 'spotify' as const, spotifyId: spotifyPlaylistId }
+        : { kind: 'local' as const };
     return [{
       id,
       name,

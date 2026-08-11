@@ -1,6 +1,7 @@
 pub mod commands;
 pub mod dependencies;
 pub mod error;
+pub mod matching;
 pub mod normalize;
 pub mod process;
 pub mod scheduler;

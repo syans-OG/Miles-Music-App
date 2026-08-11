@@ -80,6 +80,22 @@ const youtubeSong = (id: string, videoId: string): Song => ({
   playCount: 0,
 });
 
+const spotifySong = (id: string, videoId: string): Song => ({
+  id,
+  title: `Spotify ${id}`,
+  artist: 'Miles',
+  coverUrl: 'https://i.scdn.co/image/fixture.jpg',
+  source: {
+    kind: 'spotify',
+    spotifyId: '4xF4ZBGPZKxECeDFrqSAG4',
+    searchQuery: 'Miles fixture',
+    matchedVideoId: videoId,
+    canonicalUrl: `https://www.youtube.com/watch?v=${videoId}`,
+  },
+  duration: 180,
+  playCount: 0,
+});
+
 const resolvedTrack = (videoId: string, suffix = ''): ResolvedYoutubeTrack => ({
   videoId,
   title: `Track ${videoId}`,
@@ -173,6 +189,58 @@ describe('AudioService lazy YouTube playback', () => {
     expect(usePlayerStore.getState().isPlaying).toBe(false);
   });
 
+  it('resolves a verified Spotify song through the stable search resolver', async () => {
+    const audio = new FakeAudio();
+    const resolveTrack = vi.fn().mockResolvedValue(resolvedTrack('aaaaaaaaaaa'));
+    const song = spotifySong('spotify-fixture', 'aaaaaaaaaaa');
+    usePlayerStore.setState({ queue: [song], playbackQueue: [song] });
+    service = new AudioService({ audio, resolveTrack, getCachedStream: () => null });
+
+    usePlayerStore.getState().playSong(song);
+    await flush();
+
+    expect(resolveTrack).toHaveBeenCalledWith(
+      'ytsearch1:Miles fixture',
+      'explicit_selection',
+      expect.any(Function),
+    );
+  });
+
+  it('replaces a Spotify cover only after full playback resolution returns a real thumbnail', async () => {
+    const audio = new FakeAudio();
+    const resolved = {
+      ...resolvedTrack('bbbbbbbbbbb'),
+      thumbnailUrl: 'https://i.ytimg.com/vi/bbbbbbbbbbb/maxresdefault.jpg',
+    };
+    const resolveTrack = vi.fn().mockResolvedValue(resolved);
+    const song = spotifySong('spotify-cover', 'aaaaaaaaaaa');
+    usePlayerStore.setState({ queue: [song], playbackQueue: [song] });
+    service = new AudioService({ audio, resolveTrack, getCachedStream: () => null });
+
+    usePlayerStore.getState().playSong(song);
+    await flush();
+
+    expect(usePlayerStore.getState().currentSong?.coverUrl).toBe(resolved.thumbnailUrl);
+    expect(usePlayerStore.getState().queue[0].coverUrl).toBe(resolved.thumbnailUrl);
+  });
+
+  it('keeps Spotify startup loading when load emits pause before playing', async () => {
+    const audio = new FakeAudio();
+    const resolveTrack = vi.fn().mockResolvedValue(resolvedTrack('aaaaaaaaaaa'));
+    const song = spotifySong('spotify-startup', 'aaaaaaaaaaa');
+    usePlayerStore.setState({ queue: [song], playbackQueue: [song] });
+    service = new AudioService({ audio, resolveTrack, getCachedStream: () => null });
+
+    usePlayerStore.getState().playSong(song);
+    await flush();
+    expect(usePlayerStore.getState().playbackStatus).toBe('loading');
+
+    audio.emit('pause');
+
+    expect(usePlayerStore.getState().playbackStatus).toBe('loading');
+    expect(usePlayerStore.getState().playbackIntent).toBe(true);
+  });
+
   it('drops a late resolver result after selecting another track', async () => {
     const audio = new FakeAudio();
     const first = deferred<ResolvedYoutubeTrack>();
@@ -259,6 +327,28 @@ describe('AudioService lazy YouTube playback', () => {
     ]);
     expect(clearStreamCache).toHaveBeenCalledTimes(1);
     expect(usePlayerStore.getState().playbackError?.retryable).toBe(true);
+  });
+
+  it('re-resolves a failed Spotify media source exactly once per load cycle', async () => {
+    const audio = new FakeAudio();
+    const resolveTrack = vi
+      .fn()
+      .mockResolvedValueOnce(resolvedTrack('aaaaaaaaaaa', '-first'))
+      .mockResolvedValueOnce(resolvedTrack('aaaaaaaaaaa', '-retry'));
+    const clearStreamCache = vi.fn();
+    const song = spotifySong('spotify-a', 'aaaaaaaaaaa');
+    usePlayerStore.setState({ queue: [song], playbackQueue: [song] });
+    service = new AudioService({ audio, resolveTrack, getCachedStream: () => null, clearStreamCache });
+
+    usePlayerStore.getState().playSong(song);
+    await flush();
+    audio.error = { code: 2 };
+    audio.emit('error');
+    await flush();
+
+    expect(resolveTrack).toHaveBeenCalledTimes(2);
+    expect(clearStreamCache).toHaveBeenCalledWith('ytsearch1:Miles fixture');
+    expect(usePlayerStore.getState().playbackError).toBeNull();
   });
 
   it('prefetches the next YouTube track once at the 25 second threshold', async () => {
@@ -386,6 +476,22 @@ describe('AudioService lazy YouTube playback', () => {
     await flush();
     expect(usePlayerStore.getState().playbackIntent).toBe(true);
     expect(audio.playCalls).toBeGreaterThanOrEqual(3);
+  });
+
+  it('lets the user cancel a pending playback intent before audio starts', () => {
+    const song = spotifySong('spotify-pending', 'aaaaaaaaaaa');
+    usePlayerStore.setState({
+      currentSong: song,
+      queue: [song],
+      playbackQueue: [song],
+      playbackIntent: true,
+      isPlaying: false,
+      playbackStatus: 'idle',
+    });
+
+    usePlayerStore.getState().togglePlayPause();
+
+    expect(usePlayerStore.getState().playbackIntent).toBe(false);
   });
 
   it('accumulates real-time listenedSeconds via timeupdate and ranks topSongs accordingly', async () => {

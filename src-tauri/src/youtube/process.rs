@@ -12,6 +12,8 @@ const POLL_INTERVAL: Duration = Duration::from_millis(20);
 const DEFAULT_TIMEOUT: Duration = Duration::from_secs(15);
 const MAX_STDOUT_BYTES: usize = 8 * 1024 * 1024;
 const MAX_STDERR_BYTES: usize = 256 * 1024;
+#[cfg(target_os = "windows")]
+const WINDOWS_CREATE_NO_WINDOW: u32 = 0x08000000;
 static NEXT_REQUEST_ID: AtomicU64 = AtomicU64::new(1);
 static ACTIVE_PROCESS_IDS: OnceLock<Mutex<HashSet<u32>>> = OnceLock::new();
 
@@ -337,18 +339,23 @@ impl OutputReaders {
     }
 }
 
+fn hidden_command(program: &Path) -> Command {
+    let mut command = Command::new(program);
+    #[cfg(target_os = "windows")]
+    {
+        use std::os::windows::process::CommandExt;
+        command.creation_flags(WINDOWS_CREATE_NO_WINDOW);
+    }
+    command
+}
+
 fn spawn_child(request: &ProcessRequest) -> io::Result<Child> {
-    let mut command = Command::new(&request.program);
+    let mut command = hidden_command(&request.program);
     command
         .args(&request.arguments)
         .stdin(Stdio::null())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped());
-    #[cfg(target_os = "windows")]
-    {
-        use std::os::windows::process::CommandExt;
-        command.creation_flags(0x08000000);
-    }
     command.spawn()
 }
 
@@ -435,7 +442,7 @@ fn terminate_and_wait(child: &mut Child, request_id: u64) -> Result<(), ProcessE
 
 #[cfg(target_os = "windows")]
 fn terminate_process_tree(pid: u32) -> io::Result<()> {
-    let status = Command::new("taskkill.exe")
+    let status = hidden_command(Path::new("taskkill.exe"))
         .args(["/PID", &pid.to_string(), "/T", "/F"])
         .stdin(Stdio::null())
         .stdout(Stdio::null())
@@ -483,5 +490,14 @@ mod tests {
         assert!(values
             .last()
             .is_some_and(|value| value.starts_with("https://")));
+    }
+
+    #[cfg(target_os = "windows")]
+    #[test]
+    fn hidden_windows_command_uses_the_no_console_creation_flag() {
+        let command = hidden_command(Path::new("taskkill.exe"));
+
+        assert_eq!(command.get_program(), "taskkill.exe");
+        assert_eq!(WINDOWS_CREATE_NO_WINDOW, 0x08000000);
     }
 }

@@ -1,15 +1,21 @@
 use super::dependencies::{verify_runtime_sidecars, VerifiedSidecars};
 use super::error::{YoutubeError, YoutubeErrorCode};
+use super::matching::{parse_youtube_search_json, select_spotify_candidate};
 use super::normalize::{normalize_playlist_json, normalize_track_json};
 use super::process::{
     isolated_ytdlp_arguments, CancellationToken, OperationKind, ProcessError, ProcessErrorKind,
     ProcessRequest, ProcessRunner,
 };
 use super::scheduler::{ResolvePriority, ScheduleError, YoutubeScheduler};
-use super::types::{ResolvePurpose, ResolvedYoutubeTrack, YoutubePlaylistImport, YoutubeResource};
+use super::types::{
+    ResolvePurpose, ResolvedYoutubeTrack, SpotifyTrackMatchRequest, SpotifyTrackMatchResult,
+    YoutubePlaylistImport, YoutubeResource,
+};
 use super::validation::{parse_youtube_url, validate_video_id};
 use std::ffi::OsString;
 use std::path::PathBuf;
+use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::{Arc, Mutex};
 
 const PLAYLIST_ARGUMENTS: [&str; 7] = [
     "--flat-playlist",
@@ -31,11 +37,24 @@ const TRACK_ARGUMENTS: [&str; 9] = [
     "--format-sort",
     "ext:m4a",
 ];
+const SPOTIFY_MATCH_ARGUMENTS: [&str; 7] = [
+    "--flat-playlist",
+    "--playlist-end",
+    "5",
+    "--dump-single-json",
+    "--skip-download",
+    "--no-cache-dir",
+    "--no-warnings",
+];
+const MAX_SPOTIFY_MATCH_TEXT_CHARS: usize = 160;
+const MAX_SPOTIFY_MATCH_DURATION_SECONDS: u64 = 24 * 60 * 60;
 
 #[derive(Clone, Default)]
 pub struct YoutubeCommandService {
     runner: ProcessRunner,
     scheduler: YoutubeScheduler,
+    spotify_match_sequence: Arc<AtomicU64>,
+    active_spotify_match: Arc<Mutex<Option<(u64, CancellationToken)>>>,
 }
 
 #[derive(Clone)]
@@ -82,6 +101,17 @@ impl YoutubeCommandService {
 
     pub fn cancel_resolve(&self) {
         self.scheduler.cancel_resolve();
+    }
+
+    pub fn cancel_spotify_match(&self) {
+        if let Some((_, cancellation)) = self
+            .active_spotify_match
+            .lock()
+            .unwrap_or_else(|error| error.into_inner())
+            .as_ref()
+        {
+            cancellation.cancel();
+        }
     }
 
     pub fn import_playlist_with(
@@ -142,6 +172,60 @@ impl YoutubeCommandService {
             return Err(YoutubeError::new(YoutubeErrorCode::Cancelled));
         }
         Ok(track)
+    }
+
+    pub fn match_spotify_track(
+        &self,
+        request: SpotifyTrackMatchRequest,
+    ) -> Result<SpotifyTrackMatchResult, YoutubeError> {
+        self.match_spotify_track_with(request, YoutubeExecutables::verified()?)
+    }
+
+    pub fn match_spotify_track_with(
+        &self,
+        request: SpotifyTrackMatchRequest,
+        executables: YoutubeExecutables,
+    ) -> Result<SpotifyTrackMatchResult, YoutubeError> {
+        let search_target = validated_spotify_search_target(&request)?;
+        let cancellation = CancellationToken::default();
+        let match_id = self.spotify_match_sequence.fetch_add(1, Ordering::Relaxed) + 1;
+        {
+            let mut active = self
+                .active_spotify_match
+                .lock()
+                .unwrap_or_else(|error| error.into_inner());
+            if let Some((_, previous)) = active.replace((match_id, cancellation.clone())) {
+                previous.cancel();
+            }
+        }
+
+        let result = (|| {
+            let permit = self
+                .scheduler
+                .acquire_resolve(ResolvePriority::Prefetch, cancellation.clone())
+                .map_err(schedule_error)?;
+            let output = self.run_operation(
+                OperationKind::Resolve,
+                &cancellation,
+                &executables,
+                &SPOTIFY_MATCH_ARGUMENTS,
+                &search_target,
+            )?;
+            let candidates = parse_youtube_search_json(as_utf8(&output.stdout)?)?;
+            if !permit.is_current() {
+                return Err(YoutubeError::new(YoutubeErrorCode::Cancelled));
+            }
+            Ok(select_spotify_candidate(&request, &candidates))
+        })();
+
+        let mut active = self
+            .active_spotify_match
+            .lock()
+            .unwrap_or_else(|error| error.into_inner());
+        if active.as_ref().map(|(active_id, _)| *active_id) == Some(match_id) {
+            active.take();
+        }
+        result
     }
 
     fn run_operation(
@@ -211,6 +295,22 @@ pub fn cancel_youtube_resolve(service: tauri::State<'_, YoutubeCommandService>) 
     service.cancel_resolve();
 }
 
+#[tauri::command]
+pub async fn match_spotify_track(
+    service: tauri::State<'_, YoutubeCommandService>,
+    request: SpotifyTrackMatchRequest,
+) -> Result<SpotifyTrackMatchResult, YoutubeError> {
+    let service = service.inner().clone();
+    tauri::async_runtime::spawn_blocking(move || service.match_spotify_track(request))
+        .await
+        .unwrap_or_else(|_| Err(YoutubeError::new(YoutubeErrorCode::ProcessFailed)))
+}
+
+#[tauri::command]
+pub fn cancel_spotify_match(service: tauri::State<'_, YoutubeCommandService>) {
+    service.cancel_spotify_match();
+}
+
 impl From<ResolvePurpose> for ResolvePriority {
     fn from(purpose: ResolvePurpose) -> Self {
         match purpose {
@@ -229,6 +329,37 @@ fn validated_playlist(url: &str) -> Result<(String, String), YoutubeError> {
         } => Ok((playlist_id, canonical_url)),
         YoutubeResource::Video { .. } => Err(YoutubeError::new(YoutubeErrorCode::UnsupportedUrl)),
     }
+}
+
+fn validated_spotify_search_target(
+    request: &SpotifyTrackMatchRequest,
+) -> Result<String, YoutubeError> {
+    let has_valid_id = request.spotify_id.len() == 22
+        && request
+            .spotify_id
+            .bytes()
+            .all(|byte| byte.is_ascii_alphanumeric());
+    let valid_text = |value: &str| {
+        let trimmed = value.trim();
+        !trimmed.is_empty()
+            && trimmed.chars().count() <= MAX_SPOTIFY_MATCH_TEXT_CHARS
+            && trimmed
+                .chars()
+                .all(|character| !character.is_control() || character.is_whitespace())
+    };
+    if !has_valid_id
+        || !valid_text(&request.title)
+        || !valid_text(&request.artist)
+        || request.duration_seconds == 0
+        || request.duration_seconds > MAX_SPOTIFY_MATCH_DURATION_SECONDS
+    {
+        return Err(YoutubeError::new(YoutubeErrorCode::InvalidMetadata));
+    }
+    Ok(format!(
+        "ytsearch5:{} {}",
+        request.artist.trim(),
+        request.title.trim()
+    ))
 }
 
 fn as_utf8(output: &[u8]) -> Result<&str, YoutubeError> {
@@ -291,6 +422,41 @@ mod tests {
         assert!(!TRACK_ARGUMENTS
             .iter()
             .any(|value| value.contains("cookies")));
+        assert!(SPOTIFY_MATCH_ARGUMENTS.contains(&"--skip-download"));
+        assert!(!SPOTIFY_MATCH_ARGUMENTS
+            .iter()
+            .any(|value| value.contains("cookies")));
+    }
+
+    #[test]
+    fn spotify_search_target_rejects_untrusted_metadata() {
+        let valid = SpotifyTrackMatchRequest {
+            spotify_id: "4xF4ZBGPZKxECeDFrqSAG4".to_string(),
+            title: "Sunflower".to_string(),
+            artist: "Post Malone Swae Lee".to_string(),
+            duration_seconds: 158,
+        };
+        assert_eq!(
+            validated_spotify_search_target(&valid).expect("valid request"),
+            "ytsearch5:Post Malone Swae Lee Sunflower"
+        );
+
+        for invalid in [
+            SpotifyTrackMatchRequest {
+                spotify_id: "bad".to_string(),
+                ..valid.clone()
+            },
+            SpotifyTrackMatchRequest {
+                title: "\0".to_string(),
+                ..valid.clone()
+            },
+            SpotifyTrackMatchRequest {
+                duration_seconds: 0,
+                ..valid.clone()
+            },
+        ] {
+            assert!(validated_spotify_search_target(&invalid).is_err());
+        }
     }
 
     #[test]

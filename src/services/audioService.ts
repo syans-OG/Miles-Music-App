@@ -52,6 +52,14 @@ const skipReason = (error: YoutubeServiceError) => {
   return 'tidak tersedia';
 };
 
+const youtubeResolveKey = (song: Song): string | null => {
+  if (song.source.kind === 'youtube') return song.source.videoId;
+  if (song.source.kind === 'spotify') {
+    return `ytsearch1:${song.source.searchQuery || `${song.artist} ${song.title}`}`;
+  }
+  return null;
+};
+
 export class AudioService {
   private readonly audio: AudioElementLike;
   private readonly resolveTrack: typeof resolveYoutubeTrack;
@@ -174,9 +182,8 @@ export class AudioService {
       return;
     }
 
-    const resolveId = song.source.kind === 'spotify'
-      ? `ytsearch1:${song.source.searchQuery || `${song.artist} ${song.title}`}`
-      : song.source.videoId;
+    const resolveId = youtubeResolveKey(song);
+    if (!resolveId) return;
 
     if (song.source.kind === 'youtube' && song.source.availability !== 'available') {
       this.purgeAndSkipUnavailableSong(song, `${song.title} dihapus: tidak tersedia`);
@@ -285,7 +292,12 @@ export class AudioService {
       on('pause', () => {
         if (!isCurrent()) return;
         this.lastRecordedTime = this.audio.currentTime;
-        usePlayerStore.getState().setPlaybackStatus('idle');
+        const state = usePlayerStore.getState();
+        if (state.playbackIntent && ['resolving', 'loading', 'buffering'].includes(state.playbackStatus)) {
+          return;
+        }
+        if (state.playbackIntent) state.setPlaybackIntent(false);
+        state.setPlaybackStatus('idle');
       }),
       on('waiting', () => {
         if (!isCurrent()) return;
@@ -311,11 +323,12 @@ export class AudioService {
       await this.audio.play();
     } catch (error) {
       if (generation !== this.loadGeneration || !usePlayerStore.getState().playbackIntent) return;
-      if (state.currentSong?.source.kind === 'youtube' && !this.mediaRetryUsed) {
+      const resolveKey = state.currentSong ? youtubeResolveKey(state.currentSong) : null;
+      if (resolveKey && !this.mediaRetryUsed) {
         this.mediaRetryUsed = true;
-        this.clearStreamCache(state.currentSong.source.videoId);
+        this.clearStreamCache(resolveKey);
         this.clearAssignedSource();
-        this.startLoadCycle(true);
+        this.startLoadCycle(false);
         return;
       }
       const message = error instanceof Error ? error.message : 'Audio tidak dapat diputar.';
@@ -349,9 +362,10 @@ export class AudioService {
   private handleMediaError(song: Song, generation: number, selectionSerial: number) {
     usePlayerStore.getState().setPlaybackStatus('idle');
     const eligibleMediaFailure = this.audio.error?.code === 2 || this.audio.error?.code === 4;
-    if (song.source.kind === 'youtube' && eligibleMediaFailure && !this.mediaRetryUsed) {
+    const resolveKey = youtubeResolveKey(song);
+    if (resolveKey && eligibleMediaFailure && !this.mediaRetryUsed) {
       this.mediaRetryUsed = true;
-      this.clearStreamCache(song.source.videoId);
+      this.clearStreamCache(resolveKey);
       this.clearAssignedSource();
       this.loadGeneration += 1;
       const retryGeneration = this.loadGeneration;

@@ -1,0 +1,24 @@
+{
+  "_type": "playlist",
+  "entries": [
+    {
+      "id": "ApXoWvfEYVU",
+      "title": "Post Malone, Swae Lee - Sunflower (Official Audio)",
+      "artist": "Post Malone",
+      "channel": "Post Malone",
+      "duration": 158,
+      "thumbnail": "https://i.ytimg.com/vi/ApXoWvfEYVU/hqdefault.jpg",
+      "live_status": "not_live",
+      "availability": "public"
+    },
+    {
+      "id": "aaaaaaaaaaa",
+      "title": "Sunflower Karaoke Version",
+      "artist": "Karaoke Studio",
+      "channel": "Karaoke Studio",
+      "duration": 158,
+      "live_status": "not_live",
+      "availability": "public"
+    }
+  ]
+}

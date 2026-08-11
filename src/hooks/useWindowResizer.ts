@@ -5,11 +5,12 @@ import { useShallow } from 'zustand/react/shallow';
 import { usePlayerStore } from '../stores/usePlayerStore';
 
 export const useWindowResizer = () => {
-  const { mode, isDrawerOpen, isUrlInputOpen, youtubeImportTask, dockPosition, setDockPosition } = usePlayerStore(useShallow((state) => ({
+  const { mode, isDrawerOpen, isUrlInputOpen, youtubeImportTask, spotifyImportTask, dockPosition, setDockPosition } = usePlayerStore(useShallow((state) => ({
     mode: state.mode,
     isDrawerOpen: state.isDrawerOpen,
     isUrlInputOpen: state.isUrlInputOpen,
     youtubeImportTask: state.youtubeImportTask,
+    spotifyImportTask: state.spotifyImportTask,
     dockPosition: state.dockPosition,
     setDockPosition: state.setDockPosition,
   })));
@@ -26,7 +27,9 @@ export const useWindowResizer = () => {
         targetHeight = isDrawerOpen
           ? 620
           : isUrlInputOpen
-            ? youtubeImportTask?.report ? 420 : youtubeImportTask ? 330 : 285
+            ? youtubeImportTask?.report || spotifyImportTask?.report
+              ? 420
+              : youtubeImportTask || spotifyImportTask ? 330 : 285
             : youtubeImportTask?.status === 'success' && youtubeImportTask.backgrounded ? 285 : 200;
       } else if (mode === 'vinyl-widget') {
         targetWidth = 200;
@@ -53,7 +56,7 @@ export const useWindowResizer = () => {
     };
 
     resizeWindow();
-  }, [mode, isDrawerOpen, isUrlInputOpen, youtubeImportTask, dockPosition]);
+  }, [mode, isDrawerOpen, isUrlInputOpen, youtubeImportTask, spotifyImportTask, dockPosition]);
 
 
   // Automatic Magnetic Auto-Snap Listener when dragging ends
