@@ -301,21 +301,9 @@ pub async fn match_spotify_track(
     request: SpotifyTrackMatchRequest,
 ) -> Result<SpotifyTrackMatchResult, YoutubeError> {
     let service = service.inner().clone();
-    let spotify_id = request.spotify_id.clone();
-    let cover_task = tauri::async_runtime::spawn(async move {
-        crate::spotify::fetch_spotify_track_cover(&spotify_id).await
-    });
-    let mut result =
-        tauri::async_runtime::spawn_blocking(move || service.match_spotify_track(request))
-            .await
-            .unwrap_or_else(|_| Err(YoutubeError::new(YoutubeErrorCode::ProcessFailed)))?;
-    if let SpotifyTrackMatchResult::Matched {
-        spotify_cover_url, ..
-    } = &mut result
-    {
-        *spotify_cover_url = cover_task.await.ok().flatten();
-    }
-    Ok(result)
+    tauri::async_runtime::spawn_blocking(move || service.match_spotify_track(request))
+        .await
+        .unwrap_or_else(|_| Err(YoutubeError::new(YoutubeErrorCode::ProcessFailed)))
 }
 
 #[tauri::command]

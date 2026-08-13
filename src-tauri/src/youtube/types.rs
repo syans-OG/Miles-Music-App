@@ -131,7 +131,6 @@ pub enum SpotifyTrackMatchResult {
         title: String,
         artist: String,
         duration_seconds: u64,
-        spotify_cover_url: Option<String>,
         thumbnail_url: Option<String>,
         canonical_url: String,
         score: u8,

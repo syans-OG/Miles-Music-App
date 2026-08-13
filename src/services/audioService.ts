@@ -192,6 +192,9 @@ export class AudioService {
 
     const cached = this.getCachedStream(resolveId);
     if (cached) {
+      if (song.source.kind === 'spotify' && cached.thumbnailUrl) {
+        usePlayerStore.getState().updateSongMetadata(song.id, { coverUrl: cached.thumbnailUrl });
+      }
       usePlayerStore.getState().setPlaybackStatus('loading');
       this.assignSource(song, cached.url, generation, selectionSerial);
       await this.playAssignedSource(generation);
@@ -209,7 +212,9 @@ export class AudioService {
         () => this.isCurrentSelection(generation, selectionSerial, song.id) && usePlayerStore.getState().playbackIntent,
       );
       if (!this.isCurrentSelection(generation, selectionSerial, song.id) || !usePlayerStore.getState().playbackIntent) return;
-      if (track.thumbnailUrl && song.source.kind === 'youtube' && !song.coverUrl) {
+      if (track.thumbnailUrl && song.source.kind === 'spotify') {
+        usePlayerStore.getState().updateSongMetadata(song.id, { coverUrl: track.thumbnailUrl });
+      } else if (track.thumbnailUrl && song.source.kind === 'youtube' && !song.coverUrl) {
         usePlayerStore.getState().updateSongMetadata(song.id, { coverUrl: track.thumbnailUrl });
       }
       usePlayerStore.getState().setPlaybackStatus('loading');

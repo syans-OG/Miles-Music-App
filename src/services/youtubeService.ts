@@ -24,8 +24,13 @@ interface YoutubeRuntimeResolution {
   requestToken: number;
   status: YoutubeResolutionStatus;
   stream?: YoutubeAudioStream;
+  thumbnailUrl?: string | null;
   error?: YoutubeServiceError;
   lastAccessedAt: number;
+}
+
+export interface CachedYoutubeStream extends YoutubeAudioStream {
+  thumbnailUrl?: string | null;
 }
 
 const runtimeResolutions = new Map<string, YoutubeRuntimeResolution>();
@@ -100,12 +105,12 @@ const trimRuntimeCache = () => {
   }
 };
 
-export const getCachedYoutubeStream = (videoId: string): YoutubeAudioStream | null => {
+export const getCachedYoutubeStream = (videoId: string): CachedYoutubeStream | null => {
   const resolution = runtimeResolutions.get(videoId);
   if (resolution?.status !== 'ready' || !resolution.stream) return null;
   if (isFresh(resolution.stream)) {
     resolution.lastAccessedAt = Date.now();
-    return resolution.stream;
+    return { ...resolution.stream, thumbnailUrl: resolution.thumbnailUrl };
   }
   runtimeResolutions.delete(videoId);
   return null;
@@ -209,6 +214,7 @@ export const resolveYoutubeTrack = async (
           requestToken,
           status: 'ready',
           stream: track.stream,
+          thumbnailUrl: track.thumbnailUrl,
           lastAccessedAt: Date.now(),
         });
         trimRuntimeCache();

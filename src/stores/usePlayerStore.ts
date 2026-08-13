@@ -195,10 +195,8 @@ const matchedSpotifySong = (
   title: track.title,
   artist: track.artist,
   album: track.album || resource.title,
-  coverUrl: match.spotifyCoverUrl
+  coverUrl: resource.cover_url
     || track.cover_url
-    || resource.cover_url
-    || match.thumbnailUrl
     || YOUTUBE_COVER_FALLBACK,
   source: {
     kind: 'spotify',

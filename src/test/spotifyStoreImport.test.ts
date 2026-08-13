@@ -57,7 +57,6 @@ describe('Spotify store import behavior', () => {
         title: 'Fixture Artist - Fixture Track',
         artist: 'Fixture Artist',
         durationSeconds: 180,
-        spotifyCoverUrl: 'https://image-cdn-fa.spotifycdn.com/image/track-cover',
         canonicalUrl: 'https://www.youtube.com/watch?v=aaaaaaaaaaa',
         score: 96,
       };
@@ -79,7 +78,7 @@ describe('Spotify store import behavior', () => {
       kind: 'spotify',
       matchedVideoId: 'aaaaaaaaaaa',
     });
-    expect(state.queue[0].coverUrl).toBe('https://image-cdn-fa.spotifycdn.com/image/track-cover');
+    expect(state.queue[0].coverUrl).toBe('https://i.scdn.co/image/fixture');
   });
 
   it('progressively keeps matched playlist tracks and reports skipped tracks', async () => {
@@ -105,7 +104,6 @@ describe('Spotify store import behavior', () => {
               title: 'Good Artist - Good Track',
               artist: 'Good Artist',
               durationSeconds: 180,
-              spotifyCoverUrl: 'https://image-cdn-fa.spotifycdn.com/image/good-track-cover',
               canonicalUrl: 'https://www.youtube.com/watch?v=aaaaaaaaaaa',
               score: 95,
             }
@@ -122,11 +120,50 @@ describe('Spotify store import behavior', () => {
     expect(state.queue.map((song) => song.title)).toEqual(['Good Track']);
     expect(state.playlists).toHaveLength(1);
     expect(state.playlists[0].songs.map((song) => song.title)).toEqual(['Good Track']);
-    expect(state.queue[0].coverUrl).toBe('https://image-cdn-fa.spotifycdn.com/image/good-track-cover');
+    expect(state.queue[0].coverUrl).toBe('https://i.scdn.co/image/playlist-cover');
     expect(state.playlists[0].coverUrl).toBe('https://i.scdn.co/image/playlist-cover');
     expect(state.isDrawerOpen).toBe(false);
     expect(state.spotifyImportTask?.status).toBe('partial');
     expect(state.spotifyImportTask?.report).toMatchObject({ added: 1, skipped: 1, processed: 2 });
+  });
+
+  it('uses playlist artwork as the initial cover even when a YouTube thumbnail is available', async () => {
+    mockedInvoke.mockImplementation(async (command) => {
+      if (command === 'fetch_spotify_playlist') return {
+        resource_type: 'playlist',
+        id: '37i9dQZF1DXcBWIGoYBM5M',
+        title: 'Fallback Playlist',
+        owner: 'Fixture Owner',
+        cover_url: 'https://i.scdn.co/image/playlist-cover',
+        tracks: [{
+          id: '4xF4ZBGPZKxECeDFrqSAG4',
+          title: 'Fallback Track',
+          artist: 'Fallback Artist',
+          duration_seconds: 180,
+          search_query: 'Fallback Artist Fallback Track',
+        }],
+      };
+      if (command === 'match_spotify_track') return {
+        status: 'matched',
+        spotifyId: '4xF4ZBGPZKxECeDFrqSAG4',
+        videoId: 'aaaaaaaaaaa',
+        title: 'Fallback Track',
+        artist: 'Fallback Artist',
+        durationSeconds: 180,
+        thumbnailUrl: 'https://i.ytimg.com/vi/aaaaaaaaaaa/maxresdefault.jpg',
+        canonicalUrl: 'https://www.youtube.com/watch?v=aaaaaaaaaaa',
+        score: 96,
+      };
+      throw new Error(`Unexpected command: ${command}`);
+    });
+
+    await usePlayerStore.getState().importSpotifyUrl(
+      'https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M',
+    );
+
+    const state = usePlayerStore.getState();
+    expect(state.queue[0].coverUrl).toBe('https://i.scdn.co/image/playlist-cover');
+    expect(state.playlists[0].coverUrl).toBe('https://i.scdn.co/image/playlist-cover');
   });
 
   it('does not close an import panel reopened by the user after first-track autoplay', async () => {
@@ -189,7 +226,6 @@ describe('Spotify store import behavior', () => {
       title: string;
       artist: string;
       durationSeconds: number;
-      spotifyCoverUrl: string;
       canonicalUrl: string;
       score: number;
     };
@@ -239,7 +275,6 @@ describe('Spotify store import behavior', () => {
       title: 'Retry Track',
       artist: 'Retry Artist',
       durationSeconds: 180,
-      spotifyCoverUrl: 'https://image-cdn-fa.spotifycdn.com/image/retry-track-cover',
       canonicalUrl: 'https://www.youtube.com/watch?v=aaaaaaaaaaa',
       score: 97,
     };

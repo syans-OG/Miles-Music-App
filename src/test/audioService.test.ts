@@ -206,7 +206,7 @@ describe('AudioService lazy YouTube playback', () => {
     );
   });
 
-  it('preserves the Spotify cover after playback resolution returns a YouTube thumbnail', async () => {
+  it('upgrades and persists a Spotify placeholder after playback resolves a YouTube thumbnail', async () => {
     const audio = new FakeAudio();
     const resolved = {
       ...resolvedTrack('bbbbbbbbbbb'),
@@ -220,8 +220,31 @@ describe('AudioService lazy YouTube playback', () => {
     usePlayerStore.getState().playSong(song);
     await flush();
 
-    expect(usePlayerStore.getState().currentSong?.coverUrl).toBe(song.coverUrl);
-    expect(usePlayerStore.getState().queue[0].coverUrl).toBe(song.coverUrl);
+    expect(usePlayerStore.getState().currentSong?.coverUrl).toBe(resolved.thumbnailUrl);
+    expect(usePlayerStore.getState().queue[0].coverUrl).toBe(resolved.thumbnailUrl);
+  });
+
+  it('upgrades a Spotify placeholder when playback uses a prefetched stream', async () => {
+    const audio = new FakeAudio();
+    const resolveTrack = vi.fn();
+    const song = spotifySong('spotify-prefetched-cover', 'aaaaaaaaaaa');
+    usePlayerStore.setState({ queue: [song], playbackQueue: [song] });
+    service = new AudioService({
+      audio,
+      resolveTrack,
+      getCachedStream: () => ({
+        ...resolvedTrack('bbbbbbbbbbb').stream,
+        thumbnailUrl: 'https://i.ytimg.com/vi/bbbbbbbbbbb/maxresdefault.jpg',
+      }),
+    });
+
+    usePlayerStore.getState().playSong(song);
+    await flush();
+
+    expect(resolveTrack).not.toHaveBeenCalled();
+    expect(usePlayerStore.getState().queue[0].coverUrl).toBe(
+      'https://i.ytimg.com/vi/bbbbbbbbbbb/maxresdefault.jpg',
+    );
   });
 
   it('keeps Spotify startup loading when load emits pause before playing', async () => {
