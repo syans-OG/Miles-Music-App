@@ -22,6 +22,7 @@ describe('Spotify store import behavior', () => {
       currentTime: 0,
       playbackIntent: false,
       playbackStatus: 'idle',
+      isUrlInputOpen: false,
       isDrawerOpen: false,
       drawerTab: 'cd',
       selectedPlaylistId: null,
@@ -122,5 +123,57 @@ describe('Spotify store import behavior', () => {
     expect(state.isDrawerOpen).toBe(false);
     expect(state.spotifyImportTask?.status).toBe('partial');
     expect(state.spotifyImportTask?.report).toMatchObject({ added: 1, skipped: 1, processed: 2 });
+  });
+
+  it('does not close an import panel reopened by the user after first-track autoplay', async () => {
+    let releaseSecondMatch!: () => void;
+    const secondMatchReady = new Promise<void>((resolve) => {
+      releaseSecondMatch = resolve;
+    });
+    let matchCount = 0;
+
+    mockedInvoke.mockImplementation(async (command) => {
+      if (command === 'fetch_spotify_playlist') return {
+        resource_type: 'playlist',
+        id: '37i9dQZF1DXcBWIGoYBM5M',
+        title: 'Two Track Playlist',
+        owner: 'Fixture Owner',
+        cover_url: 'https://i.scdn.co/image/playlist-cover',
+        tracks: [
+          { id: '4xF4ZBGPZKxECeDFrqSAG4', title: 'First Track', artist: 'First Artist', duration_seconds: 180, search_query: 'First Artist First Track' },
+          { id: '0VjIdWI8SuT4Ytz7vLmrCH', title: 'Second Track', artist: 'Second Artist', duration_seconds: 200, search_query: 'Second Artist Second Track' },
+        ],
+      };
+      if (command === 'match_spotify_track') {
+        matchCount += 1;
+        if (matchCount === 2) await secondMatchReady;
+        return {
+          status: 'matched',
+          spotifyId: matchCount === 1 ? '4xF4ZBGPZKxECeDFrqSAG4' : '0VjIdWI8SuT4Ytz7vLmrCH',
+          videoId: matchCount === 1 ? 'aaaaaaaaaaa' : 'bbbbbbbbbbb',
+          title: matchCount === 1 ? 'First Track' : 'Second Track',
+          artist: matchCount === 1 ? 'First Artist' : 'Second Artist',
+          durationSeconds: matchCount === 1 ? 180 : 200,
+          canonicalUrl: `https://www.youtube.com/watch?v=${matchCount === 1 ? 'aaaaaaaaaaa' : 'bbbbbbbbbbb'}`,
+          score: 95,
+        };
+      }
+      throw new Error(`Unexpected command: ${command}`);
+    });
+
+    const importPromise = usePlayerStore.getState().importSpotifyUrl(
+      'https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M',
+    );
+    await vi.waitFor(() => {
+      expect(usePlayerStore.getState().queue).toHaveLength(1);
+      expect(usePlayerStore.getState().isUrlInputOpen).toBe(false);
+    });
+
+    usePlayerStore.getState().setUrlInputOpen(true);
+    releaseSecondMatch();
+    await importPromise;
+
+    expect(usePlayerStore.getState().queue).toHaveLength(2);
+    expect(usePlayerStore.getState().isUrlInputOpen).toBe(true);
   });
 });

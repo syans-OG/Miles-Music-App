@@ -30,7 +30,7 @@ import { isSpotifyUrl } from '../services/spotifyService';
 
 import { handleMagneticSnapOnRelease } from '../hooks/useWindowResizer';
 import { detectYoutubeResource } from '../services/youtubeService';
-import { getDisplayCoverUrl } from '../utils/coverImage';
+import { getDisplayCoverUrl, handleCoverImageError } from '../utils/coverImage';
 
 export const ControlBar: React.FC = () => {
   const {
@@ -407,6 +407,7 @@ export const ControlBar: React.FC = () => {
             }`}>
               <img
                 src={getDisplayCoverUrl(currentSong?.coverUrl, 128)}
+                onError={handleCoverImageError}
                 alt={currentSong?.title}
                 decoding="async"
                 className="w-full h-full object-cover"

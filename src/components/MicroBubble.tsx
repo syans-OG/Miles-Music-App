@@ -2,7 +2,7 @@ import React from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { Play, Pause, Layers, Loader2, RotateCcw } from 'lucide-react';
 import { usePlayerStore } from '../stores/usePlayerStore';
-import { getDisplayCoverUrl } from '../utils/coverImage';
+import { getDisplayCoverUrl, handleCoverImageError } from '../utils/coverImage';
 
 export const MicroBubble: React.FC = () => {
   const {
@@ -74,6 +74,7 @@ export const MicroBubble: React.FC = () => {
       >
         <img
           src={getDisplayCoverUrl(currentSong?.coverUrl, 96)}
+          onError={handleCoverImageError}
           alt={currentSong?.title}
           decoding="async"
           className={`w-full h-full rounded-full object-cover ${isPlaying ? 'animate-spin-slow' : ''}`}

@@ -2,6 +2,12 @@ const DEFAULT_COVER_URL = 'https://images.unsplash.com/photo-1614613535308-eb5fb
 
 const YOUTUBE_THUMBNAIL_HOSTS = new Set(['i.ytimg.com', 'img.youtube.com']);
 
+export const handleCoverImageError = (event: { currentTarget: HTMLImageElement }) => {
+  const image = event.currentTarget;
+  image.onerror = null;
+  image.src = DEFAULT_COVER_URL;
+};
+
 export const getDisplayCoverUrl = (source: string | undefined, width = 192): string => {
   const value = source || DEFAULT_COVER_URL;
 

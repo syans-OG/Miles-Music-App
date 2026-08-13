@@ -5,7 +5,7 @@ import { AlertTriangle, Check, ChevronDown, ChevronUp, Clock, Disc, Flame, Folde
 import { useShallow } from 'zustand/react/shallow';
 import { usePlayerStore } from '../stores/usePlayerStore';
 import { Playlist, Song } from '../types/player';
-import { getDisplayCoverUrl } from '../utils/coverImage';
+import { getDisplayCoverUrl, handleCoverImageError } from '../utils/coverImage';
 import { getFloatingMenuPosition } from '../utils/floatingMenuPosition';
 import { SettingsPanel } from './SettingsDialog';
 
@@ -32,7 +32,7 @@ const EditSongDialog: React.FC<EditSongDialogProps> = ({ song, onClose, onSave }
     <div className="absolute inset-0 z-[70] flex items-center justify-center bg-black/75 p-6 backdrop-blur-sm">
       <form onSubmit={handleSubmit} className="w-full rounded-2xl border border-white/10 bg-[#11141c] p-4 shadow-2xl">
         <div className="mb-4 flex items-center gap-3">
-          <img src={getDisplayCoverUrl(song.coverUrl, 96)} alt="" loading="lazy" decoding="async" className="h-12 w-12 rounded-full object-cover" />
+          <img src={getDisplayCoverUrl(song.coverUrl, 96)} onError={handleCoverImageError} alt="" loading="lazy" decoding="async" className="h-12 w-12 rounded-full object-cover" />
           <div className="min-w-0 flex-1">
             <h4 className="truncate text-sm font-bold text-white">Edit Song Info</h4>
             <p className="truncate text-[10px] text-slate-400">Changes are saved without modifying original audio files</p>
@@ -102,7 +102,7 @@ const SongPlaylistDialog: React.FC<SongPlaylistDialogProps> = ({ song, playlists
   <div className="absolute inset-0 z-[70] flex items-center justify-center bg-black/75 p-6 backdrop-blur-sm">
     <div className="w-full rounded-2xl border border-white/10 bg-[#11141c] p-4 shadow-2xl">
       <div className="mb-3 flex items-center gap-3">
-        <img src={getDisplayCoverUrl(song.coverUrl, 96)} alt="" loading="lazy" decoding="async" className="h-10 w-10 rounded-full object-cover" />
+        <img src={getDisplayCoverUrl(song.coverUrl, 96)} onError={handleCoverImageError} alt="" loading="lazy" decoding="async" className="h-10 w-10 rounded-full object-cover" />
         <div className="min-w-0 flex-1"><h4 className="truncate text-sm font-bold text-white">Add to Playlist</h4><p className="truncate text-[10px] text-slate-400">{song.title}</p></div>
         <button type="button" onClick={onClose} className="rounded-lg p-1.5 text-slate-400 hover:bg-white/10 hover:text-white"><X className="h-4 w-4" /></button>
       </div>
@@ -111,7 +111,7 @@ const SongPlaylistDialog: React.FC<SongPlaylistDialogProps> = ({ song, playlists
           const included = playlist.songs.some((item) => item.id === song.id);
           return (
             <button key={playlist.id} type="button" onClick={() => onToggle(playlist.id)} className="flex w-full items-center gap-2.5 rounded-xl border border-white/5 bg-white/5 p-2 text-left hover:bg-white/10">
-              <img src={getDisplayCoverUrl(playlist.coverUrl, 96)} alt="" loading="lazy" decoding="async" className="h-8 w-8 rounded-lg object-cover" />
+              <img src={getDisplayCoverUrl(playlist.coverUrl, 96)} onError={handleCoverImageError} alt="" loading="lazy" decoding="async" className="h-8 w-8 rounded-lg object-cover" />
               <span className="min-w-0 flex-1 truncate text-[11px] font-semibold text-white">{playlist.name}</span>
               <span className={`flex h-5 w-5 items-center justify-center rounded-md border ${included ? 'border-indigo-300 bg-indigo-400 text-dark-900' : 'border-white/20 text-transparent'}`}><Check className="h-3 w-3" /></span>
             </button>
@@ -139,7 +139,7 @@ const PlaylistManagerDialog: React.FC<PlaylistManagerDialogProps> = ({ playlist,
     <div className="absolute inset-0 z-[70] flex items-center justify-center bg-black/75 p-5 backdrop-blur-sm">
       <div className="flex max-h-[360px] w-full flex-col rounded-2xl border border-white/10 bg-[#11141c] p-4 shadow-2xl">
         <div className="mb-3 flex items-center gap-3">
-          <img src={getDisplayCoverUrl(playlist.coverUrl, 96)} alt="" loading="lazy" decoding="async" className="h-11 w-11 rounded-xl object-cover" />
+          <img src={getDisplayCoverUrl(playlist.coverUrl, 96)} onError={handleCoverImageError} alt="" loading="lazy" decoding="async" className="h-11 w-11 rounded-xl object-cover" />
           <div className="min-w-0 flex-1"><h4 className="truncate text-sm font-bold text-white">{playlist.name}</h4><p className="text-[10px] text-slate-400">{playlist.songs.length} songs</p></div>
           <button type="button" onClick={() => setConfirmDelete(true)} className="rounded-lg p-1.5 text-slate-500 hover:bg-rose-500/10 hover:text-rose-300" title="Delete playlist"><Trash2 className="h-4 w-4" /></button>
           <button type="button" onClick={onClose} className="rounded-lg p-1.5 text-slate-400 hover:bg-white/10 hover:text-white"><X className="h-4 w-4" /></button>
@@ -150,7 +150,7 @@ const PlaylistManagerDialog: React.FC<PlaylistManagerDialogProps> = ({ playlist,
             const included = playlist.songs.some((item) => item.id === song.id);
             return (
               <div key={song.id} className="flex items-center gap-2 rounded-xl bg-white/[0.04] p-1.5 hover:bg-white/[0.08]">
-                <button type="button" onClick={() => onPlay(song)} className="relative h-8 w-8 flex-shrink-0 overflow-hidden rounded-lg"><img src={getDisplayCoverUrl(song.coverUrl, 96)} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover" /><span className="absolute inset-0 flex items-center justify-center bg-black/35 text-white"><Play className="h-3 w-3 fill-current" /></span></button>
+                <button type="button" onClick={() => onPlay(song)} className="relative h-8 w-8 flex-shrink-0 overflow-hidden rounded-lg"><img src={getDisplayCoverUrl(song.coverUrl, 96)} onError={handleCoverImageError} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover" /><span className="absolute inset-0 flex items-center justify-center bg-black/35 text-white"><Play className="h-3 w-3 fill-current" /></span></button>
                 <div className="min-w-0 flex-1"><p className="truncate text-[11px] font-semibold text-white">{song.title}</p><p className="truncate text-[9px] text-slate-500">{song.artist}</p></div>
                 <button type="button" onClick={() => onToggle(song.id)} className={`flex h-6 w-6 items-center justify-center rounded-lg border ${included ? 'border-indigo-300 bg-indigo-400 text-dark-900' : 'border-white/15 text-slate-500 hover:border-white/30'}`}><Check className="h-3.5 w-3.5" /></button>
               </div>
@@ -644,6 +644,7 @@ export const MusicDrawer: React.FC = () => {
                 <div className="pure-cd-disc vinyl-grooves relative flex items-center justify-center shadow-xl">
                   <img
                     src={getDisplayCoverUrl(song.coverUrl, 128)}
+                    onError={handleCoverImageError}
                     alt={song.title}
                     loading="lazy"
                     decoding="async"
@@ -696,7 +697,7 @@ export const MusicDrawer: React.FC = () => {
                 className="group/playlist flex items-center gap-2.5 rounded-2xl border border-white/5 bg-white/5 p-2 text-left transition-all hover:border-indigo-400/25 hover:bg-white/10"
               >
                 <div className="relative h-11 w-11 flex-shrink-0 overflow-hidden rounded-xl border border-white/10">
-                  <img src={getDisplayCoverUrl(playlist.coverUrl, 96)} alt={playlist.name} loading="lazy" decoding="async" className="h-full w-full object-cover transition-transform group-hover/playlist:scale-105" />
+                  <img src={getDisplayCoverUrl(playlist.coverUrl, 96)} onError={handleCoverImageError} alt={playlist.name} loading="lazy" decoding="async" className="h-full w-full object-cover transition-transform group-hover/playlist:scale-105" />
                   {playlist.songs.length > 0 && <span onClick={(event) => { event.stopPropagation(); playPlaylist(playlist.id); }} className="absolute inset-0 flex items-center justify-center bg-black/35 text-white opacity-0 transition-opacity group-hover/playlist:opacity-100"><Play className="h-4 w-4 fill-current" /></span>}
                 </div>
                 <div className="min-w-0 flex-1">
@@ -738,7 +739,7 @@ export const MusicDrawer: React.FC = () => {
                       style={{ transform: `translateY(${virtualItem.start}px)` }}
                     >
                   <span className={`w-4 text-center text-[9px] font-mono ${isCurrent ? 'text-emerald-300' : 'text-slate-600'}`}>{isCurrent ? '▶' : index + 1}</span>
-                  <img src={getDisplayCoverUrl(song.coverUrl, 96)} alt="" loading="lazy" decoding="async" className="h-8 w-8 flex-shrink-0 rounded-lg object-cover" />
+                  <img src={getDisplayCoverUrl(song.coverUrl, 96)} onError={handleCoverImageError} alt="" loading="lazy" decoding="async" className="h-8 w-8 flex-shrink-0 rounded-lg object-cover" />
                   <div className="min-w-0 flex-1"><p className={`truncate text-[11px] font-semibold ${isCurrent ? 'text-emerald-200' : 'text-white'}`}>{song.title}</p><p className="truncate text-[9px] text-slate-500">{song.artist}</p></div>
                   <div onClick={(event) => event.stopPropagation()} className="flex items-center opacity-0 transition-opacity group-hover/queue:opacity-100">
                     <button type="button" onClick={() => movePlaybackQueueItem(song.id, 'up')} disabled={index === 0} className="rounded p-1 text-slate-500 hover:bg-white/10 hover:text-white disabled:opacity-20" title="Move Up"><ChevronUp className="h-3 w-3" /></button>
@@ -801,6 +802,7 @@ export const MusicDrawer: React.FC = () => {
 
                     <img
                       src={getDisplayCoverUrl(song.coverUrl, 96)}
+                      onError={handleCoverImageError}
                       alt={song.title}
                       loading="lazy"
                       decoding="async"

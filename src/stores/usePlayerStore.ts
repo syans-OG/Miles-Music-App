@@ -793,7 +793,7 @@ export const usePlayerStore = create<PlayerStore>()(
                     selectionSerial: shouldStart ? state.selectionSerial + 1 : state.selectionSerial,
                     selectionReason: shouldStart ? 'manual' : state.selectionReason,
                     topSongs: sortTopSongs(queue),
-                    isUrlInputOpen: false,
+                    ...(shouldStart ? { isUrlInputOpen: false } : {}),
                   };
                 });
                 startedPlayback = true;

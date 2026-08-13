@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { getDisplayCoverUrl } from '../utils/coverImage';
+import { getDisplayCoverUrl, handleCoverImageError } from '../utils/coverImage';
 
 describe('getDisplayCoverUrl', () => {
   it('uses a compact YouTube thumbnail for display', () => {
@@ -16,5 +16,16 @@ describe('getDisplayCoverUrl', () => {
 
   it('leaves local asset URLs unchanged', () => {
     expect(getDisplayCoverUrl('asset://localhost/library/cover.jpg')).toBe('asset://localhost/library/cover.jpg');
+  });
+
+  it('replaces a broken cover and disables repeated native errors', () => {
+    const image = document.createElement('img');
+    image.src = 'https://i.scdn.co/image/broken';
+    image.onerror = () => undefined;
+
+    handleCoverImageError({ currentTarget: image });
+
+    expect(image.onerror).toBeNull();
+    expect(image.src).toBe(getDisplayCoverUrl(undefined));
   });
 });
