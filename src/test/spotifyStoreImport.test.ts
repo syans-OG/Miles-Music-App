@@ -57,6 +57,7 @@ describe('Spotify store import behavior', () => {
         title: 'Fixture Artist - Fixture Track',
         artist: 'Fixture Artist',
         durationSeconds: 180,
+        spotifyCoverUrl: 'https://image-cdn-fa.spotifycdn.com/image/track-cover',
         canonicalUrl: 'https://www.youtube.com/watch?v=aaaaaaaaaaa',
         score: 96,
       };
@@ -78,6 +79,7 @@ describe('Spotify store import behavior', () => {
       kind: 'spotify',
       matchedVideoId: 'aaaaaaaaaaa',
     });
+    expect(state.queue[0].coverUrl).toBe('https://image-cdn-fa.spotifycdn.com/image/track-cover');
   });
 
   it('progressively keeps matched playlist tracks and reports skipped tracks', async () => {
@@ -103,6 +105,7 @@ describe('Spotify store import behavior', () => {
               title: 'Good Artist - Good Track',
               artist: 'Good Artist',
               durationSeconds: 180,
+              spotifyCoverUrl: 'https://image-cdn-fa.spotifycdn.com/image/good-track-cover',
               canonicalUrl: 'https://www.youtube.com/watch?v=aaaaaaaaaaa',
               score: 95,
             }
@@ -119,7 +122,8 @@ describe('Spotify store import behavior', () => {
     expect(state.queue.map((song) => song.title)).toEqual(['Good Track']);
     expect(state.playlists).toHaveLength(1);
     expect(state.playlists[0].songs.map((song) => song.title)).toEqual(['Good Track']);
-    expect(state.queue[0].coverUrl).toBe('https://i.scdn.co/image/playlist-cover');
+    expect(state.queue[0].coverUrl).toBe('https://image-cdn-fa.spotifycdn.com/image/good-track-cover');
+    expect(state.playlists[0].coverUrl).toBe('https://i.scdn.co/image/playlist-cover');
     expect(state.isDrawerOpen).toBe(false);
     expect(state.spotifyImportTask?.status).toBe('partial');
     expect(state.spotifyImportTask?.report).toMatchObject({ added: 1, skipped: 1, processed: 2 });
@@ -175,5 +179,83 @@ describe('Spotify store import behavior', () => {
 
     expect(usePlayerStore.getState().queue).toHaveLength(2);
     expect(usePlayerStore.getState().isUrlInputOpen).toBe(true);
+  });
+
+  it('ignores a cancelled match result and does not duplicate the song after retry', async () => {
+    type MatchResult = {
+      status: 'matched';
+      spotifyId: string;
+      videoId: string;
+      title: string;
+      artist: string;
+      durationSeconds: number;
+      spotifyCoverUrl: string;
+      canonicalUrl: string;
+      score: number;
+    };
+    const pendingMatches: Array<{
+      resolve: (result: MatchResult) => void;
+      promise: Promise<MatchResult>;
+    }> = [];
+
+    mockedInvoke.mockImplementation(async (command) => {
+      if (command === 'fetch_spotify_playlist') return {
+        resource_type: 'playlist',
+        id: '37i9dQZF1DXcBWIGoYBM5M',
+        title: 'Retry Playlist',
+        owner: 'Fixture Owner',
+        cover_url: 'https://i.scdn.co/image/playlist-cover',
+        tracks: [{
+          id: '4xF4ZBGPZKxECeDFrqSAG4',
+          title: 'Retry Track',
+          artist: 'Retry Artist',
+          duration_seconds: 180,
+          search_query: 'Retry Artist Retry Track',
+        }],
+      };
+      if (command === 'match_spotify_track') {
+        let resolve!: (result: MatchResult) => void;
+        const promise = new Promise<MatchResult>((done) => { resolve = done; });
+        pendingMatches.push({ resolve, promise });
+        return promise;
+      }
+      if (command === 'cancel_spotify_match') return undefined;
+      throw new Error(`Unexpected command: ${command}`);
+    });
+
+    const firstImport = usePlayerStore.getState().importSpotifyUrl(
+      'https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M',
+    );
+    await vi.waitFor(() => expect(pendingMatches).toHaveLength(1));
+    await usePlayerStore.getState().cancelSpotifyTask();
+
+    const retryImport = usePlayerStore.getState().retrySpotifyTask();
+    await vi.waitFor(() => expect(pendingMatches).toHaveLength(2));
+
+    const result: MatchResult = {
+      status: 'matched',
+      spotifyId: '4xF4ZBGPZKxECeDFrqSAG4',
+      videoId: 'aaaaaaaaaaa',
+      title: 'Retry Track',
+      artist: 'Retry Artist',
+      durationSeconds: 180,
+      spotifyCoverUrl: 'https://image-cdn-fa.spotifycdn.com/image/retry-track-cover',
+      canonicalUrl: 'https://www.youtube.com/watch?v=aaaaaaaaaaa',
+      score: 97,
+    };
+    pendingMatches[0].resolve(result);
+    await firstImport;
+    expect(usePlayerStore.getState().queue).toEqual([]);
+
+    pendingMatches[1].resolve(result);
+    await retryImport;
+
+    const state = usePlayerStore.getState();
+    expect(state.queue.map((song) => song.id)).toEqual(['spotify-4xF4ZBGPZKxECeDFrqSAG4']);
+    expect(state.playlists).toHaveLength(1);
+    expect(state.playlists[0].songs.map((song) => song.id)).toEqual([
+      'spotify-4xF4ZBGPZKxECeDFrqSAG4',
+    ]);
+    expect(state.spotifyImportTask?.report).toMatchObject({ added: 1, duplicates: 0 });
   });
 });

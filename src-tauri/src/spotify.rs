@@ -4,6 +4,7 @@ use url::Url;
 const SPOTIFY_HOST: &str = "open.spotify.com";
 const SPOTIFY_ID_LENGTH: usize = 22;
 const MAX_SPOTIFY_RESPONSE_BYTES: usize = 2 * 1024 * 1024;
+const SPOTIFY_COVER_TIMEOUT_SECONDS: u64 = 4;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SpotifyTrackEntry {
@@ -50,6 +51,25 @@ fn extract_spotify_track_id(track: &serde_json::Value) -> Option<&str> {
                 .strip_prefix("spotify:track:")
                 .filter(|id| is_valid_spotify_id(id))
         })
+}
+
+fn trusted_spotify_cover_url(value: &str) -> Option<String> {
+    let parsed = Url::parse(value).ok()?;
+    let host = parsed.host_str()?;
+    if parsed.scheme() != "https"
+        || !parsed.username().is_empty()
+        || parsed.password().is_some()
+        || parsed.port().is_some()
+        || !(host == "i.scdn.co" || host.ends_with(".spotifycdn.com"))
+    {
+        return None;
+    }
+    Some(parsed.into())
+}
+
+fn parse_spotify_track_cover(body: &str) -> Option<String> {
+    let value = serde_json::from_str::<serde_json::Value>(body).ok()?;
+    trusted_spotify_cover_url(value["thumbnail_url"].as_str()?)
 }
 
 pub fn parse_spotify_url(url: &str) -> Option<(String, String)> {
@@ -154,6 +174,23 @@ async fn fetch_bounded_text(
             "Spotify returned a response Miles could not process.",
         )
     })
+}
+
+pub async fn fetch_spotify_track_cover(spotify_id: &str) -> Option<String> {
+    if !is_valid_spotify_id(spotify_id) {
+        return None;
+    }
+    let client = reqwest::Client::builder()
+        .user_agent("Miles Music Player/1.0")
+        .timeout(std::time::Duration::from_secs(
+            SPOTIFY_COVER_TIMEOUT_SECONDS,
+        ))
+        .build()
+        .ok()?;
+    let url =
+        format!("https://open.spotify.com/oembed?url=https://open.spotify.com/track/{spotify_id}");
+    let body = fetch_bounded_text(&client, &url).await.ok()?;
+    parse_spotify_track_cover(&body)
 }
 
 fn html_escape_decode(input: &str) -> String {
@@ -268,8 +305,7 @@ pub async fn fetch_spotify_playlist(
                                         .pointer("/album/images/0/url")
                                         .and_then(|v| v.as_str())
                                 })
-                                .map(|s| s.to_string())
-                                .or_else(|| cover_url.clone());
+                                .map(|s| s.to_string());
 
                             let duration_ms = track_obj["duration"]
                                 .as_u64()
@@ -354,7 +390,9 @@ pub async fn fetch_spotify_playlist(
 
 #[cfg(test)]
 mod tests {
-    use super::{append_bounded, extract_spotify_track_id, parse_spotify_url};
+    use super::{
+        append_bounded, extract_spotify_track_id, parse_spotify_track_cover, parse_spotify_url,
+    };
 
     #[test]
     fn accepts_supported_spotify_urls_and_uris() {
@@ -412,5 +450,27 @@ mod tests {
         let error = append_bounded(&mut body, &[5], 4).unwrap_err();
         assert_eq!(error.code, "RESPONSE_TOO_LARGE");
         assert_eq!(body, vec![1, 2, 3, 4]);
+    }
+
+    #[test]
+    fn accepts_only_official_https_spotify_cover_urls() {
+        let body = r#"{"thumbnail_url":"https://image-cdn-fa.spotifycdn.com/image/fixture"}"#;
+        assert_eq!(
+            parse_spotify_track_cover(body),
+            Some("https://image-cdn-fa.spotifycdn.com/image/fixture".to_string())
+        );
+        assert_eq!(
+            parse_spotify_track_cover(r#"{"thumbnail_url":"https://i.scdn.co/image/fixture"}"#),
+            Some("https://i.scdn.co/image/fixture".to_string())
+        );
+
+        for url in [
+            "http://image-cdn-fa.spotifycdn.com/image/fixture",
+            "https://spotifycdn.com.evil.example/image/fixture",
+            "https://user:pass@image-cdn-fa.spotifycdn.com/image/fixture",
+        ] {
+            let body = format!(r#"{{"thumbnail_url":"{url}"}}"#);
+            assert_eq!(parse_spotify_track_cover(&body), None, "accepted {url}");
+        }
     }
 }

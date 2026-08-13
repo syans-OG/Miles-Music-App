@@ -7,6 +7,7 @@ describe('Tauri image CSP', () => {
     const imageSources = tauriConfig.app.security.csp['img-src'].split(/\s+/);
 
     expect(imageSources).toContain('https://i.scdn.co');
+    expect(imageSources).toContain('https://*.spotifycdn.com');
     expect(imageSources).not.toContain('https://*.scdn.co');
   });
 });

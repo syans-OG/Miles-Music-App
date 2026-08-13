@@ -206,7 +206,7 @@ describe('AudioService lazy YouTube playback', () => {
     );
   });
 
-  it('replaces a Spotify cover only after full playback resolution returns a real thumbnail', async () => {
+  it('preserves the Spotify cover after playback resolution returns a YouTube thumbnail', async () => {
     const audio = new FakeAudio();
     const resolved = {
       ...resolvedTrack('bbbbbbbbbbb'),
@@ -220,8 +220,8 @@ describe('AudioService lazy YouTube playback', () => {
     usePlayerStore.getState().playSong(song);
     await flush();
 
-    expect(usePlayerStore.getState().currentSong?.coverUrl).toBe(resolved.thumbnailUrl);
-    expect(usePlayerStore.getState().queue[0].coverUrl).toBe(resolved.thumbnailUrl);
+    expect(usePlayerStore.getState().currentSong?.coverUrl).toBe(song.coverUrl);
+    expect(usePlayerStore.getState().queue[0].coverUrl).toBe(song.coverUrl);
   });
 
   it('keeps Spotify startup loading when load emits pause before playing', async () => {

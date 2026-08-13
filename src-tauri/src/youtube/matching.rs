@@ -145,6 +145,7 @@ pub(crate) fn select_spotify_candidate(
         title: candidate.title.clone(),
         artist: candidate.artist.clone(),
         duration_seconds: candidate.duration_seconds,
+        spotify_cover_url: None,
         thumbnail_url: candidate.thumbnail_url.clone(),
         canonical_url: format!("https://www.youtube.com/watch?v={}", candidate.video_id),
         score: score.clamp(0, 100) as u8,

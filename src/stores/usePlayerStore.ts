@@ -195,7 +195,8 @@ const matchedSpotifySong = (
   title: track.title,
   artist: track.artist,
   album: track.album || resource.title,
-  coverUrl: track.cover_url
+  coverUrl: match.spotifyCoverUrl
+    || track.cover_url
     || resource.cover_url
     || match.thumbnailUrl
     || YOUTUBE_COVER_FALLBACK,
@@ -675,7 +676,11 @@ export const usePlayerStore = create<PlayerStore>()(
                   source: { kind: 'spotify', spotifyId: data.id },
                 };
                 return {
-                  playlists: existing ? state.playlists : [...state.playlists, draft],
+                  playlists: existing
+                    ? state.playlists.map((playlist) => playlist.id === targetPlaylistId
+                      ? { ...playlist, coverUrl: data.cover_url || playlist.coverUrl }
+                      : playlist)
+                    : [...state.playlists, draft],
                   drawerTab: 'playlist',
                   selectedPlaylistId: targetPlaylistId,
                 };
@@ -714,8 +719,10 @@ export const usePlayerStore = create<PlayerStore>()(
                       artist: track.artist,
                       durationSeconds: track.duration_seconds,
                     });
+                    if (activeSpotifyImportRequestId !== requestId) return;
                     break;
                   } catch (error) {
+                    if (activeSpotifyImportRequestId !== requestId) return;
                     if (error instanceof SpotifyMatchError
                       && error.code === 'cancelled'
                       && activeSpotifyImportRequestId === requestId) {
@@ -753,20 +760,17 @@ export const usePlayerStore = create<PlayerStore>()(
               }
 
               if (song) {
-                report = {
-                  ...report,
-                  added: report.added + (duplicate ? 0 : 1),
-                  duplicates: report.duplicates + (duplicate ? 1 : 0),
-                  processed: report.processed + 1,
-                };
-                const committedSong = song;
+                if (activeSpotifyImportRequestId !== requestId) return;
+                let duplicateAtCommit = duplicate;
                 set((state) => {
-                  const queue = duplicate ? state.queue : [...state.queue, committedSong];
+                  const existingAtCommit = state.queue.find((item) => item.id === song.id);
+                  duplicateAtCommit = existingAtCommit !== undefined;
+                  const committedSong = existingAtCommit ?? song;
+                  const queue = duplicateAtCommit ? state.queue : [...state.queue, committedSong];
                   const playlists = targetPlaylistId
                     ? state.playlists.map((playlist) => playlist.id === targetPlaylistId
                       ? {
                           ...playlist,
-                          coverUrl: playlist.songs[0]?.coverUrl ?? committedSong.coverUrl,
                           songs: playlist.songs.some((item) => item.id === committedSong.id)
                             ? playlist.songs
                             : [...playlist.songs, committedSong],
@@ -796,6 +800,12 @@ export const usePlayerStore = create<PlayerStore>()(
                     ...(shouldStart ? { isUrlInputOpen: false } : {}),
                   };
                 });
+                report = {
+                  ...report,
+                  added: report.added + (duplicateAtCommit ? 0 : 1),
+                  duplicates: report.duplicates + (duplicateAtCommit ? 1 : 0),
+                  processed: report.processed + 1,
+                };
                 startedPlayback = true;
               }
 

@@ -45,6 +45,7 @@ export type SpotifyTrackMatchResult =
       title: string;
       artist: string;
       durationSeconds: number;
+      spotifyCoverUrl?: string;
       thumbnailUrl?: string;
       canonicalUrl: string;
       score: number;

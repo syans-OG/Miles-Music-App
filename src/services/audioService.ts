@@ -209,7 +209,7 @@ export class AudioService {
         () => this.isCurrentSelection(generation, selectionSerial, song.id) && usePlayerStore.getState().playbackIntent,
       );
       if (!this.isCurrentSelection(generation, selectionSerial, song.id) || !usePlayerStore.getState().playbackIntent) return;
-      if (track.thumbnailUrl && (song.source.kind === 'spotify' || !song.coverUrl)) {
+      if (track.thumbnailUrl && song.source.kind === 'youtube' && !song.coverUrl) {
         usePlayerStore.getState().updateSongMetadata(song.id, { coverUrl: track.thumbnailUrl });
       }
       usePlayerStore.getState().setPlaybackStatus('loading');
