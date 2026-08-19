@@ -37,7 +37,8 @@ impl YoutubeScheduler {
         cancellation: CancellationToken,
     ) -> Result<SchedulePermit, ScheduleError> {
         let preempt_equal = priority == ResolvePriority::ExplicitSelection;
-        self.resolve.acquire(priority as u8, preempt_equal, cancellation)
+        self.resolve
+            .acquire(priority as u8, preempt_equal, cancellation)
     }
 
     pub fn acquire_spotify_match(
@@ -159,8 +160,7 @@ impl Slot {
                 return Err(ScheduleError::Cancelled);
             }
             if state.active.as_ref().is_some_and(|active| {
-                priority < active.priority
-                    || (preempt_equal && active.priority == priority)
+                priority < active.priority || (preempt_equal && active.priority == priority)
             }) {
                 state.active.as_ref().unwrap().cancellation.cancel();
             }

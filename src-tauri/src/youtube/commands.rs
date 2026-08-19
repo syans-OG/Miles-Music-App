@@ -363,14 +363,9 @@ fn validated_spotify_search_target(
         .spotify_id
         .strip_prefix("spotify-")
         .unwrap_or(&request.spotify_id);
-    let clean_id = clean_id
-        .strip_prefix("spotify:track:")
-        .unwrap_or(clean_id);
+    let clean_id = clean_id.strip_prefix("spotify:track:").unwrap_or(clean_id);
     let has_valid_id = clean_id.is_empty()
-        || (clean_id.len() == 22
-            && clean_id
-                .bytes()
-                .all(|byte| byte.is_ascii_alphanumeric()));
+        || (clean_id.len() == 22 && clean_id.bytes().all(|byte| byte.is_ascii_alphanumeric()));
     let valid_text = |value: &str| {
         let trimmed = value.trim();
         !trimmed.is_empty()
