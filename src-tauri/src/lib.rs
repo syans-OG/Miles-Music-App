@@ -10,6 +10,7 @@ use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent}
 use tauri::{AppHandle, Emitter, Manager, PhysicalPosition, Window};
 
 pub mod discord_rpc;
+mod media_proxy;
 mod sidecar_manifest;
 pub mod spotify;
 pub mod youtube;
@@ -571,8 +572,10 @@ fn hide_window(window: Window) -> Result<(), String> {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    let media_proxy = media_proxy::MediaProxy::start().expect("audio proxy could not start");
     let application = tauri::Builder::default()
         .manage(youtube::commands::YoutubeCommandService::default())
+        .manage(media_proxy)
         .setup(|app| {
             let show_item = MenuItem::with_id(app, "show", "Tampilkan Miles", true, None::<&str>)?;
             let play_pause_item =

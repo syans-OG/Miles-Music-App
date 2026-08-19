@@ -196,7 +196,7 @@ export const resolveYoutubeTrack = async (
   purpose: YoutubeResolvePurpose = 'explicit_selection',
   shouldCommit: () => boolean = () => true,
 ): Promise<ResolvedYoutubeTrack> => {
-  if (!VIDEO_ID_PATTERN.test(videoId) && !videoId.startsWith('ytsearch1:')) {
+  if (!videoId || (!VIDEO_ID_PATTERN.test(videoId) && !videoId.startsWith('ytsearch1:'))) {
     throw new YoutubeServiceError({ code: 'invalid_video_id', retryable: false });
   }
 

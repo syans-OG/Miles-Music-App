@@ -30,6 +30,8 @@ export type SpotifyMatchSkipReason =
   | 'duration_mismatch'
   | 'weak_match';
 
+export type SpotifyMatchPriority = 'import' | 'playback';
+
 export interface SpotifyTrackMatchRequest {
   spotifyId: string;
   title: string;

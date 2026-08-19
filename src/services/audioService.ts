@@ -7,6 +7,7 @@ import {
   YoutubeServiceError,
   type YoutubeResolvePurpose,
 } from './youtubeService';
+import { matchSpotifyTrack } from './spotifyService';
 import { syncDiscordActivity } from './discordRpcService';
 
 interface MediaErrorLike {
@@ -33,6 +34,7 @@ interface AudioServiceDependencies {
   resolveTrack?: typeof resolveYoutubeTrack;
   getCachedStream?: typeof getCachedYoutubeStream;
   clearStreamCache?: typeof clearYoutubeStreamCache;
+  matchSpotifyTrack?: typeof matchSpotifyTrack;
 }
 
 const AUTO_SKIP_CODES = new Set([
@@ -53,10 +55,8 @@ const skipReason = (error: YoutubeServiceError) => {
 };
 
 const youtubeResolveKey = (song: Song): string | null => {
-  if (song.source.kind === 'youtube') return song.source.videoId;
-  if (song.source.kind === 'spotify') {
-    return `ytsearch1:${song.source.searchQuery || `${song.artist} ${song.title}`}`;
-  }
+  if (song.source.kind === 'youtube') return song.source.videoId || null;
+  if (song.source.kind === 'spotify') return song.source.matchedVideoId || null;
   return null;
 };
 
@@ -65,6 +65,7 @@ export class AudioService {
   private readonly resolveTrack: typeof resolveYoutubeTrack;
   private readonly getCachedStream: typeof getCachedYoutubeStream;
   private readonly clearStreamCache: typeof clearYoutubeStreamCache;
+  private readonly matchSpotifyTrack: typeof matchSpotifyTrack;
   private readonly unsubscribers: Array<() => void> = [];
   private detachLoadListeners: (() => void) | null = null;
   private loadGeneration = 0;
@@ -83,6 +84,7 @@ export class AudioService {
     this.resolveTrack = dependencies.resolveTrack ?? resolveYoutubeTrack;
     this.getCachedStream = dependencies.getCachedStream ?? getCachedYoutubeStream;
     this.clearStreamCache = dependencies.clearStreamCache ?? clearYoutubeStreamCache;
+    this.matchSpotifyTrack = dependencies.matchSpotifyTrack ?? matchSpotifyTrack;
     this.audio.preload = 'metadata';
 
     this.unsubscribers.push(
@@ -96,12 +98,7 @@ export class AudioService {
       ),
       usePlayerStore.subscribe(
         (state) => state.playbackRetryToken,
-        () => {
-          const status = usePlayerStore.getState().playbackStatus;
-          if (status !== 'resolving' && status !== 'loading') {
-            this.handleIntentChange(usePlayerStore.getState().playbackIntent);
-          }
-        },
+        () => this.handleRetryRequest(),
       ),
       usePlayerStore.subscribe(
         (state) => state.playbackQueue.map((song) => song.id).join('\u0000'),
@@ -141,6 +138,7 @@ export class AudioService {
     this.detachCurrentLoad();
     this.audio.pause();
     this.clearAssignedSource();
+    state.setDuration(state.currentSong?.duration ?? 0);
     state.setPlaybackStatus('idle');
     if (state.playbackIntent) this.startLoadCycle(true);
     this.handlingSelection = false;
@@ -159,6 +157,19 @@ export class AudioService {
     }
     const status = usePlayerStore.getState().playbackStatus;
     if (status === 'resolving' || status === 'loading') return;
+    this.startLoadCycle(true);
+  }
+
+  private handleRetryRequest() {
+    const state = usePlayerStore.getState();
+    if (!state.currentSong || !state.playbackIntent) return;
+    const resolveKey = youtubeResolveKey(state.currentSong);
+    if (resolveKey) this.clearStreamCache(resolveKey);
+    this.loadGeneration += 1;
+    this.mediaRetryUsed = false;
+    this.audio.pause();
+    this.clearAssignedSource();
+    state.setPlaybackStatus('idle');
     this.startLoadCycle(true);
   }
 
@@ -182,8 +193,46 @@ export class AudioService {
       return;
     }
 
-    const resolveId = youtubeResolveKey(song);
-    if (!resolveId) return;
+    let resolveId = youtubeResolveKey(song);
+    if (!resolveId && song.source.kind === 'spotify') {
+      usePlayerStore.getState().setPlaybackStatus('resolving');
+      const cleanSpotifyId = (song.source.spotifyId || song.id).replace(/^spotify-/, '');
+      const validSpotifyId = cleanSpotifyId.length === 22 && /^[A-Za-z0-9]{22}$/.test(cleanSpotifyId)
+        ? cleanSpotifyId
+        : '0000000000000000000000';
+      const rawDuration = song.duration || 180;
+      const durationSeconds = Math.max(1, Math.round(rawDuration > 1000 ? rawDuration / 1000 : rawDuration));
+      try {
+        const matchResult = await this.matchSpotifyTrack({
+          spotifyId: validSpotifyId,
+          title: song.title,
+          artist: song.artist,
+          durationSeconds,
+        }, 'playback');
+        if (!this.isCurrentSelection(generation, selectionSerial, song.id) || !usePlayerStore.getState().playbackIntent) return;
+        if (matchResult.status === 'matched' && matchResult.videoId) {
+          resolveId = matchResult.videoId;
+          usePlayerStore.getState().updateSongSource(song.id, {
+            ...song.source,
+            spotifyId: validSpotifyId,
+            matchedVideoId: matchResult.videoId,
+            canonicalUrl: matchResult.canonicalUrl,
+          });
+          if (matchResult.thumbnailUrl) {
+            usePlayerStore.getState().updateSongMetadata(song.id, { coverUrl: matchResult.thumbnailUrl });
+          }
+        }
+      } catch (err) {
+        console.warn('[Miles AudioService] Spotify track matching failed, falling back to search query:', err);
+      }
+      if (!resolveId) {
+        resolveId = `ytsearch1:${song.artist} ${song.title}`.trim();
+      }
+    }
+
+    if (!resolveId) {
+      return;
+    }
 
     if (song.source.kind === 'youtube' && song.source.availability !== 'available') {
       this.purgeAndSkipUnavailableSong(song, `${song.title} dihapus: tidak tersedia`);
@@ -212,8 +261,15 @@ export class AudioService {
         () => this.isCurrentSelection(generation, selectionSerial, song.id) && usePlayerStore.getState().playbackIntent,
       );
       if (!this.isCurrentSelection(generation, selectionSerial, song.id) || !usePlayerStore.getState().playbackIntent) return;
-      if (track.thumbnailUrl && song.source.kind === 'spotify') {
-        usePlayerStore.getState().updateSongMetadata(song.id, { coverUrl: track.thumbnailUrl });
+      if (song.source.kind === 'spotify') {
+        usePlayerStore.getState().updateSongSource(song.id, {
+          ...song.source,
+          matchedVideoId: track.videoId,
+          canonicalUrl: track.canonicalUrl,
+        });
+        if (track.thumbnailUrl) {
+          usePlayerStore.getState().updateSongMetadata(song.id, { coverUrl: track.thumbnailUrl });
+        }
       } else if (track.thumbnailUrl && song.source.kind === 'youtube' && !song.coverUrl) {
         usePlayerStore.getState().updateSongMetadata(song.id, { coverUrl: track.thumbnailUrl });
       }
@@ -221,7 +277,27 @@ export class AudioService {
       this.assignSource(song, track.stream.url, generation, selectionSerial);
       await this.playAssignedSource(generation);
     } catch (error) {
+      console.error('[Miles AudioService] Track resolution failed for song:', song.title, 'resolveId:', resolveId, error);
       if (!this.isCurrentSelection(generation, selectionSerial, song.id)) return;
+      if (song.source.kind === 'spotify' && !this.mediaRetryUsed) {
+        this.mediaRetryUsed = true;
+        if (resolveId) this.clearStreamCache(resolveId);
+        if (error instanceof YoutubeServiceError && error.code === 'cancelled') {
+          const retryGeneration = ++this.loadGeneration;
+          void this.loadSong(song, retryGeneration, selectionSerial);
+          return;
+        }
+        const fallbackSearchId = `ytsearch1:${song.artist} ${song.title}`.trim();
+        if (resolveId !== fallbackSearchId) {
+          const retryGeneration = ++this.loadGeneration;
+          void this.loadSong(
+            { ...song, source: { ...song.source, matchedVideoId: fallbackSearchId } },
+            retryGeneration,
+            selectionSerial,
+          );
+          return;
+        }
+      }
       if (error instanceof YoutubeServiceError && AUTO_SKIP_CODES.has(error.code)) {
         this.purgeAndSkipUnavailableSong(song, `${song.title} dihapus: ${skipReason(error)}`);
         return;
@@ -327,6 +403,7 @@ export class AudioService {
     try {
       await this.audio.play();
     } catch (error) {
+      console.error('[Miles AudioService] playAssignedSource caught error:', error);
       if (generation !== this.loadGeneration || !usePlayerStore.getState().playbackIntent) return;
       const resolveKey = state.currentSong ? youtubeResolveKey(state.currentSong) : null;
       if (resolveKey && !this.mediaRetryUsed) {
@@ -365,6 +442,7 @@ export class AudioService {
   }
 
   private handleMediaError(song: Song, generation: number, selectionSerial: number) {
+    console.error('[Miles AudioService] HTML5 Audio MediaError on song:', song.title, 'code:', this.audio.error?.code, this.audio.error);
     usePlayerStore.getState().setPlaybackStatus('idle');
     const eligibleMediaFailure = this.audio.error?.code === 2 || this.audio.error?.code === 4;
     const resolveKey = youtubeResolveKey(song);

@@ -273,6 +273,8 @@ pub fn isolated_ytdlp_arguments(
         OsString::from("--no-js-runtimes"),
         OsString::from("--js-runtimes"),
         OsString::from(format!("deno:{}", deno_path.display())),
+        OsString::from("--extractor-args"),
+        OsString::from("youtube:player_client=web_embedded,web"),
     ];
     arguments.extend(operation_arguments.iter().map(OsString::from));
     arguments.push(OsString::from("--"));
@@ -486,6 +488,8 @@ mod tests {
 
         assert!(values.contains(&"--ignore-config".into()));
         assert!(values.contains(&"--no-js-runtimes".into()));
+        assert!(values.contains(&"--extractor-args".into()));
+        assert!(values.contains(&"youtube:player_client=web_embedded,web".into()));
         assert_eq!(values[values.len() - 2], "--");
         assert!(values
             .last()

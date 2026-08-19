@@ -10,6 +10,7 @@ import {
   PlaybackStatus,
   Playlist,
   Song,
+  SongSource,
   YoutubeImportTask,
 } from '../types/player';
 import {
@@ -131,6 +132,7 @@ export interface PlayerActions {
   addLocalSong: (file: File) => Promise<void>;
   addMultipleLocalSongs: (files: FileList | File[]) => Promise<void>;
   updateSongMetadata: (songId: string, updates: Partial<Pick<Song, 'title' | 'artist' | 'album' | 'coverUrl'>>) => void;
+  updateSongSource: (songId: string, source: SongSource) => void;
   toggleFavorite: (songId: string) => void;
   createPlaylist: (name: string) => string;
   toggleSongInPlaylist: (playlistId: string, songId: string) => void;
@@ -215,12 +217,15 @@ const isVerifiedSpotifySong = (song: Song | undefined) => song?.source.kind === 
   && VIDEO_ID_PATTERN.test(song.source.matchedVideoId);
 
 const waitForPlaybackResolution = async (requestId: number, getState: () => PlayerStore) => {
-  await new Promise((resolve) => window.setTimeout(resolve, 75));
+  await new Promise((resolve) => window.setTimeout(resolve, 150));
+  let checks = 0;
   while (
     activeSpotifyImportRequestId === requestId
-    && ['resolving', 'loading', 'buffering'].includes(getState().playbackStatus)
+    && ['resolving', 'loading'].includes(getState().playbackStatus)
+    && checks < 40
   ) {
     await new Promise((resolve) => window.setTimeout(resolve, 100));
+    checks++;
   }
 };
 
@@ -425,10 +430,10 @@ export const usePlayerStore = create<PlayerStore>()(
             return;
           }
           const targetIntent = !state.playbackIntent;
-          set((s) => ({
+          set({
             playbackIntent: targetIntent,
-            ...(targetIntent ? { playbackError: null, playbackRetryToken: s.playbackRetryToken + 1 } : {}),
-          }));
+            ...(targetIntent ? { playbackError: null } : {}),
+          });
         },
         setPlaybackStatus: (playbackStatus) => set({
           playbackStatus,
@@ -709,21 +714,24 @@ export const usePlayerStore = create<PlayerStore>()(
 
               if (!song) {
                 let match: SpotifyTrackMatchResult;
+                let matchAttempt = 0;
                 for (;;) {
                   try {
                     match = await matchSpotifyTrack({
                       spotifyId: track.id,
                       title: track.title,
                       artist: track.artist,
-                      durationSeconds: track.duration_seconds,
-                    });
+                      durationSeconds: Math.max(1, Math.round(track.duration_seconds || 180)),
+                    }, 'import');
                     if (activeSpotifyImportRequestId !== requestId) return;
                     break;
                   } catch (error) {
                     if (activeSpotifyImportRequestId !== requestId) return;
                     if (error instanceof SpotifyMatchError
                       && error.code === 'cancelled'
-                      && activeSpotifyImportRequestId === requestId) {
+                      && activeSpotifyImportRequestId === requestId
+                      && matchAttempt < 5) {
+                      matchAttempt++;
                       await waitForPlaybackResolution(requestId, get);
                       continue;
                     }
@@ -804,7 +812,11 @@ export const usePlayerStore = create<PlayerStore>()(
                   duplicates: report.duplicates + (duplicateAtCommit ? 1 : 0),
                   processed: report.processed + 1,
                 };
+                const wasStarting = !startedPlayback;
                 startedPlayback = true;
+                if (wasStarting) {
+                  await waitForPlaybackResolution(requestId, get);
+                }
               }
 
               if (activeSpotifyImportRequestId !== requestId) return;
@@ -1357,6 +1369,26 @@ export const usePlayerStore = create<PlayerStore>()(
           });
         },
 
+        updateSongSource: (songId, source) => {
+          const updateSong = (song: Song): Song => song.id === songId
+            ? { ...song, source }
+            : song;
+
+          set((state) => {
+            const queue = state.queue.map(updateSong);
+            return {
+              queue,
+              playbackQueue: state.playbackQueue.map(updateSong),
+              currentSong: state.currentSong ? updateSong(state.currentSong) : null,
+              playlists: state.playlists.map((playlist) => ({
+                ...playlist,
+                songs: playlist.songs.map(updateSong),
+              })),
+              topSongs: sortTopSongs(queue),
+            };
+          });
+        },
+
         toggleFavorite: (songId) => {
           const toggleSong = (song: Song): Song => song.id === songId
             ? { ...song, isFavorite: !song.isFavorite }
@@ -1626,7 +1658,7 @@ export const usePlayerStore = create<PlayerStore>()(
       }),
       {
         name: 'aura_music_player_storage',
-        version: 5,
+        version: 6,
         migrate: migratePlayerPersistedState,
         merge: (persistedState, currentState) => {
           const savedState = persistedState as Partial<PlayerStore>;

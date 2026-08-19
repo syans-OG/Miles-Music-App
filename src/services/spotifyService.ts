@@ -1,5 +1,6 @@
 import { invoke } from '@tauri-apps/api/core';
 import type {
+  SpotifyMatchPriority,
   SpotifyPlaylistImport,
   SpotifyResourceType,
   SpotifyTrackMatchRequest,
@@ -68,9 +69,10 @@ export class SpotifyMatchError extends Error {
 
 export const matchSpotifyTrack = async (
   request: SpotifyTrackMatchRequest,
+  priority: SpotifyMatchPriority = 'import',
 ): Promise<SpotifyTrackMatchResult> => {
   try {
-    return await invoke<SpotifyTrackMatchResult>('match_spotify_track', { request });
+    return await invoke<SpotifyTrackMatchResult>('match_spotify_track', { request, priority });
   } catch (error: unknown) {
     if (typeof error === 'object' && error !== null && 'code' in error) {
       const code = typeof error.code === 'string' ? error.code : 'process_failed';

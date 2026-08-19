@@ -22,6 +22,14 @@ pub enum ResolvePurpose {
     Prefetch,
 }
 
+#[derive(Clone, Copy, Debug, Default, Deserialize, Eq, PartialEq)]
+#[serde(rename_all = "snake_case")]
+pub enum SpotifyMatchPriority {
+    #[default]
+    Import,
+    Playback,
+}
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum YoutubeResource {
     Video {

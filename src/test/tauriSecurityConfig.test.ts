@@ -10,4 +10,11 @@ describe('Tauri image CSP', () => {
     expect(imageSources).not.toContain('https://*.spotifycdn.com');
     expect(imageSources).not.toContain('https://*.scdn.co');
   });
+
+  it('routes remote audio through the bounded Rust loopback proxy', () => {
+    const mediaSources = tauriConfig.app.security.csp['media-src'].split(/\s+/);
+
+    expect(mediaSources).toContain('http://127.0.0.1:*');
+    expect(mediaSources).not.toContain('https://*.googlevideo.com');
+  });
 });

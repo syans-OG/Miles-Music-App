@@ -1,7 +1,7 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "Miles",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "identifier": "com.miles.musicplayer",
   "build": {
     "frontendDist": "../dist",
@@ -29,7 +29,7 @@
         "default-src": "'self' customprotocol: asset:",
         "connect-src": "ipc: http://ipc.localhost",
         "img-src": "'self' asset: http://asset.localhost blob: data: https://images.unsplash.com https://i.scdn.co https://i.ytimg.com https://*.ytimg.com",
-        "media-src": "'self' asset: http://asset.localhost blob: https://*.googlevideo.com",
+        "media-src": "'self' asset: http://asset.localhost blob: http://127.0.0.1:*",
         "font-src": "'self' https://fonts.gstatic.com",
         "style-src": "'self' 'unsafe-inline' https://fonts.googleapis.com"
       },

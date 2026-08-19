@@ -1,4 +1,5 @@
 use super::process::CancellationToken;
+use super::types::SpotifyMatchPriority;
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Condvar, Mutex};
@@ -19,6 +20,7 @@ pub enum ResolvePriority {
 pub struct YoutubeScheduler {
     import: Arc<Slot>,
     resolve: Arc<Slot>,
+    spotify_match: Arc<Slot>,
 }
 
 impl YoutubeScheduler {
@@ -26,7 +28,7 @@ impl YoutubeScheduler {
         &self,
         cancellation: CancellationToken,
     ) -> Result<SchedulePermit, ScheduleError> {
-        self.import.acquire(0, cancellation)
+        self.import.acquire(0, false, cancellation)
     }
 
     pub fn acquire_resolve(
@@ -34,7 +36,20 @@ impl YoutubeScheduler {
         priority: ResolvePriority,
         cancellation: CancellationToken,
     ) -> Result<SchedulePermit, ScheduleError> {
-        self.resolve.acquire(priority as u8, cancellation)
+        let preempt_equal = priority == ResolvePriority::ExplicitSelection;
+        self.resolve.acquire(priority as u8, preempt_equal, cancellation)
+    }
+
+    pub fn acquire_spotify_match(
+        &self,
+        priority: SpotifyMatchPriority,
+        cancellation: CancellationToken,
+    ) -> Result<SchedulePermit, ScheduleError> {
+        let priority_u8 = match priority {
+            SpotifyMatchPriority::Playback => 0,
+            SpotifyMatchPriority::Import => 1,
+        };
+        self.spotify_match.acquire(priority_u8, false, cancellation)
     }
 
     pub fn cancel_import(&self) {
@@ -43,6 +58,10 @@ impl YoutubeScheduler {
 
     pub fn cancel_resolve(&self) {
         self.resolve.cancel_all();
+    }
+
+    pub fn cancel_spotify_match(&self) {
+        self.spotify_match.cancel_all();
     }
 }
 
@@ -111,11 +130,12 @@ impl Slot {
     fn acquire(
         self: &Arc<Self>,
         priority: u8,
+        preempt_equal: bool,
         cancellation: CancellationToken,
     ) -> Result<SchedulePermit, ScheduleError> {
         let request_id = NEXT_SCHEDULE_ID.fetch_add(1, Ordering::Relaxed);
         let mut state = self.state.lock().unwrap_or_else(|error| error.into_inner());
-        if priority == ResolvePriority::ExplicitSelection as u8 {
+        if preempt_equal {
             for waiting in state
                 .waiting
                 .values()
@@ -140,8 +160,7 @@ impl Slot {
             }
             if state.active.as_ref().is_some_and(|active| {
                 priority < active.priority
-                    || (priority == ResolvePriority::ExplicitSelection as u8
-                        && active.priority == priority)
+                    || (preempt_equal && active.priority == priority)
             }) {
                 state.active.as_ref().unwrap().cancellation.cancel();
             }
@@ -199,7 +218,7 @@ mod tests {
     use std::thread;
 
     #[test]
-    fn import_and_resolve_have_independent_slots() {
+    fn import_and_resolve_and_spotify_match_have_independent_slots() {
         let scheduler = YoutubeScheduler::default();
         let import = scheduler
             .acquire_import(CancellationToken::default())
@@ -210,8 +229,11 @@ mod tests {
                 CancellationToken::default(),
             )
             .expect("resolve slot should be independently available");
+        let spotify_match = scheduler
+            .acquire_spotify_match(SpotifyMatchPriority::Playback, CancellationToken::default())
+            .expect("spotify match slot should be independently available");
 
-        drop((import, resolve));
+        drop((import, resolve, spotify_match));
     }
 
     #[test]

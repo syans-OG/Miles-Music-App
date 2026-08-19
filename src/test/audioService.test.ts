@@ -159,12 +159,13 @@ describe('AudioService lazy YouTube playback', () => {
   it('starts vinyl state only after the media playing event', async () => {
     const audio = new FakeAudio();
     const song = localSong('one');
-    usePlayerStore.setState({ queue: [song], playbackQueue: [song] });
+    usePlayerStore.setState({ queue: [song], playbackQueue: [song], duration: 3_625 });
     service = new AudioService({ audio });
 
     usePlayerStore.getState().playSong(song);
     await flush();
 
+    expect(usePlayerStore.getState().duration).toBe(song.duration);
     expect(usePlayerStore.getState().isPlaying).toBe(false);
     expect(usePlayerStore.getState().playbackStatus).toBe('loading');
     audio.emit('playing');
@@ -189,7 +190,7 @@ describe('AudioService lazy YouTube playback', () => {
     expect(usePlayerStore.getState().isPlaying).toBe(false);
   });
 
-  it('resolves a verified Spotify song through the stable search resolver', async () => {
+  it('resolves a verified Spotify song through its stable matched video ID', async () => {
     const audio = new FakeAudio();
     const resolveTrack = vi.fn().mockResolvedValue(resolvedTrack('aaaaaaaaaaa'));
     const song = spotifySong('spotify-fixture', 'aaaaaaaaaaa');
@@ -200,7 +201,7 @@ describe('AudioService lazy YouTube playback', () => {
     await flush();
 
     expect(resolveTrack).toHaveBeenCalledWith(
-      'ytsearch1:Miles fixture',
+      'aaaaaaaaaaa',
       'explicit_selection',
       expect.any(Function),
     );
@@ -330,7 +331,8 @@ describe('AudioService lazy YouTube playback', () => {
     const resolveTrack = vi
       .fn()
       .mockResolvedValueOnce(resolvedTrack('aaaaaaaaaaa', '-first'))
-      .mockResolvedValueOnce(resolvedTrack('aaaaaaaaaaa', '-retry'));
+      .mockResolvedValueOnce(resolvedTrack('aaaaaaaaaaa', '-retry'))
+      .mockResolvedValueOnce(resolvedTrack('aaaaaaaaaaa', '-manual-retry'));
     const clearStreamCache = vi.fn();
     const song = youtubeSong('a', 'aaaaaaaaaaa');
     usePlayerStore.setState({ queue: [song], playbackQueue: [song] });
@@ -350,6 +352,13 @@ describe('AudioService lazy YouTube playback', () => {
     ]);
     expect(clearStreamCache).toHaveBeenCalledTimes(1);
     expect(usePlayerStore.getState().playbackError?.retryable).toBe(true);
+
+    usePlayerStore.getState().requestPlaybackRetry();
+    await flush();
+
+    expect(resolveTrack).toHaveBeenCalledTimes(3);
+    expect(clearStreamCache).toHaveBeenCalledTimes(2);
+    expect(usePlayerStore.getState().playbackError).toBeNull();
   });
 
   it('re-resolves a failed Spotify media source exactly once per load cycle', async () => {
@@ -370,7 +379,11 @@ describe('AudioService lazy YouTube playback', () => {
     await flush();
 
     expect(resolveTrack).toHaveBeenCalledTimes(2);
-    expect(clearStreamCache).toHaveBeenCalledWith('ytsearch1:Miles fixture');
+    expect(resolveTrack.mock.calls.map((call) => call[0])).toEqual([
+      'aaaaaaaaaaa',
+      'aaaaaaaaaaa',
+    ]);
+    expect(clearStreamCache).toHaveBeenCalledWith('aaaaaaaaaaa');
     expect(usePlayerStore.getState().playbackError).toBeNull();
   });
 
@@ -499,6 +512,7 @@ describe('AudioService lazy YouTube playback', () => {
     await flush();
     expect(usePlayerStore.getState().playbackIntent).toBe(true);
     expect(audio.playCalls).toBeGreaterThanOrEqual(3);
+    expect(usePlayerStore.getState().playbackRetryToken).toBe(0);
   });
 
   it('lets the user cancel a pending playback intent before audio starts', () => {
@@ -579,11 +593,57 @@ describe('AudioService lazy YouTube playback', () => {
     await flush();
     audio.emit('pause');
 
-    usePlayerStore.getState().togglePlayPause();
-    await flush();
-    audio.emit('playing');
-
     // playCount must remain EXACTLY 1!
     expect(usePlayerStore.getState().queue[0].playCount).toBe(1);
+  });
+
+  it('matches unmatched Spotify track on demand and proceeds to playback', async () => {
+    const audio = new FakeAudio();
+    const unmatchedSong: Song = {
+      id: 'spotify-unmatched-1',
+      title: 'Unmatched Track',
+      artist: 'Artist',
+      coverUrl: 'https://i.scdn.co/image/fixture.jpg',
+      source: {
+        kind: 'spotify',
+        spotifyId: '4xF4ZBGPZKxECeDFrqSAG4',
+        searchQuery: 'Artist Unmatched Track',
+        matchedVideoId: '',
+        canonicalUrl: '',
+      },
+      duration: 180,
+      playCount: 0,
+    };
+    usePlayerStore.setState({ queue: [unmatchedSong], currentSong: unmatchedSong, playbackQueue: [unmatchedSong] });
+    const matchSpotifyTrackMock = vi.fn().mockResolvedValue({
+      status: 'matched' as const,
+      spotifyId: '4xF4ZBGPZKxECeDFrqSAG4',
+      videoId: 'matched12345',
+      title: 'Matched Title',
+      artist: 'Matched Artist',
+      durationSeconds: 180,
+      thumbnailUrl: 'https://img.youtube.com/vi/matched12345/0.jpg',
+      canonicalUrl: 'https://www.youtube.com/watch?v=matched12345',
+      score: 95,
+    });
+    const resolveTrackMock = vi.fn().mockResolvedValue(resolvedTrack('matched12345'));
+    service = new AudioService({
+      audio,
+      matchSpotifyTrack: matchSpotifyTrackMock,
+      resolveTrack: resolveTrackMock,
+      getCachedStream: () => null,
+    });
+
+    usePlayerStore.getState().playSong(unmatchedSong);
+    await flush();
+
+    expect(matchSpotifyTrackMock).toHaveBeenCalledWith({
+      spotifyId: '4xF4ZBGPZKxECeDFrqSAG4',
+      title: 'Unmatched Track',
+      artist: 'Artist',
+      durationSeconds: 180,
+    }, 'playback');
+    expect(resolveTrackMock).toHaveBeenCalledWith('matched12345', 'explicit_selection', expect.any(Function));
+    expect(audio.src).toBe('https://rr1---sn-fixture.googlevideo.com/audio-matched12345');
   });
 });

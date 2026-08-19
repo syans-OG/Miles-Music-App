@@ -1,7 +1,7 @@
 {
   "name": "miles-music-player",
   "private": true,
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "A lightweight Windows music player for local audio and public YouTube links.",
   "author": "syans-OG",
   "license": "MIT",

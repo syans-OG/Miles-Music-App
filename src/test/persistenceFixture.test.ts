@@ -39,7 +39,7 @@ describe('Zustand persistence V1 fixture', () => {
   });
 });
 
-describe('Zustand persistence V5 migration', () => {
+describe('Zustand persistence V6 migration', () => {
   const migrateFixture = () => migratePlayerPersistedState(fixture.state, fixture.version) as {
     queue: Song[];
     playbackQueue: Song[];

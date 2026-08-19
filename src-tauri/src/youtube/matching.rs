@@ -7,7 +7,7 @@ use serde_json::Value;
 use std::collections::BTreeSet;
 
 const MATCH_THRESHOLD: i32 = 70;
-const MAX_DURATION_DIFFERENCE_SECONDS: u64 = 30;
+const MAX_DURATION_DIFFERENCE_SECONDS: u64 = 45;
 const UNWANTED_QUALIFIERS: [&str; 8] = [
     "karaoke",
     "cover",
@@ -170,15 +170,18 @@ fn candidate_score(input: &SpotifyTrackMatchRequest, candidate: &YoutubeSearchCa
 
 fn duration_is_close(expected: u64, actual: u64) -> bool {
     if expected == 0 || actual == 0 {
-        return false;
+        return true;
     }
     let difference = expected.abs_diff(actual);
-    difference <= MAX_DURATION_DIFFERENCE_SECONDS && difference.saturating_mul(5) <= expected
+    difference <= MAX_DURATION_DIFFERENCE_SECONDS
 }
 
 fn duration_score(expected: u64, actual: u64) -> f64 {
+    if expected == 0 || actual == 0 {
+        return 0.5;
+    }
     let difference = expected.abs_diff(actual) as f64;
-    let allowed = (expected as f64 * 0.2).min(MAX_DURATION_DIFFERENCE_SECONDS as f64);
+    let allowed = (expected as f64 * 0.3).max(MAX_DURATION_DIFFERENCE_SECONDS as f64);
     (1.0 - difference / allowed.max(1.0)).clamp(0.0, 1.0)
 }
 

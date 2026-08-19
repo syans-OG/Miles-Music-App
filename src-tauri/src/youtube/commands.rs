@@ -8,10 +8,12 @@ use super::process::{
 };
 use super::scheduler::{ResolvePriority, ScheduleError, YoutubeScheduler};
 use super::types::{
-    ResolvePurpose, ResolvedYoutubeTrack, SpotifyTrackMatchRequest, SpotifyTrackMatchResult,
-    YoutubePlaylistImport, YoutubeResource,
+    ResolvePurpose, ResolvedYoutubeTrack, SpotifyMatchPriority, SpotifyTrackMatchRequest,
+    SpotifyTrackMatchResult, YoutubePlaylistImport, YoutubeResource,
 };
 use super::validation::{parse_youtube_url, validate_video_id};
+use crate::media_proxy::MediaProxy;
+use std::collections::HashMap;
 use std::ffi::OsString;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -54,7 +56,7 @@ pub struct YoutubeCommandService {
     runner: ProcessRunner,
     scheduler: YoutubeScheduler,
     spotify_match_sequence: Arc<AtomicU64>,
-    active_spotify_match: Arc<Mutex<Option<(u64, CancellationToken)>>>,
+    active_spotify_matches: Arc<Mutex<HashMap<u64, CancellationToken>>>,
 }
 
 #[derive(Clone)]
@@ -104,12 +106,12 @@ impl YoutubeCommandService {
     }
 
     pub fn cancel_spotify_match(&self) {
-        if let Some((_, cancellation)) = self
-            .active_spotify_match
+        self.scheduler.cancel_spotify_match();
+        let active = self
+            .active_spotify_matches
             .lock()
-            .unwrap_or_else(|error| error.into_inner())
-            .as_ref()
-        {
+            .unwrap_or_else(|error| error.into_inner());
+        for cancellation in active.values() {
             cancellation.cancel();
         }
     }
@@ -178,7 +180,11 @@ impl YoutubeCommandService {
         &self,
         request: SpotifyTrackMatchRequest,
     ) -> Result<SpotifyTrackMatchResult, YoutubeError> {
-        self.match_spotify_track_with(request, YoutubeExecutables::verified()?)
+        self.match_spotify_track_with_priority(
+            request,
+            SpotifyMatchPriority::Import,
+            YoutubeExecutables::verified()?,
+        )
     }
 
     pub fn match_spotify_track_with(
@@ -186,23 +192,30 @@ impl YoutubeCommandService {
         request: SpotifyTrackMatchRequest,
         executables: YoutubeExecutables,
     ) -> Result<SpotifyTrackMatchResult, YoutubeError> {
+        self.match_spotify_track_with_priority(request, SpotifyMatchPriority::Import, executables)
+    }
+
+    pub fn match_spotify_track_with_priority(
+        &self,
+        request: SpotifyTrackMatchRequest,
+        priority: SpotifyMatchPriority,
+        executables: YoutubeExecutables,
+    ) -> Result<SpotifyTrackMatchResult, YoutubeError> {
         let search_target = validated_spotify_search_target(&request)?;
         let cancellation = CancellationToken::default();
         let match_id = self.spotify_match_sequence.fetch_add(1, Ordering::Relaxed) + 1;
         {
             let mut active = self
-                .active_spotify_match
+                .active_spotify_matches
                 .lock()
                 .unwrap_or_else(|error| error.into_inner());
-            if let Some((_, previous)) = active.replace((match_id, cancellation.clone())) {
-                previous.cancel();
-            }
+            active.insert(match_id, cancellation.clone());
         }
 
         let result = (|| {
             let permit = self
                 .scheduler
-                .acquire_resolve(ResolvePriority::Prefetch, cancellation.clone())
+                .acquire_spotify_match(priority, cancellation.clone())
                 .map_err(schedule_error)?;
             let output = self.run_operation(
                 OperationKind::Resolve,
@@ -219,12 +232,10 @@ impl YoutubeCommandService {
         })();
 
         let mut active = self
-            .active_spotify_match
+            .active_spotify_matches
             .lock()
             .unwrap_or_else(|error| error.into_inner());
-        if active.as_ref().map(|(active_id, _)| *active_id) == Some(match_id) {
-            active.take();
-        }
+        active.remove(&match_id);
         result
     }
 
@@ -274,12 +285,18 @@ pub async fn import_youtube_playlist(
 #[tauri::command]
 pub async fn resolve_youtube_track(
     service: tauri::State<'_, YoutubeCommandService>,
+    media_proxy: tauri::State<'_, MediaProxy>,
     video_id: String,
     purpose: Option<ResolvePurpose>,
 ) -> Result<ResolvedYoutubeTrack, YoutubeError> {
     let service = service.inner().clone();
+    let media_proxy = media_proxy.inner().clone();
     tauri::async_runtime::spawn_blocking(move || {
-        service.resolve_track(video_id, purpose.unwrap_or_default())
+        let mut track = service.resolve_track(video_id, purpose.unwrap_or_default())?;
+        track.stream.url = media_proxy
+            .register(&track.stream.url, track.stream.expires_at_unix)
+            .map_err(|_| YoutubeError::retryable(YoutubeErrorCode::AudioStreamUnavailable))?;
+        Ok(track)
     })
     .await
     .unwrap_or_else(|_| Err(YoutubeError::new(YoutubeErrorCode::ProcessFailed)))
@@ -299,11 +316,19 @@ pub fn cancel_youtube_resolve(service: tauri::State<'_, YoutubeCommandService>) 
 pub async fn match_spotify_track(
     service: tauri::State<'_, YoutubeCommandService>,
     request: SpotifyTrackMatchRequest,
+    priority: Option<SpotifyMatchPriority>,
 ) -> Result<SpotifyTrackMatchResult, YoutubeError> {
     let service = service.inner().clone();
-    tauri::async_runtime::spawn_blocking(move || service.match_spotify_track(request))
-        .await
-        .unwrap_or_else(|_| Err(YoutubeError::new(YoutubeErrorCode::ProcessFailed)))
+    let priority = priority.unwrap_or(SpotifyMatchPriority::Import);
+    tauri::async_runtime::spawn_blocking(move || {
+        service.match_spotify_track_with_priority(
+            request,
+            priority,
+            YoutubeExecutables::verified()?,
+        )
+    })
+    .await
+    .unwrap_or_else(|_| Err(YoutubeError::new(YoutubeErrorCode::ProcessFailed)))
 }
 
 #[tauri::command]
@@ -334,11 +359,18 @@ fn validated_playlist(url: &str) -> Result<(String, String), YoutubeError> {
 fn validated_spotify_search_target(
     request: &SpotifyTrackMatchRequest,
 ) -> Result<String, YoutubeError> {
-    let has_valid_id = request.spotify_id.len() == 22
-        && request
-            .spotify_id
-            .bytes()
-            .all(|byte| byte.is_ascii_alphanumeric());
+    let clean_id = request
+        .spotify_id
+        .strip_prefix("spotify-")
+        .unwrap_or(&request.spotify_id);
+    let clean_id = clean_id
+        .strip_prefix("spotify:track:")
+        .unwrap_or(clean_id);
+    let has_valid_id = clean_id.is_empty()
+        || (clean_id.len() == 22
+            && clean_id
+                .bytes()
+                .all(|byte| byte.is_ascii_alphanumeric()));
     let valid_text = |value: &str| {
         let trimmed = value.trim();
         !trimmed.is_empty()
