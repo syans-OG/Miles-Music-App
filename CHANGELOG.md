@@ -2,6 +2,14 @@
 
 All notable changes to Miles Music Player are documented here.
 
+## [1.0.5] - 2026-08-19
+
+### Fixed
+
+- Seamless Spotify playlist playback and autoplay: background import tasks no longer cancel active stream resolutions.
+- Resilient audio streaming: automatic fallback to dynamic search (`ytsearch1:`) for geoblocked or unavailable YouTube video IDs.
+- Spotify metadata normalization: improved track duration and URI format parsing.
+
 ## [1.0.4] - 2026-08-19
 
 ### Added
