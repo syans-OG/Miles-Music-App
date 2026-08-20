@@ -70,7 +70,7 @@ export const MicroBubble: React.FC = () => {
       <div
         onClick={() => togglePlayPause()}
         title={playbackError?.message ?? (isPlaybackPending ? 'Preparing audio...' : playbackIntent ? 'Pause' : 'Play')}
-        className="w-full h-full animate-float rounded-full glass-panel p-1 flex items-center justify-center border border-white/20 shadow-2xl hover:scale-110 transition-transform relative overflow-hidden"
+        className="mode-three-no-outer-shadow w-full h-full animate-float rounded-full bg-dark-900/90 p-0.5 flex items-center justify-center border border-white/20 hover:scale-105 transition-transform relative overflow-hidden"
       >
         <img
           src={getDisplayCoverUrl(currentSong?.coverUrl, 96)}
@@ -94,10 +94,10 @@ export const MicroBubble: React.FC = () => {
       {/* Mode Switcher Button Popover */}
       <button
         onClick={cycleMode}
-        title="Switch to Full Mode (Console Bar)"
-        className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-white text-dark-900 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg hover:scale-110"
+        title="Switch Mode"
+        className="absolute -top-0.5 -right-0.5 w-5 h-5 rounded-full bg-white text-dark-900 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:scale-110 z-20 border border-black/10"
       >
-        <Layers className="w-3 h-3" />
+        <Layers className="w-2.5 h-2.5" />
       </button>
     </div>
   );

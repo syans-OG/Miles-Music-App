@@ -111,6 +111,7 @@ export interface PlayerActions {
   setVolume: (volume: number) => void;
   toggleMute: () => void;
   playSong: (song: Song, reason?: PlaybackSelectionReason) => void;
+  playSongList: (songs: Song[], startIndex?: number, reason?: PlaybackSelectionReason) => void;
   playPlaylist: (playlistId: string, songId?: string) => void;
   playNext: (reason?: PlaybackSelectionReason) => void;
   playPrev: (reason?: PlaybackSelectionReason) => void;
@@ -118,6 +119,8 @@ export interface PlayerActions {
   playNextFromQueue: (songId: string) => void;
   removeFromPlaybackQueue: (songId: string) => void;
   movePlaybackQueueItem: (songId: string, direction: 'up' | 'down') => void;
+  shufflePlaybackQueue: () => void;
+  toggleQueueRepeat: () => void;
   clearPlaybackQueue: () => void;
   addSongFromUrl: (url: string) => Promise<void>;
   importYoutubeUrl: (url: string) => Promise<void>;
@@ -135,9 +138,11 @@ export interface PlayerActions {
   updateSongSource: (songId: string, source: SongSource) => void;
   toggleFavorite: (songId: string) => void;
   createPlaylist: (name: string) => string;
+  renamePlaylist: (playlistId: string, newName: string) => void;
   toggleSongInPlaylist: (playlistId: string, songId: string) => void;
   deletePlaylist: (playlistId: string) => void;
   deleteSong: (songId: string) => Promise<void>;
+  deleteMultipleSongs: (songIds: string[]) => Promise<void>;
   purgeUnavailableYoutubeSong: (songId: string, nextSongId: string | null, notice: string) => void;
   clearLibraryNotice: () => void;
   incrementPlayCount: (songId: string) => void;
@@ -197,8 +202,9 @@ const matchedSpotifySong = (
   title: track.title,
   artist: track.artist,
   album: track.album || resource.title,
-  coverUrl: resource.cover_url
-    || track.cover_url
+  coverUrl: track.cover_url
+    || resource.cover_url
+    || match.thumbnailUrl
     || YOUTUBE_COVER_FALLBACK,
   source: {
     kind: 'spotify',
@@ -496,6 +502,24 @@ export const usePlayerStore = create<PlayerStore>()(
           });
         },
 
+        playSongList: (songs, startIndex = 0, reason = 'manual') => {
+          if (songs.length === 0) return;
+          const safeIndex = Math.max(0, Math.min(startIndex, songs.length - 1));
+          const song = songs[safeIndex];
+          set((state) => ({
+            playbackQueue: [...songs],
+            currentSong: song,
+            currentIndex: safeIndex,
+            currentTime: 0,
+            resumePosition: { songId: song.id, time: 0 },
+            playbackIntent: true,
+            playbackError: null,
+            playbackStatus: 'idle',
+            selectionSerial: state.selectionSerial + 1,
+            selectionReason: reason,
+          }));
+        },
+
         playPlaylist: (playlistId, songId) => {
           const playlist = get().playlists.find((item) => item.id === playlistId);
           if (!playlist || playlist.songs.length === 0) return;
@@ -599,11 +623,50 @@ export const usePlayerStore = create<PlayerStore>()(
           });
         },
 
+        shufflePlaybackQueue: () => {
+          set((state) => {
+            const currentSongId = state.currentSong?.id;
+            const list = [...state.playbackQueue];
+            if (list.length <= 1) return state;
+
+            const currentIndex = currentSongId
+              ? list.findIndex((item) => item.id === currentSongId)
+              : state.currentIndex;
+
+            const before = currentIndex > 0 ? list.slice(0, currentIndex) : [];
+            const current = currentIndex >= 0 && currentIndex < list.length ? [list[currentIndex]] : [];
+            const upcoming = currentIndex >= 0 ? list.slice(currentIndex + 1) : list;
+
+            // Fisher-Yates shuffle on upcoming items
+            for (let i = upcoming.length - 1; i > 0; i--) {
+              const j = Math.floor(Math.random() * (i + 1));
+              [upcoming[i], upcoming[j]] = [upcoming[j], upcoming[i]];
+            }
+
+            const nextQueue = [...before, ...current, ...upcoming];
+            return {
+              playbackQueue: nextQueue,
+              currentIndex: currentSongId ? nextQueue.findIndex((item) => item.id === currentSongId) : 0,
+              libraryNotice: 'Antrean berikutnya berhasil diacak',
+            };
+          });
+        },
+
+        toggleQueueRepeat: () => {
+          set((state) => {
+            const next = state.queueEndBehavior === 'repeat-queue' ? 'stop' : 'repeat-queue';
+            return {
+              queueEndBehavior: next,
+              libraryNotice: next === 'repeat-queue' ? 'Ulang antrean: Aktif' : 'Ulang antrean: Mati',
+            };
+          });
+        },
+
         clearPlaybackQueue: () => {
           set((state) => ({
             playbackQueue: state.currentSong ? [state.currentSong] : [],
             currentIndex: 0,
-            libraryNotice: 'Up next queue cleared',
+            libraryNotice: 'Antrean dibersihkan',
           }));
         },
 
@@ -1435,6 +1498,23 @@ export const usePlayerStore = create<PlayerStore>()(
           return playlistId;
         },
 
+        renamePlaylist: (playlistId, newName) => {
+          const cleanName = newName.trim();
+          if (!cleanName) return;
+
+          set((state) => {
+            const playlist = state.playlists.find((item) => item.id === playlistId);
+            if (!playlist) return state;
+
+            return {
+              playlists: state.playlists.map((item) =>
+                item.id === playlistId ? { ...item, name: cleanName } : item
+              ),
+              libraryNotice: `Playlist renamed to “${cleanName}”`,
+            };
+          });
+        },
+
         toggleSongInPlaylist: (playlistId, songId) => {
           set((state) => {
             const song = state.queue.find((item) => item.id === songId);
@@ -1534,6 +1614,71 @@ export const usePlayerStore = create<PlayerStore>()(
               })),
               topSongs: sortTopSongs(queue),
               libraryNotice: `“${song.title}” removed from library`,
+            };
+          });
+        },
+
+        deleteMultipleSongs: async (songIds: string[]) => {
+          if (songIds.length === 0) return;
+          const targetIds = new Set(songIds);
+          const state = get();
+          const targetSongs = state.queue.filter((item) => targetIds.has(item.id));
+          if (targetSongs.length === 0) return;
+
+          // Delete managed local files
+          for (const song of targetSongs) {
+            if (isLocalSong(song) && song.source.managed) {
+              try {
+                const localSource = song.source;
+                const sharedFile = state.queue.some((item) => isLocalSong(item)
+                  && !targetIds.has(item.id)
+                  && item.source.filePath === localSource.filePath);
+                const sharedCover = localSource.coverPath
+                  && state.queue.some((item) => isLocalSong(item)
+                    && !targetIds.has(item.id)
+                    && item.source.coverPath === localSource.coverPath);
+                await invoke('delete_library_song', {
+                  filePath: sharedFile ? null : localSource.filePath,
+                  coverPath: sharedCover ? null : localSource.coverPath ?? null,
+                });
+              } catch (err) {
+                console.error(`Failed to delete local files for ${song.title}:`, err);
+              }
+            }
+          }
+
+          set((currentState) => {
+            const queue = currentState.queue.filter((item) => !targetIds.has(item.id));
+            const playbackQueue = currentState.playbackQueue.filter((item) => !targetIds.has(item.id));
+            const deletedCurrent = currentState.currentSong && targetIds.has(currentState.currentSong.id);
+            const currentSong = deletedCurrent
+              ? playbackQueue[Math.min(currentState.currentIndex, Math.max(0, playbackQueue.length - 1))] ?? null
+              : currentState.currentSong;
+            const currentIndex = currentSong
+              ? Math.max(0, playbackQueue.findIndex((item) => item.id === currentSong.id))
+              : 0;
+
+            return {
+              queue,
+              playbackQueue,
+              currentSong,
+              currentIndex,
+              currentTime: deletedCurrent ? 0 : currentState.currentTime,
+              resumePosition: deletedCurrent
+                ? (currentSong ? { songId: currentSong.id, time: 0 } : null)
+                : currentState.resumePosition,
+              playbackIntent: deletedCurrent ? false : currentState.playbackIntent,
+              playbackError: deletedCurrent ? null : currentState.playbackError,
+              selectionSerial: deletedCurrent
+                ? currentState.selectionSerial + 1
+                : currentState.selectionSerial,
+              selectionReason: deletedCurrent ? 'manual' : currentState.selectionReason,
+              playlists: currentState.playlists.map((playlist) => ({
+                ...playlist,
+                songs: playlist.songs.filter((item) => !targetIds.has(item.id)),
+              })),
+              topSongs: sortTopSongs(queue),
+              libraryNotice: `${targetSongs.length} lagu berhasil dihapus`,
             };
           });
         },

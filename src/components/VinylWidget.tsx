@@ -89,48 +89,48 @@ export const VinylWidget: React.FC = () => {
   };
 
   return (
-    <div className="relative group cursor-pointer p-2">
-      {/* Original Square Turntable Body (176px x 176px, matching height of Mode 1) */}
+    <div className="relative group cursor-pointer p-1">
+      {/* Compact Square Turntable Body */}
       <div
-        className={`mode-two-no-outer-shadow turntable-body w-[176px] h-[176px] p-3 flex flex-col items-center justify-center relative overflow-hidden ${getAnimationClass()}`}
+        className={`mode-two-no-outer-shadow turntable-body w-[160px] h-[160px] p-2.5 flex flex-col items-center justify-center relative overflow-hidden ${getAnimationClass()}`}
       >
         {/* Dedicated Top Header Drag Strip */}
         <div
           data-tauri-drag-region
           onMouseDown={handleStartDrag}
-          className="absolute top-0 left-0 right-0 h-7 z-25 cursor-grab active:cursor-grabbing"
+          className="absolute top-0 left-0 right-0 h-6 z-25 cursor-grab active:cursor-grabbing"
           title="Geser Vinyl Widget"
         />
 
 
         {/* Top-Left Branding / Logo */}
-        <div className="absolute top-2.5 left-3 text-[9px] font-bold text-slate-400 tracking-wider flex items-center gap-1.5 z-20">
-          <Disc className="w-3 h-3 text-slate-300" />
+        <div className="absolute top-2 left-2.5 text-[8px] font-bold text-slate-400 tracking-wider flex items-center gap-1 z-20">
+          <Disc className="w-2.5 h-2.5 text-slate-300" />
           <span>MILES</span>
         </div>
 
 
         {/* Top-Right Tonearm Pivot System */}
-        <div className="absolute top-2.5 right-3 flex flex-col items-center z-20">
-          <div className="w-3.5 h-3.5 rounded-full bg-gradient-to-tr from-slate-600 to-slate-400 border border-slate-300 shadow-md" />
+        <div className="absolute top-2 right-2.5 flex flex-col items-center z-20">
+          <div className="w-3 h-3 rounded-full bg-gradient-to-tr from-slate-600 to-slate-400 border border-slate-300 shadow-md" />
           {/* Metallic Tonearm Needle Rod */}
           <div
-            className={`w-0.5 h-20 bg-gradient-to-b from-slate-400 to-slate-200 origin-top transition-transform duration-700 z-10 shadow-lg ${
+            className={`w-0.5 h-16 bg-gradient-to-b from-slate-400 to-slate-200 origin-top transition-transform duration-700 z-10 shadow-lg ${
               isPlaying ? 'rotate-[22deg]' : 'rotate-[0deg]'
             }`}
             style={{ borderRadius: '2px' }}
           >
-            <div className="w-2 h-3 bg-slate-700 border border-slate-400 absolute -bottom-1 -left-0.75 rounded-sm" />
+            <div className="w-1.5 h-2.5 bg-slate-700 border border-slate-400 absolute -bottom-1 -left-0.5 rounded-sm" />
           </div>
         </div>
 
         {/* Center Spinning Vinyl Record Disc */}
-        <div className="relative w-32 h-32 rounded-full vinyl-grooves shadow-2xl flex items-center justify-center border-2 border-neutral-800 my-auto">
+        <div className="relative w-28 h-28 rounded-full vinyl-grooves shadow-2xl flex items-center justify-center border-2 border-neutral-800 my-auto">
           {/* Vinyl Shine Reflex */}
           <div className={`absolute inset-0 rounded-full vinyl-shine ${isPlaying ? 'animate-spin-slow' : ''}`} />
 
           {/* Center Album Art Badge */}
-          <div className={`relative w-12 h-12 rounded-full overflow-hidden border-2 border-neutral-900 shadow-inner ${
+          <div className={`relative w-10 h-10 rounded-full overflow-hidden border-2 border-neutral-900 shadow-inner ${
             isPlaying ? 'animate-spin-slow' : ''
           }`}>
             <img
@@ -141,7 +141,7 @@ export const VinylWidget: React.FC = () => {
               className="w-full h-full object-cover"
             />
             {/* Center Spindle Hole */}
-            <div className="absolute inset-0 m-auto w-2.5 h-2.5 rounded-full bg-neutral-950 border border-slate-400/50 shadow-inner" />
+            <div className="absolute inset-0 m-auto w-2 h-2 rounded-full bg-neutral-950 border border-slate-400/50 shadow-inner" />
           </div>
         </div>
 

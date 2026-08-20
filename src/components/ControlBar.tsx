@@ -365,44 +365,44 @@ export const ControlBar: React.FC = () => {
         </form>
       )}
 
-      {/* Main Mode 1 Card: Top Console Unit (~440px wide), with dockPosition aware animation */}
+      {/* Main Mode 1 Card: Top Console Unit (~420px wide), with dockPosition aware animation */}
       <div
-        className={`mode-one-no-outer-shadow w-[440px] h-[176px] glass-panel drawer-top-console rounded-t-3xl rounded-b-2xl p-4 flex items-center gap-4 border border-white/10 relative z-20 overflow-hidden ${getAnimationClass()}`}
+        className={`mode-one-no-outer-shadow w-[420px] h-[160px] glass-panel drawer-top-console rounded-t-3xl rounded-b-2xl p-3 flex items-center gap-3 border border-white/10 relative z-20 overflow-hidden ${getAnimationClass()}`}
       >
         {/* Dedicated Top Header Drag Strip (Tactile Drag Region) */}
         <div
           data-tauri-drag-region
           onMouseDown={handleStartDrag}
-          className="absolute top-0 left-0 right-0 h-7 z-30 cursor-grab active:cursor-grabbing flex items-center justify-center group"
+          className="absolute top-0 left-0 right-0 h-6 z-30 cursor-grab active:cursor-grabbing flex items-center justify-center group"
           title="Geser Widget (Drag Header)"
         >
-          <div className="w-12 h-1 rounded-full bg-white/10 group-hover:bg-amber-400/40 transition-colors mt-1.5" />
+          <div className="w-10 h-1 rounded-full bg-white/10 group-hover:bg-amber-400/40 transition-colors mt-1" />
         </div>
 
 
 
         {/* Left Side: Prominent Spinning Vinyl Record Turntable */}
-        <div className="relative flex h-32 w-32 flex-shrink-0 items-center justify-center">
+        <div className="relative flex h-28 w-28 flex-shrink-0 items-center justify-center">
 
           {/* Metallic Tonearm Needle */}
           <div className="pointer-events-none absolute -top-1 right-0 z-20 flex flex-col items-center">
-            <div className="h-3.5 w-3.5 rounded-full border border-slate-300 bg-gradient-to-tr from-slate-600 to-slate-400 shadow-md" />
+            <div className="h-3 w-3 rounded-full border border-slate-300 bg-gradient-to-tr from-slate-600 to-slate-400 shadow-md" />
             <div
-              className={`z-10 h-20 w-0.5 origin-top rounded-sm bg-gradient-to-b from-slate-400 to-slate-200 shadow-lg transition-transform duration-700 ${
+              className={`z-10 h-16 w-0.5 origin-top rounded-sm bg-gradient-to-b from-slate-400 to-slate-200 shadow-lg transition-transform duration-700 ${
                 isPlaying ? 'rotate-[22deg]' : 'rotate-[0deg]'
               }`}
             >
-              <div className="w-2 h-3 bg-slate-700 border border-slate-300 absolute -bottom-1 -left-0.75 rounded-xs" />
+              <div className="w-1.5 h-2.5 bg-slate-700 border border-slate-300 absolute -bottom-1 -left-0.5 rounded-xs" />
             </div>
           </div>
 
           {/* Vinyl Record Disc */}
-          <div className="vinyl-grooves relative flex h-[124px] w-[124px] items-center justify-center rounded-full border-2 border-neutral-800 shadow-2xl">
+          <div className="vinyl-grooves relative flex h-[110px] w-[110px] items-center justify-center rounded-full border-2 border-neutral-800 shadow-2xl">
             {/* Vinyl Shine Animation */}
             <div className={`absolute inset-0 rounded-full vinyl-shine ${isPlaying ? 'animate-spin-slow' : ''}`} />
 
             {/* Center Album Cover Badge */}
-            <div className={`relative h-12 w-12 overflow-hidden rounded-full border-2 border-neutral-900 shadow-inner ${
+            <div className={`relative h-10 w-10 overflow-hidden rounded-full border-2 border-neutral-900 shadow-inner ${
               isPlaying ? 'animate-spin-slow' : ''
             }`}>
               <img
@@ -412,13 +412,13 @@ export const ControlBar: React.FC = () => {
                 decoding="async"
                 className="w-full h-full object-cover"
               />
-              <div className="absolute inset-0 m-auto h-2.5 w-2.5 rounded-full border border-slate-400/50 bg-neutral-950 shadow-inner" />
+              <div className="absolute inset-0 m-auto h-2 w-2 rounded-full border border-slate-400/50 bg-neutral-950 shadow-inner" />
             </div>
           </div>
         </div>
 
         {/* Right Side: Song Info, Controls, Progress, & Drawer Button */}
-        <div className="flex-1 min-w-0 flex flex-col justify-between h-[126px] pt-1.5 pb-0.5">
+        <div className="flex-1 min-w-0 flex flex-col justify-between h-[114px] pt-1 pb-0.5">
 
           {/* Top Row: Track Details & Dock/Window Actions */}
           <div className="flex items-start justify-between gap-2">

@@ -17,6 +17,7 @@ interface MediaErrorLike {
 export interface AudioElementLike {
   currentTime: number;
   duration: number;
+  ended?: boolean;
   error: MediaErrorLike | null;
   preload: string;
   src: string;
@@ -374,6 +375,9 @@ export class AudioService {
         if (!isCurrent()) return;
         this.lastRecordedTime = this.audio.currentTime;
         const state = usePlayerStore.getState();
+        if (this.audio.ended || (state.isLooping && state.playbackIntent)) {
+          return;
+        }
         if (state.playbackIntent && ['resolving', 'loading', 'buffering'].includes(state.playbackStatus)) {
           return;
         }
@@ -424,19 +428,23 @@ export class AudioService {
 
   private handleEnded() {
     const state = usePlayerStore.getState();
-    state.setPlaybackStatus('idle');
     this.lastRecordedTime = 0;
     if (state.isLooping && state.currentSong) {
       state.incrementPlayCount(state.currentSong.id);
+      state.setPlaybackIntent(true);
+      state.setPlaybackStatus('loading');
       this.audio.currentTime = 0;
       void this.playAssignedSource(this.loadGeneration);
     } else if (state.currentIndex < state.playbackQueue.length - 1) {
+      state.setPlaybackStatus('idle');
       state.playNext('sequential');
     } else if (state.queueEndBehavior === 'repeat-queue' && state.playbackQueue.length > 0) {
+      state.setPlaybackStatus('idle');
       state.playNext('sequential');
     } else {
       this.audio.currentTime = 0;
       state.checkpointPlaybackPosition(0);
+      state.setPlaybackStatus('idle');
       state.setPlaybackIntent(false);
     }
   }

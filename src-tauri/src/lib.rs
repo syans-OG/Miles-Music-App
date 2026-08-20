@@ -385,9 +385,9 @@ async fn resize_widget_window(
             let monitor_pos = monitor.position();
             let monitor_size = monitor.size();
 
-            let margin_x = (16.0 * factor).round();
-            let margin_y = (16.0 * factor).round();
-            let taskbar_bottom = (48.0 * factor).round();
+            let margin_x = (8.0 * factor).round();
+            let margin_y = (8.0 * factor).round();
+            let taskbar_bottom = (40.0 * factor).round();
 
             match dock_position.as_str() {
                 "top-left" | "bottom-left" => end_x = monitor_pos.x as f64 + margin_x,
@@ -471,8 +471,8 @@ async fn handle_drag_end_snap(window: Window) -> Result<String, String> {
         let mon_w = monitor.size().width as i32;
         let mon_h = monitor.size().height as i32;
 
-        let margin = (16.0 * factor).round() as i32;
-        let taskbar_b = (48.0 * factor).round() as i32;
+        let margin = (8.0 * factor).round() as i32;
+        let taskbar_b = (40.0 * factor).round() as i32;
 
         let snap_corners = [
             ("top-left", mon_x + margin, mon_y + margin),
@@ -576,6 +576,14 @@ pub fn run() {
     let application = tauri::Builder::default()
         .manage(youtube::commands::YoutubeCommandService::default())
         .manage(media_proxy)
+        .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
+            if let Some(window) = app.get_webview_window("main") {
+                let _ = window.show();
+                let _ = window.unminimize();
+                let _ = window.set_focus();
+                let _ = window.emit("single-instance-focus", ());
+            }
+        }))
         .setup(|app| {
             let show_item = MenuItem::with_id(app, "show", "Tampilkan Miles", true, None::<&str>)?;
             let play_pause_item =

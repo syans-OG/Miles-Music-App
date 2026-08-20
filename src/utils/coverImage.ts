@@ -14,7 +14,10 @@ export const getDisplayCoverUrl = (source: string | undefined, width = 192): str
   try {
     const url = new URL(value);
     if (YOUTUBE_THUMBNAIL_HOSTS.has(url.hostname)) {
-      url.pathname = url.pathname.replace(/\/(?:maxresdefault|sddefault|hqdefault)\.(?:jpg|webp)$/i, '/mqdefault.jpg');
+      // Keep hqdefault or maxresdefault, replace default.jpg (low res 120x90) with hqdefault
+      if (url.pathname.endsWith('/default.jpg') || url.pathname.endsWith('/default.webp')) {
+        url.pathname = url.pathname.replace(/\/default\.(?:jpg|webp)$/i, '/hqdefault.jpg');
+      }
       return url.toString();
     }
 

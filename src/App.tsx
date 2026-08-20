@@ -67,10 +67,13 @@ export const App: React.FC = () => {
       });
   }, [isAlwaysOnTop]);
 
-  // System Tray IPC listeners (Play/Pause, Next Track from System Tray menu)
+  const [isFocusNudged, setIsFocusNudged] = useState(false);
+
+  // System Tray & Single Instance IPC listeners
   useEffect(() => {
     let unlistenPlayPause: (() => void) | undefined;
     let unlistenNext: (() => void) | undefined;
+    let unlistenFocus: (() => void) | undefined;
 
     const setupTrayListeners = async () => {
       try {
@@ -82,9 +85,14 @@ export const App: React.FC = () => {
         const handleNext = () => {
           usePlayerStore.getState().playNext();
         };
+        const handleFocusNudge = () => {
+          setIsFocusNudged(true);
+          setTimeout(() => setIsFocusNudged(false), 800);
+        };
 
         unlistenPlayPause = await win.listen('tray-play-pause', handlePlayPause);
         unlistenNext = await win.listen('tray-next-track', handleNext);
+        unlistenFocus = await win.listen('single-instance-focus', handleFocusNudge);
       } catch {
         // Browser fallback
       }
@@ -95,6 +103,7 @@ export const App: React.FC = () => {
     return () => {
       if (unlistenPlayPause) unlistenPlayPause();
       if (unlistenNext) unlistenNext();
+      if (unlistenFocus) unlistenFocus();
     };
   }, []);
 
@@ -150,7 +159,7 @@ export const App: React.FC = () => {
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
-      className="group w-full h-full bg-transparent text-slate-100 flex flex-col p-2 relative overflow-hidden select-none"
+      className={`group w-full h-full bg-transparent text-slate-100 flex flex-col p-1 relative overflow-hidden select-none transition-transform duration-300 ${isFocusNudged ? 'scale-[1.03]' : 'scale-100'}`}
     >
       {/* Floating Hover Window Controls (Snapping, Minimize, Close) */}
       <WindowControlsBar />
@@ -210,7 +219,7 @@ export const App: React.FC = () => {
 
         {/* MODE 3: MICRO FLOATING BUBBLE */}
         {mode === 'micro-bubble' && (
-          <div className={`w-full flex flex-col ${getAlignmentClass()}`}>
+          <div className="w-full h-full flex items-center justify-center">
             <MicroBubble />
           </div>
         )}

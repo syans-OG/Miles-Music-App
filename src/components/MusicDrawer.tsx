@@ -1,7 +1,7 @@
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { AlertTriangle, Check, ChevronDown, ChevronUp, Clock, Disc, Flame, FolderHeart, FolderPlus, Heart, ListMusic, ListOrdered, ListPlus, MoreHorizontal, Pencil, Play, Plus, Save, Search, Settings, Sparkles, Trash2, X } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, Check, ChevronDown, ChevronUp, Clock, Disc, Flame, FolderHeart, FolderPlus, Heart, ListChecks, ListMusic, ListOrdered, ListPlus, MoreHorizontal, Pencil, Play, Plus, Repeat, Search, Settings, Shuffle, Sparkles, Trash2, X } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
 import { usePlayerStore } from '../stores/usePlayerStore';
 import { Playlist, Song } from '../types/player';
@@ -20,70 +20,109 @@ const EditSongDialog: React.FC<EditSongDialogProps> = ({ song, onClose, onSave }
   const [artist, setArtist] = useState(song.artist);
   const [album, setAlbum] = useState(song.album ?? '');
 
-  const handleSubmit = (event: React.FormEvent) => {
-    event.preventDefault();
-    const cleanTitle = title.trim();
-    const cleanArtist = artist.trim();
-    if (!cleanTitle || !cleanArtist) return;
-    onSave({ title: cleanTitle, artist: cleanArtist, album: album.trim() || undefined });
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!title.trim() || !artist.trim()) return;
+    onSave({
+      title: title.trim(),
+      artist: artist.trim(),
+      album: album.trim() || undefined,
+    });
   };
 
   return (
     <div className="absolute inset-0 z-[70] flex items-center justify-center bg-black/75 p-6 backdrop-blur-sm">
       <form onSubmit={handleSubmit} className="w-full rounded-2xl border border-white/10 bg-[#11141c] p-4 shadow-2xl">
-        <div className="mb-4 flex items-center gap-3">
-          <img src={getDisplayCoverUrl(song.coverUrl, 96)} onError={handleCoverImageError} alt="" loading="lazy" decoding="async" className="h-12 w-12 rounded-full object-cover" />
-          <div className="min-w-0 flex-1">
-            <h4 className="truncate text-sm font-bold text-white">Edit Song Info</h4>
-            <p className="truncate text-[10px] text-slate-400">Changes are saved without modifying original audio files</p>
-          </div>
-          <button type="button" onClick={onClose} className="rounded-lg p-1.5 text-slate-400 hover:bg-white/10 hover:text-white">
+        <div className="mb-3 flex items-center justify-between">
+          <h4 className="text-sm font-bold text-white">Edit Song Info</h4>
+          <button type="button" onClick={onClose} className="rounded-lg p-1 text-slate-400 hover:bg-white/10 hover:text-white">
             <X className="h-4 w-4" />
           </button>
         </div>
-
         <div className="space-y-2.5">
-          <label className="block text-[10px] font-semibold uppercase tracking-wider text-slate-400">
-            Title
-            <input value={title} onChange={(event) => setTitle(event.target.value)} maxLength={120} autoFocus className="mt-1 w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-normal normal-case tracking-normal text-white outline-none focus:border-amber-400/60" />
-          </label>
-          <label className="block text-[10px] font-semibold uppercase tracking-wider text-slate-400">
-            Artist
-            <input value={artist} onChange={(event) => setArtist(event.target.value)} maxLength={120} className="mt-1 w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-normal normal-case tracking-normal text-white outline-none focus:border-amber-400/60" />
-          </label>
-          <label className="block text-[10px] font-semibold uppercase tracking-wider text-slate-400">
-            Album
-            <input value={album} onChange={(event) => setAlbum(event.target.value)} maxLength={120} className="mt-1 w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-normal normal-case tracking-normal text-white outline-none focus:border-amber-400/60" />
-          </label>
+          <div>
+            <label className="text-[10px] font-semibold text-slate-400">Title</label>
+            <input value={title} onChange={(e) => setTitle(e.target.value)} className="mt-1 w-full rounded-xl border border-white/10 bg-white/5 px-2.5 py-1.5 text-xs text-white outline-none focus:border-amber-400" autoFocus />
+          </div>
+          <div>
+            <label className="text-[10px] font-semibold text-slate-400">Artist</label>
+            <input value={artist} onChange={(e) => setArtist(e.target.value)} className="mt-1 w-full rounded-xl border border-white/10 bg-white/5 px-2.5 py-1.5 text-xs text-white outline-none focus:border-amber-400" />
+          </div>
+          <div>
+            <label className="text-[10px] font-semibold text-slate-400">Album</label>
+            <input value={album} onChange={(e) => setAlbum(e.target.value)} className="mt-1 w-full rounded-xl border border-white/10 bg-white/5 px-2.5 py-1.5 text-xs text-white outline-none focus:border-amber-400" />
+          </div>
         </div>
-
         <div className="mt-4 flex justify-end gap-2">
-          <button type="button" onClick={onClose} className="rounded-xl bg-white/5 px-3 py-2 text-xs font-semibold text-slate-300 hover:bg-white/10">Cancel</button>
-          <button type="submit" disabled={!title.trim() || !artist.trim()} className="flex items-center gap-1.5 rounded-xl bg-amber-400 px-3 py-2 text-xs font-bold text-dark-900 hover:bg-amber-300 disabled:cursor-not-allowed disabled:opacity-40">
-            <Save className="h-3.5 w-3.5" /> Save
-          </button>
+          <button type="button" onClick={onClose} className="rounded-xl px-3 py-1.5 text-xs font-semibold text-slate-300 hover:bg-white/10">Cancel</button>
+          <button type="submit" className="rounded-xl bg-amber-400 px-3.5 py-1.5 text-xs font-bold text-dark-900 shadow-md hover:bg-amber-300">Save</button>
         </div>
       </form>
     </div>
   );
 };
 
-const CreatePlaylistDialog: React.FC<{ onClose: () => void; onCreate: (name: string) => void }> = ({ onClose, onCreate }) => {
-  const [name, setName] = useState('');
+interface RenamePlaylistDialogProps {
+  playlist: Playlist;
+  onClose: () => void;
+  onSave: (newName: string) => void;
+}
+
+const RenamePlaylistDialog: React.FC<RenamePlaylistDialogProps> = ({ playlist, onClose, onSave }) => {
+  const [name, setName] = useState(playlist.name);
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name.trim()) return;
+    onSave(name.trim());
+  };
+
   return (
-    <div className="absolute inset-0 z-[80] flex items-center justify-center bg-black/75 p-7 backdrop-blur-sm">
-      <form onSubmit={(event) => { event.preventDefault(); if (name.trim()) onCreate(name); }} className="w-full rounded-2xl border border-indigo-400/20 bg-[#11141c] p-5 shadow-2xl">
-        <div className="mb-4 flex items-center justify-between">
-          <div>
-            <h4 className="text-sm font-bold text-white">New Playlist</h4>
-            <p className="mt-0.5 text-[10px] text-slate-400">Create a playlist without copying audio files</p>
-          </div>
-          <button type="button" onClick={onClose} className="rounded-lg p-1.5 text-slate-400 hover:bg-white/10 hover:text-white"><X className="h-4 w-4" /></button>
+    <div className="absolute inset-0 z-[70] flex items-center justify-center bg-black/75 p-6 backdrop-blur-sm">
+      <form onSubmit={handleSubmit} className="w-full rounded-2xl border border-white/10 bg-[#11141c] p-4 shadow-2xl">
+        <div className="mb-3 flex items-center justify-between">
+          <h4 className="text-sm font-bold text-white">Rename Playlist</h4>
+          <button type="button" onClick={onClose} className="rounded-lg p-1 text-slate-400 hover:bg-white/10 hover:text-white"><X className="h-4 w-4" /></button>
         </div>
-        <input value={name} onChange={(event) => setName(event.target.value)} maxLength={60} autoFocus placeholder="Playlist Name" className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2.5 text-xs text-white outline-none placeholder:text-slate-500 focus:border-indigo-400/60" />
+        <div>
+          <label className="text-[10px] font-semibold text-slate-400">Playlist Name</label>
+          <input value={name} onChange={(e) => setName(e.target.value)} maxLength={60} className="mt-1 w-full rounded-xl border border-white/10 bg-white/5 px-2.5 py-1.5 text-xs text-white outline-none focus:border-indigo-400" autoFocus />
+        </div>
         <div className="mt-4 flex justify-end gap-2">
-          <button type="button" onClick={onClose} className="rounded-xl bg-white/5 px-3 py-2 text-xs font-semibold text-slate-300 hover:bg-white/10">Cancel</button>
-          <button type="submit" disabled={!name.trim()} className="flex items-center gap-1.5 rounded-xl bg-indigo-400 px-3 py-2 text-xs font-bold text-dark-900 hover:bg-indigo-300 disabled:opacity-40"><Plus className="h-3.5 w-3.5" /> Create</button>
+          <button type="button" onClick={onClose} className="rounded-xl px-3 py-1.5 text-xs font-semibold text-slate-300 hover:bg-white/10">Cancel</button>
+          <button type="submit" disabled={!name.trim()} className="rounded-xl bg-indigo-500 px-3.5 py-1.5 text-xs font-bold text-white shadow-md hover:bg-indigo-400 disabled:opacity-40">Save</button>
+        </div>
+      </form>
+    </div>
+  );
+};
+
+interface CreatePlaylistDialogProps {
+  onClose: () => void;
+  onCreate: (name: string) => void;
+}
+
+const CreatePlaylistDialog: React.FC<CreatePlaylistDialogProps> = ({ onClose, onCreate }) => {
+  const [name, setName] = useState('');
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name.trim()) return;
+    onCreate(name.trim());
+  };
+
+  return (
+    <div className="absolute inset-0 z-[70] flex items-center justify-center bg-black/75 p-6 backdrop-blur-sm">
+      <form onSubmit={handleSubmit} className="w-full rounded-2xl border border-white/10 bg-[#11141c] p-4 shadow-2xl">
+        <div className="mb-3 flex items-center justify-between">
+          <h4 className="text-sm font-bold text-white">Create Playlist</h4>
+          <button type="button" onClick={onClose} className="rounded-lg p-1 text-slate-400 hover:bg-white/10 hover:text-white"><X className="h-4 w-4" /></button>
+        </div>
+        <div>
+          <label className="text-[10px] font-semibold text-slate-400">Playlist Name</label>
+          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="My Favorite Jams" className="mt-1 w-full rounded-xl border border-white/10 bg-white/5 px-2.5 py-1.5 text-xs text-white outline-none focus:border-indigo-400" autoFocus />
+        </div>
+        <div className="mt-4 flex justify-end gap-2">
+          <button type="button" onClick={onClose} className="rounded-xl px-3 py-1.5 text-xs font-semibold text-slate-300 hover:bg-white/10">Cancel</button>
+          <button type="submit" className="rounded-xl bg-indigo-500 px-3.5 py-1.5 text-xs font-bold text-white shadow-md hover:bg-indigo-400">Create</button>
         </div>
       </form>
     </div>
@@ -124,46 +163,93 @@ const SongPlaylistDialog: React.FC<SongPlaylistDialogProps> = ({ song, playlists
   </div>
 );
 
-interface PlaylistManagerDialogProps {
+interface AddSongsModalProps {
   playlist: Playlist;
   library: Song[];
   onToggle: (songId: string) => void;
-  onPlay: (song: Song) => void;
-  onDelete: () => void;
   onClose: () => void;
 }
 
-const PlaylistManagerDialog: React.FC<PlaylistManagerDialogProps> = ({ playlist, library, onToggle, onPlay, onDelete, onClose }) => {
-  const [confirmDelete, setConfirmDelete] = useState(false);
+const AddSongsToPlaylistModal: React.FC<AddSongsModalProps> = ({ playlist, library, onToggle, onClose }) => {
+  const [search, setSearch] = useState('');
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return library;
+    return library.filter((s) => s.title.toLowerCase().includes(q) || s.artist.toLowerCase().includes(q));
+  }, [library, search]);
+
   return (
-    <div className="absolute inset-0 z-[70] flex items-center justify-center bg-black/75 p-5 backdrop-blur-sm">
-      <div className="flex max-h-[360px] w-full flex-col rounded-2xl border border-white/10 bg-[#11141c] p-4 shadow-2xl">
-        <div className="mb-3 flex items-center gap-3">
-          <img src={getDisplayCoverUrl(playlist.coverUrl, 96)} onError={handleCoverImageError} alt="" loading="lazy" decoding="async" className="h-11 w-11 rounded-xl object-cover" />
-          <div className="min-w-0 flex-1"><h4 className="truncate text-sm font-bold text-white">{playlist.name}</h4><p className="text-[10px] text-slate-400">{playlist.songs.length} songs</p></div>
-          <button type="button" onClick={() => setConfirmDelete(true)} className="rounded-lg p-1.5 text-slate-500 hover:bg-rose-500/10 hover:text-rose-300" title="Delete playlist"><Trash2 className="h-4 w-4" /></button>
-          <button type="button" onClick={onClose} className="rounded-lg p-1.5 text-slate-400 hover:bg-white/10 hover:text-white"><X className="h-4 w-4" /></button>
+    <div className="absolute inset-0 z-[70] flex items-center justify-center bg-black/80 p-4 backdrop-blur-md">
+      <div className="flex max-h-[350px] w-full flex-col rounded-2xl border border-white/10 bg-[#11141c] p-4 shadow-2xl">
+        <div className="mb-3 flex items-center justify-between">
+          <h4 className="text-sm font-bold text-white">Add Songs to “{playlist.name}”</h4>
+          <button type="button" onClick={onClose} className="rounded-lg p-1 text-slate-400 hover:bg-white/10 hover:text-white">
+            <X className="h-4 w-4" />
+          </button>
         </div>
-        <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-slate-500">Select songs</p>
+
+        {/* Search */}
+        <div className="mb-2.5 flex h-7 items-center gap-1.5 rounded-xl border border-white/10 bg-white/5 px-2">
+          <Search className="h-3 w-3 text-slate-400" />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search songs in library..."
+            className="w-full bg-transparent text-[11px] text-white outline-none placeholder:text-slate-500"
+          />
+          {search && (
+            <button onClick={() => setSearch('')} className="text-slate-400 hover:text-white">
+              <X className="h-3 w-3" />
+            </button>
+          )}
+        </div>
+
+        {/* List of library songs with Checkbox */}
         <div className="min-h-0 flex-1 space-y-1 overflow-y-auto pr-1">
-          {library.map((song) => {
-            const included = playlist.songs.some((item) => item.id === song.id);
+          {filtered.map((song) => {
+            const included = playlist.songs.some((s) => s.id === song.id);
             return (
-              <div key={song.id} className="flex items-center gap-2 rounded-xl bg-white/[0.04] p-1.5 hover:bg-white/[0.08]">
-                <button type="button" onClick={() => onPlay(song)} className="relative h-8 w-8 flex-shrink-0 overflow-hidden rounded-lg"><img src={getDisplayCoverUrl(song.coverUrl, 96)} onError={handleCoverImageError} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover" /><span className="absolute inset-0 flex items-center justify-center bg-black/35 text-white"><Play className="h-3 w-3 fill-current" /></span></button>
-                <div className="min-w-0 flex-1"><p className="truncate text-[11px] font-semibold text-white">{song.title}</p><p className="truncate text-[9px] text-slate-500">{song.artist}</p></div>
-                <button type="button" onClick={() => onToggle(song.id)} className={`flex h-6 w-6 items-center justify-center rounded-lg border ${included ? 'border-indigo-300 bg-indigo-400 text-dark-900' : 'border-white/15 text-slate-500 hover:border-white/30'}`}><Check className="h-3.5 w-3.5" /></button>
+              <div
+                key={song.id}
+                onClick={() => onToggle(song.id)}
+                className={`flex cursor-pointer items-center gap-2.5 rounded-xl p-1.5 transition-colors ${
+                  included ? 'border border-indigo-400/30 bg-indigo-500/10' : 'bg-white/[0.04] hover:bg-white/[0.08]'
+                }`}
+              >
+                <img
+                  src={getDisplayCoverUrl(song.coverUrl, 96)}
+                  onError={handleCoverImageError}
+                  alt=""
+                  loading="lazy"
+                  decoding="async"
+                  className="h-8 w-8 rounded-lg object-cover"
+                />
+                <div className="min-w-0 flex-1">
+                  <p className={`truncate text-[11px] font-semibold ${included ? 'text-indigo-200' : 'text-white'}`}>
+                    {song.title}
+                  </p>
+                  <p className="truncate text-[9px] text-slate-400">{song.artist}</p>
+                </div>
+                <div className={`flex h-5 w-5 items-center justify-center rounded-md border ${
+                  included ? 'border-indigo-400 bg-indigo-500 text-white' : 'border-white/20 text-transparent'
+                }`}>
+                  <Check className="h-3 w-3" />
+                </div>
               </div>
             );
           })}
-          {library.length === 0 && <p className="py-8 text-center text-[11px] text-slate-500">Library is empty.</p>}
+          {filtered.length === 0 && (
+            <p className="py-8 text-center text-[11px] text-slate-500">No songs found.</p>
+          )}
         </div>
-        {confirmDelete && (
-          <div className="mt-3 flex items-center justify-between rounded-xl border border-rose-400/20 bg-rose-500/10 p-2">
-            <span className="text-[10px] text-rose-200">Delete this playlist?</span>
-            <div className="flex gap-1"><button type="button" onClick={() => setConfirmDelete(false)} className="rounded-lg px-2 py-1 text-[10px] text-slate-300 hover:bg-white/10">Cancel</button><button type="button" onClick={onDelete} className="rounded-lg bg-rose-500 px-2 py-1 text-[10px] font-bold text-white">Delete</button></div>
-          </div>
-        )}
+
+        <button
+          type="button"
+          onClick={onClose}
+          className="mt-3 flex w-full items-center justify-center rounded-xl bg-indigo-500 py-1.5 text-xs font-semibold text-white shadow-md hover:bg-indigo-600 active:scale-[0.98]"
+        >
+          Done
+        </button>
       </div>
     </div>
   );
@@ -275,6 +361,12 @@ export const MusicDrawer: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [isCreatePlaylistOpen, setIsCreatePlaylistOpen] = useState(false);
   const [playlistSong, setPlaylistSong] = useState<Song | null>(null);
+  const [isSelectMode, setIsSelectMode] = useState(false);
+  const [selectedSongIds, setSelectedSongIds] = useState<Set<string>>(new Set());
+  const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
+  const [isAddSongsOpen, setIsAddSongsOpen] = useState(false);
+  const [playlistToDelete, setPlaylistToDelete] = useState<Playlist | null>(null);
+  const [renamingPlaylist, setRenamingPlaylist] = useState<Playlist | null>(null);
 
   const {
     toggleDrawer,
@@ -291,20 +383,26 @@ export const MusicDrawer: React.FC = () => {
     queue,
     playbackQueue,
     playSong,
+    playSongList,
     playPlaylist,
     addToPlaybackQueue,
     playNextFromQueue,
     removeFromPlaybackQueue,
     movePlaybackQueueItem,
+    shufflePlaybackQueue,
+    toggleQueueRepeat,
     clearPlaybackQueue,
+    queueEndBehavior,
     currentSong,
     addMultipleLocalSongs,
     updateSongMetadata,
     toggleFavorite,
     createPlaylist,
+    renamePlaylist,
     toggleSongInPlaylist,
     deletePlaylist,
     deleteSong,
+    deleteMultipleSongs,
     libraryNotice,
     clearLibraryNotice,
     isSettingsOpen,
@@ -324,20 +422,26 @@ export const MusicDrawer: React.FC = () => {
     queue: state.queue,
     playbackQueue: state.playbackQueue,
     playSong: state.playSong,
+    playSongList: state.playSongList,
     playPlaylist: state.playPlaylist,
     addToPlaybackQueue: state.addToPlaybackQueue,
     playNextFromQueue: state.playNextFromQueue,
     removeFromPlaybackQueue: state.removeFromPlaybackQueue,
     movePlaybackQueueItem: state.movePlaybackQueueItem,
+    shufflePlaybackQueue: state.shufflePlaybackQueue,
+    toggleQueueRepeat: state.toggleQueueRepeat,
     clearPlaybackQueue: state.clearPlaybackQueue,
+    queueEndBehavior: state.queueEndBehavior,
     currentSong: state.currentSong,
     addMultipleLocalSongs: state.addMultipleLocalSongs,
     updateSongMetadata: state.updateSongMetadata,
     toggleFavorite: state.toggleFavorite,
     createPlaylist: state.createPlaylist,
+    renamePlaylist: state.renamePlaylist,
     toggleSongInPlaylist: state.toggleSongInPlaylist,
     deletePlaylist: state.deletePlaylist,
     deleteSong: state.deleteSong,
+    deleteMultipleSongs: state.deleteMultipleSongs,
     libraryNotice: state.libraryNotice,
     clearLibraryNotice: state.clearLibraryNotice,
     isSettingsOpen: state.isSettingsOpen,
@@ -582,12 +686,39 @@ export const MusicDrawer: React.FC = () => {
                   <button onClick={() => setCdSubTab('favorites')} className={`px-2.5 py-0.5 rounded-lg text-[11px] font-medium transition-all ${cdSubTab === 'favorites' ? 'bg-amber-400/20 text-amber-300 border border-amber-400/40 font-semibold' : 'bg-white/5 text-slate-400 hover:text-slate-200'}`}>Favorites</button>
                 </div>
                 <div className="flex items-center gap-1">
-                  <button type="button" onClick={() => setIsSearchOpen(true)} className="rounded-lg border border-white/10 bg-white/5 p-1 text-slate-400 transition-colors hover:text-white" title="Search songs">
+                  <button
+                    type="button"
+                    onClick={() => setIsSearchOpen(true)}
+                    className="flex h-7 w-7 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-slate-400 transition-colors hover:border-white/20 hover:bg-white/10 hover:text-white"
+                    title="Search songs"
+                    aria-label="Search songs"
+                  >
                     <Search className="h-3.5 w-3.5" />
                   </button>
-                  <button onClick={() => fileInputRef.current?.click()} className="flex items-center gap-1 rounded-lg border border-amber-500/30 bg-amber-500/20 px-1.5 py-1 text-[10px] font-semibold text-amber-300 transition-all hover:bg-amber-500/30 active:scale-95" title="Add local music files">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsSelectMode(!isSelectMode);
+                      setSelectedSongIds(new Set());
+                    }}
+                    className={`flex h-7 w-7 items-center justify-center rounded-lg border transition-all ${
+                      isSelectMode
+                        ? 'border-amber-400/40 bg-amber-400/20 text-amber-300 shadow-sm'
+                        : 'border-white/10 bg-white/5 text-slate-400 hover:border-white/20 hover:bg-white/10 hover:text-white'
+                    }`}
+                    title={isSelectMode ? 'Cancel Select' : 'Select multiple songs to delete'}
+                    aria-label="Select multiple songs"
+                  >
+                    <ListChecks className="h-3.5 w-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="flex h-7 w-7 items-center justify-center rounded-lg border border-amber-500/30 bg-amber-500/20 text-amber-300 transition-all hover:bg-amber-500/30 hover:text-amber-200 active:scale-95 shadow-sm"
+                    title="Import local music files"
+                    aria-label="Import local music files"
+                  >
                     <FolderPlus className="h-3.5 w-3.5 text-amber-400" />
-                    <span>Import</span>
                   </button>
                 </div>
               </>
@@ -595,7 +726,7 @@ export const MusicDrawer: React.FC = () => {
           </div>
 
           {/* Grid Content: Pure Circular CD Discs + Text Directly Underneath (Frameless User Sketch) */}
-          <div ref={cdScrollRef} className="h-[280px] overflow-y-auto overscroll-contain px-1 pt-2 pr-2">
+          <div ref={cdScrollRef} className="relative h-[285px] overflow-y-auto overscroll-contain px-1 pt-2 pr-2 pb-4">
             {filteredCDs.length === 0 && (
               <div className="flex h-[250px] flex-col items-center justify-center text-center">
                 {cdSubTab === 'favorites' && !searchQuery ? <Heart className="mb-2 h-7 w-7 text-slate-600" /> : <Search className="mb-2 h-7 w-7 text-slate-600" />}
@@ -611,106 +742,395 @@ export const MusicDrawer: React.FC = () => {
                     className="absolute left-0 top-0 grid w-full grid-cols-3 gap-x-3"
                     style={{ height: 130, transform: `translateY(${virtualRow.start}px)` }}
                   >
-                    {filteredCDs.slice(virtualRow.index * 3, virtualRow.index * 3 + 3).map((song) => (
-                      <div
-                        key={song.id}
-                        onClick={() => playSong(song)}
-                        className="pure-cd-container group/cd relative cursor-pointer flex flex-col items-center text-center"
-                      >
-                <button
-                  type="button"
-                  onClick={(event) => { event.stopPropagation(); toggleFavorite(song.id); }}
-                  className={`absolute left-0 top-0 z-40 rounded-lg p-1 shadow-md transition-all ${song.isFavorite ? 'bg-rose-500 text-white opacity-100' : 'bg-black/60 text-slate-300 opacity-0 hover:bg-rose-500 hover:text-white group-hover/cd:opacity-100'}`}
-                  aria-label={song.isFavorite ? `Remove ${song.title} from Favorites` : `Add ${song.title} to Favorites`}
-                >
-                  <Heart className={`h-3.5 w-3.5 ${song.isFavorite ? 'fill-current' : ''}`} />
-                </button>
-                <button
-                  type="button"
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    const anchor = event.currentTarget;
-                    setCdMenu((current) => current?.song.id === song.id ? null : { song, anchor });
-                  }}
-                  className={`absolute right-0 top-0 z-40 rounded-lg bg-black/60 p-1 text-slate-300 shadow-md transition-all hover:bg-white hover:text-dark-900 group-hover/cd:opacity-100 ${cdMenu?.song.id === song.id ? 'opacity-100' : 'opacity-0'}`}
-                  aria-label={`Menu ${song.title}`}
-                  aria-haspopup="menu"
-                  aria-expanded={cdMenu?.song.id === song.id}
-                >
-                  <MoreHorizontal className="h-3.5 w-3.5" />
-                </button>
+                    {filteredCDs.slice(virtualRow.index * 3, virtualRow.index * 3 + 3).map((song) => {
+                      const isSelected = selectedSongIds.has(song.id);
+                      return (
+                        <div
+                          key={song.id}
+                          onClick={() => {
+                            if (isSelectMode) {
+                              setSelectedSongIds((prev) => {
+                                const next = new Set(prev);
+                                if (next.has(song.id)) next.delete(song.id);
+                                else next.add(song.id);
+                                return next;
+                              });
+                            } else {
+                              playSongList(filteredCDs, filteredCDs.findIndex((s) => s.id === song.id));
+                            }
+                          }}
+                          className="pure-cd-container group/cd relative cursor-pointer flex flex-col items-center text-center"
+                        >
+                          {/* Selection Checkbox Overlay */}
+                          {isSelectMode ? (
+                            <div className={`absolute left-0 top-0 z-40 flex h-6 w-6 items-center justify-center rounded-full border shadow-md transition-all ${
+                              isSelected ? 'border-amber-400 bg-amber-400 text-dark-900 font-bold' : 'border-white/40 bg-black/70 text-transparent'
+                            }`}>
+                              <Check className="h-3.5 w-3.5 stroke-[3]" />
+                            </div>
+                          ) : (
+                            <>
+                              <button
+                                type="button"
+                                onClick={(event) => { event.stopPropagation(); toggleFavorite(song.id); }}
+                                className={`absolute left-0 top-0 z-40 rounded-lg p-1 shadow-md transition-all ${song.isFavorite ? 'bg-rose-500 text-white opacity-100' : 'bg-black/60 text-slate-300 opacity-0 hover:bg-rose-500 hover:text-white group-hover/cd:opacity-100'}`}
+                                aria-label={song.isFavorite ? `Remove ${song.title} from Favorites` : `Add ${song.title} to Favorites`}
+                              >
+                                <Heart className={`h-3.5 w-3.5 ${song.isFavorite ? 'fill-current' : ''}`} />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  const anchor = event.currentTarget;
+                                  setCdMenu((current) => current?.song.id === song.id ? null : { song, anchor });
+                                }}
+                                className={`absolute right-0 top-0 z-40 rounded-lg bg-black/60 p-1 text-slate-300 shadow-md transition-all hover:bg-white hover:text-dark-900 group-hover/cd:opacity-100 ${cdMenu?.song.id === song.id ? 'opacity-100' : 'opacity-0'}`}
+                                aria-label={`Menu ${song.title}`}
+                                aria-haspopup="menu"
+                                aria-expanded={cdMenu?.song.id === song.id}
+                              >
+                                <MoreHorizontal className="h-3.5 w-3.5" />
+                              </button>
+                            </>
+                          )}
 
-                {/* TOP: Pure Circular CD Disc */}
-                <div className="pure-cd-disc vinyl-grooves relative flex items-center justify-center shadow-xl">
-                  <img
-                    src={getDisplayCoverUrl(song.coverUrl, 128)}
-                    onError={handleCoverImageError}
-                    alt={song.title}
-                    loading="lazy"
-                    decoding="async"
-                    className="w-full h-full object-cover opacity-90 group-hover/cd:opacity-100 transition-opacity"
-                  />
+                          {/* TOP: Pure Circular CD Disc */}
+                          <div className={`pure-cd-disc vinyl-grooves relative flex items-center justify-center shadow-xl transition-transform ${isSelected ? 'ring-2 ring-amber-400 scale-[0.96]' : ''}`}>
+                            <img
+                              src={getDisplayCoverUrl(song.coverUrl, 128)}
+                              onError={handleCoverImageError}
+                              alt={song.title}
+                              loading="lazy"
+                              decoding="async"
+                              className="w-full h-full object-cover opacity-90 group-hover/cd:opacity-100 transition-opacity"
+                            />
 
-                  {/* Center Spindle Hole */}
-                  <div className="pure-cd-center-hole" />
+                            {/* Center Spindle Hole */}
+                            <div className="pure-cd-center-hole" />
 
-                  {/* Hover Play Icon Overlay */}
-                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/cd:opacity-100 transition-opacity flex items-center justify-center z-20">
-                    <div className="w-7 h-7 rounded-full bg-white text-dark-900 flex items-center justify-center shadow-lg">
-                      <Play className="w-3.5 h-3.5 fill-current ml-0.5" />
-                    </div>
-                  </div>
-                </div>
+                            {/* Hover Play Icon Overlay */}
+                            {!isSelectMode && (
+                              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/cd:opacity-100 transition-opacity flex items-center justify-center z-20">
+                                <div className="w-7 h-7 rounded-full bg-white text-dark-900 flex items-center justify-center shadow-lg">
+                                  <Play className="w-3.5 h-3.5 fill-current ml-0.5" />
+                                </div>
+                              </div>
+                            )}
+                          </div>
 
-                {/* BOTTOM: Text Information (Line 1: Title, Line 2: Artist) */}
-                <div className="mt-2 w-full">
-                  <h5 className="text-[11px] font-bold text-white truncate group-hover/cd:text-amber-300 transition-colors font-sans px-0.5">
-                    {song.title}
-                  </h5>
-                  <p className="text-[10px] text-slate-400 truncate mt-0.5">
-                    {song.artist}
-                  </p>
-                </div>
-                      </div>
-                    ))}
+                          {/* BOTTOM: Text Information (Line 1: Title, Line 2: Artist) */}
+                          <div className="mt-2 w-full">
+                            <h5 className="text-[11px] font-bold text-white truncate group-hover/cd:text-amber-300 transition-colors font-sans px-0.5">
+                              {song.title}
+                            </h5>
+                            <p className="text-[10px] text-slate-400 truncate mt-0.5">
+                              {song.artist}
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 ))}
               </div>
             )}
+
+            {/* Floating Multi-Select Action Bar */}
+            {isSelectMode && (
+              <div className="sticky bottom-0 left-0 right-0 z-50 flex items-center justify-between rounded-xl border border-white/15 bg-dark-900/95 p-2 shadow-2xl backdrop-blur-md">
+                <div className="flex items-center gap-2">
+                  <span className="rounded-lg bg-amber-400/20 px-2 py-0.5 text-[10px] font-bold text-amber-300">
+                    {selectedSongIds.size} Selected
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (selectedSongIds.size === filteredCDs.length) setSelectedSongIds(new Set());
+                      else setSelectedSongIds(new Set(filteredCDs.map((s) => s.id)));
+                    }}
+                    className="rounded-lg px-2 py-0.5 text-[10px] font-medium text-slate-300 hover:bg-white/10"
+                  >
+                    {selectedSongIds.size === filteredCDs.length ? 'Deselect All' : 'Select All'}
+                  </button>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => { setIsSelectMode(false); setSelectedSongIds(new Set()); }}
+                    className="rounded-lg px-2 py-0.5 text-[10px] text-slate-400 hover:bg-white/10 hover:text-white"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setConfirmBulkDelete(true)}
+                    disabled={selectedSongIds.size === 0}
+                    className="flex items-center gap-1 rounded-lg bg-rose-500 px-2.5 py-1 text-[10px] font-bold text-white shadow-md hover:bg-rose-600 active:scale-95 disabled:opacity-30"
+                  >
+                    <Trash2 className="h-3 w-3" />
+                    <span>Delete ({selectedSongIds.size})</span>
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
+
+          {/* Confirm Bulk Delete Dialog */}
+          {confirmBulkDelete && (
+            <div className="absolute inset-0 z-[70] flex items-center justify-center bg-black/80 p-6 backdrop-blur-sm">
+              <div className="w-full rounded-2xl border border-rose-500/30 bg-[#161318] p-4 shadow-2xl">
+                <div className="mb-2 flex items-center gap-2 text-rose-400">
+                  <AlertTriangle className="h-5 w-5 flex-shrink-0" />
+                  <h4 className="text-sm font-bold text-white">Delete {selectedSongIds.size} Songs?</h4>
+                </div>
+                <p className="text-[11px] text-slate-400">
+                  Are you sure you want to remove {selectedSongIds.size} selected songs from your library and playlists? This action cannot be undone.
+                </p>
+                <div className="mt-4 flex justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setConfirmBulkDelete(false)}
+                    className="rounded-xl px-3 py-1.5 text-xs font-semibold text-slate-300 hover:bg-white/10"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      const ids = Array.from(selectedSongIds);
+                      setConfirmBulkDelete(false);
+                      setIsSelectMode(false);
+                      setSelectedSongIds(new Set());
+                      await deleteMultipleSongs(ids);
+                    }}
+                    className="rounded-xl bg-rose-500 px-3.5 py-1.5 text-xs font-bold text-white shadow-lg hover:bg-rose-600 active:scale-95"
+                  >
+                    Delete All
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
       {/* CATEGORY 2: PLAYLIST */}
       {!isSettingsOpen && drawerTab === 'playlist' && (
-        <div className="h-[317px] space-y-3">
-          <div className="flex items-center justify-between px-1">
-            <div><p className="text-[11px] font-semibold text-slate-300">Your Collection</p><p className="text-[9px] text-slate-500">{playlists.length} playlists</p></div>
-            <button type="button" onClick={() => { setPlaylistSong(null); setIsCreatePlaylistOpen(true); }} className="flex items-center gap-1 rounded-lg border border-indigo-400/30 bg-indigo-400/10 px-2 py-1 text-[10px] font-semibold text-indigo-300 hover:bg-indigo-400/20"><Plus className="h-3.5 w-3.5" /> New Playlist</button>
-          </div>
-          <div className="grid h-[280px] grid-cols-2 auto-rows-[66px] gap-2.5 overflow-y-auto overscroll-contain pr-1">
-            {playlists.map((playlist) => (
-              <button
-                type="button"
-                key={playlist.id}
-                onClick={() => selectPlaylist(playlist.id)}
-                className="group/playlist flex items-center gap-2.5 rounded-2xl border border-white/5 bg-white/5 p-2 text-left transition-all hover:border-indigo-400/25 hover:bg-white/10"
-              >
-                <div className="relative h-11 w-11 flex-shrink-0 overflow-hidden rounded-xl border border-white/10">
-                  <img src={getDisplayCoverUrl(playlist.coverUrl, 96)} onError={handleCoverImageError} alt={playlist.name} loading="lazy" decoding="async" className="h-full w-full object-cover transition-transform group-hover/playlist:scale-105" />
-                  {playlist.songs.length > 0 && <span onClick={(event) => { event.stopPropagation(); playPlaylist(playlist.id); }} className="absolute inset-0 flex items-center justify-center bg-black/35 text-white opacity-0 transition-opacity group-hover/playlist:opacity-100"><Play className="h-4 w-4 fill-current" /></span>}
+        <div className="h-[317px] space-y-2.5">
+          {!managedPlaylist ? (
+            /* 2.1 Playlist Collection Overview */
+            <>
+              <div className="flex items-center justify-between px-1">
+                <div>
+                  <p className="text-[11px] font-semibold text-slate-300">Your Collection</p>
+                  <p className="text-[9px] text-slate-500">{playlists.length} playlists</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => { setPlaylistSong(null); setIsCreatePlaylistOpen(true); }}
+                  className="flex items-center gap-1 rounded-lg border border-indigo-400/30 bg-indigo-400/10 px-2 py-1 text-[10px] font-semibold text-indigo-300 hover:bg-indigo-400/20 active:scale-95"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  <span>New Playlist</span>
+                </button>
+              </div>
+              <div className="grid h-[280px] grid-cols-2 auto-rows-[66px] gap-2.5 overflow-y-auto overscroll-contain pr-1">
+                {playlists.map((playlist) => (
+                  <button
+                    type="button"
+                    key={playlist.id}
+                    onClick={() => selectPlaylist(playlist.id)}
+                    className="group/playlist flex items-center gap-2.5 rounded-2xl border border-white/5 bg-white/5 p-2 text-left transition-all hover:border-indigo-400/25 hover:bg-white/10"
+                  >
+                    <div className="relative h-11 w-11 flex-shrink-0 overflow-hidden rounded-xl border border-white/10">
+                      <img
+                        src={getDisplayCoverUrl(playlist.coverUrl, 96)}
+                        onError={handleCoverImageError}
+                        alt={playlist.name}
+                        loading="lazy"
+                        decoding="async"
+                        className="h-full w-full object-cover transition-transform group-hover/playlist:scale-105"
+                      />
+                      {playlist.songs.length > 0 && (
+                        <span
+                          onClick={(event) => { event.stopPropagation(); playPlaylist(playlist.id); }}
+                          className="absolute inset-0 flex items-center justify-center bg-black/35 text-white opacity-0 transition-opacity group-hover/playlist:opacity-100"
+                        >
+                          <Play className="h-4 w-4 fill-current" />
+                        </span>
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <h5 className="truncate text-[11px] font-bold text-white transition-colors group-hover/playlist:text-indigo-300">
+                        {playlist.name}
+                      </h5>
+                      <p className="mt-0.5 truncate text-[9px] text-slate-500">
+                        {playlist.songs.length} songs · {playlist.curator}
+                      </p>
+                      <span className="mt-1 inline-flex items-center gap-1 text-[9px] text-slate-400">
+                        <ListMusic className="h-2.5 w-2.5" /> View tracks
+                      </span>
+                    </div>
+                  </button>
+                ))}
+                {playlists.length === 0 && (
+                  <div className="col-span-2 flex h-[250px] flex-col items-center justify-center text-center">
+                    <ListMusic className="mb-2 h-8 w-8 text-slate-600" />
+                    <p className="text-xs font-semibold text-slate-300">No playlists yet</p>
+                    <p className="mt-1 text-[10px] text-slate-500">Create your first playlist to organize your music.</p>
+                  </div>
+                )}
+              </div>
+            </>
+          ) : (
+            /* 2.2 Direction 1: Studio Hero Inset (Playlist Detail View) */
+            <div className="flex h-full flex-col">
+              {/* Hero Header */}
+              <div className="flex items-center gap-2.5 rounded-2xl border border-white/10 bg-white/5 p-2.5 shadow-md backdrop-blur-sm">
+                <button
+                  type="button"
+                  onClick={() => selectPlaylist(null)}
+                  className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-slate-300 transition-colors hover:bg-white/15 hover:text-white"
+                  title="Back to Playlists"
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                </button>
+                <div className="relative h-10 w-10 flex-shrink-0 overflow-hidden rounded-xl border border-white/10 shadow-sm">
+                  <img
+                    src={getDisplayCoverUrl(managedPlaylist.coverUrl, 96)}
+                    onError={handleCoverImageError}
+                    alt=""
+                    className="h-full w-full object-cover"
+                  />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <h5 className="truncate text-[11px] font-bold text-white transition-colors group-hover/playlist:text-indigo-300">{playlist.name}</h5>
-                  <p className="mt-0.5 truncate text-[9px] text-slate-500">{playlist.songs.length} songs · {playlist.curator}</p>
-                  <span className="mt-1 inline-flex items-center gap-1 text-[9px] text-slate-400"><ListMusic className="h-2.5 w-2.5" /> Manage</span>
+                  <div className="flex items-center gap-1.5">
+                    <h4 className="truncate text-xs font-bold text-white">{managedPlaylist.name}</h4>
+                    <button
+                      type="button"
+                      onClick={() => setRenamingPlaylist(managedPlaylist)}
+                      className="rounded p-0.5 text-slate-400 hover:bg-white/10 hover:text-white"
+                      title="Rename Playlist"
+                      aria-label="Rename Playlist"
+                    >
+                      <Pencil className="h-2.5 w-2.5" />
+                    </button>
+                  </div>
+                  <p className="truncate text-[9px] text-slate-400">
+                    {managedPlaylist.songs.length} songs · {managedPlaylist.curator}
+                  </p>
                 </div>
-              </button>
-            ))}
-            {playlists.length === 0 && (
-              <div className="col-span-2 flex h-[250px] flex-col items-center justify-center text-center"><ListMusic className="mb-2 h-8 w-8 text-slate-600" /><p className="text-xs font-semibold text-slate-300">No playlists yet</p><p className="mt-1 text-[10px] text-slate-500">Create your first playlist to organize your music.</p></div>
-            )}
-          </div>
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => playPlaylist(managedPlaylist.id)}
+                    disabled={managedPlaylist.songs.length === 0}
+                    className="flex h-7 w-7 items-center justify-center rounded-lg border border-emerald-400/40 bg-emerald-400/20 text-emerald-300 shadow-sm transition-all hover:bg-emerald-400/30 active:scale-95 disabled:opacity-30"
+                    title="Play All"
+                  >
+                    <Play className="h-3.5 w-3.5 fill-current ml-0.5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (managedPlaylist.songs.length > 0) {
+                        const shuffled = [...managedPlaylist.songs];
+                        for (let i = shuffled.length - 1; i > 0; i--) {
+                          const j = Math.floor(Math.random() * (i + 1));
+                          [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+                        }
+                        playSongList(shuffled, 0);
+                      }
+                    }}
+                    disabled={managedPlaylist.songs.length === 0}
+                    className="flex h-7 w-7 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-slate-400 transition-all hover:border-white/20 hover:bg-white/10 hover:text-white active:scale-95 disabled:opacity-30"
+                    title="Shuffle Play"
+                  >
+                    <Shuffle className="h-3.5 w-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsAddSongsOpen(true)}
+                    className="flex h-7 w-7 items-center justify-center rounded-lg border border-indigo-400/30 bg-indigo-400/20 text-indigo-300 shadow-sm transition-all hover:bg-indigo-400/30 active:scale-95"
+                    title="Add Songs to Playlist"
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPlaylistToDelete(managedPlaylist)}
+                    className="flex h-7 w-7 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-slate-400 transition-all hover:border-rose-400/30 hover:bg-rose-500/20 hover:text-rose-300 active:scale-95"
+                    title="Delete Playlist"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Tracks List (Strictly shows tracks in this playlist) */}
+              <div className="mt-2 min-h-0 flex-1 space-y-1 overflow-y-auto overscroll-contain pr-1">
+                {managedPlaylist.songs.map((song, index) => {
+                  const isCurrent = currentSong?.id === song.id;
+                  return (
+                    <div
+                      key={song.id}
+                      onClick={() => playSongList(managedPlaylist.songs, index)}
+                      className={`group/song flex cursor-pointer items-center gap-2 rounded-xl border p-1.5 transition-all ${
+                        isCurrent
+                          ? 'border-indigo-400/40 bg-indigo-400/15 font-semibold'
+                          : 'border-white/5 bg-white/[0.03] hover:border-white/10 hover:bg-white/[0.07]'
+                      }`}
+                    >
+                      <span className={`w-4 text-center font-mono text-[9px] ${isCurrent ? 'font-bold text-indigo-300' : 'text-slate-500'}`}>
+                        {isCurrent ? '▶' : index + 1}
+                      </span>
+                      <img
+                        src={getDisplayCoverUrl(song.coverUrl, 96)}
+                        onError={handleCoverImageError}
+                        alt=""
+                        loading="lazy"
+                        decoding="async"
+                        className="h-8 w-8 flex-shrink-0 rounded-lg object-cover"
+                      />
+                      <div className="min-w-0 flex-1">
+                        <p className={`truncate text-[11px] ${isCurrent ? 'text-indigo-200' : 'text-white'}`}>
+                          {song.title}
+                        </p>
+                        <p className="truncate text-[9px] text-slate-500">{song.artist}</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleSongInPlaylist(managedPlaylist.id, song.id);
+                        }}
+                        className="rounded p-1 text-slate-500 opacity-0 transition-opacity hover:bg-rose-500/20 hover:text-rose-300 group-hover/song:opacity-100"
+                        title="Remove from playlist"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  );
+                })}
+                {managedPlaylist.songs.length === 0 && (
+                  <div className="flex h-[210px] flex-col items-center justify-center text-center">
+                    <ListMusic className="mb-2 h-7 w-7 text-slate-600" />
+                    <p className="text-xs font-semibold text-slate-300">Playlist is empty</p>
+                    <p className="mt-0.5 text-[10px] text-slate-500">No tracks added to this playlist yet.</p>
+                    <button
+                      type="button"
+                      onClick={() => setIsAddSongsOpen(true)}
+                      className="mt-3 flex items-center gap-1.5 rounded-xl bg-indigo-500 px-3 py-1.5 text-[11px] font-semibold text-white shadow-md hover:bg-indigo-600 active:scale-95"
+                    >
+                      <Plus className="h-3.5 w-3.5" />
+                      <span>Add Songs</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -718,8 +1138,45 @@ export const MusicDrawer: React.FC = () => {
       {!isSettingsOpen && drawerTab === 'queue' && (
         <div className="h-[317px] space-y-3">
           <div className="flex items-center justify-between px-1">
-            <div><p className="text-[11px] font-semibold text-slate-300">Now Playing & Up Next</p><p className="text-[9px] text-slate-500">{playbackQueue.length} songs in queue</p></div>
-            <button type="button" onClick={clearPlaybackQueue} disabled={playbackQueue.length <= (currentSong ? 1 : 0)} className="rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-[10px] font-semibold text-slate-400 hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-35">Clear</button>
+            <div>
+              <p className="text-[11px] font-semibold text-slate-300">Now Playing & Up Next</p>
+              <p className="text-[9px] text-slate-500">{playbackQueue.length} songs in queue</p>
+            </div>
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={toggleQueueRepeat}
+                className={`flex h-7 w-7 items-center justify-center rounded-lg border transition-all ${
+                  queueEndBehavior === 'repeat-queue'
+                    ? 'border-amber-400/40 bg-amber-400/20 text-amber-300 shadow-sm'
+                    : 'border-white/10 bg-white/5 text-slate-400 hover:border-white/20 hover:bg-white/10 hover:text-white'
+                }`}
+                title={queueEndBehavior === 'repeat-queue' ? 'Repeat Queue: On' : 'Repeat Queue: Off'}
+                aria-label="Toggle Repeat Queue"
+              >
+                <Repeat className="h-3.5 w-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={shufflePlaybackQueue}
+                disabled={playbackQueue.length <= 1}
+                className="flex h-7 w-7 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-slate-400 transition-all hover:border-white/20 hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-30"
+                title="Shuffle Upcoming Queue"
+                aria-label="Shuffle Queue"
+              >
+                <Shuffle className="h-3.5 w-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={clearPlaybackQueue}
+                disabled={playbackQueue.length <= (currentSong ? 1 : 0)}
+                className="flex h-7 w-7 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-slate-400 transition-all hover:border-rose-400/30 hover:bg-rose-500/15 hover:text-rose-300 disabled:cursor-not-allowed disabled:opacity-30"
+                title="Clear Queue"
+                aria-label="Clear Queue"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
+            </div>
           </div>
           <div ref={queueScrollRef} className="h-[280px] overflow-y-auto overscroll-contain pr-1">
             {playbackQueue.length > 0 && (
@@ -853,19 +1310,48 @@ export const MusicDrawer: React.FC = () => {
         />
       )}
 
-      {managedPlaylist && (
-        <PlaylistManagerDialog
-          key={managedPlaylist.id}
+      {isAddSongsOpen && managedPlaylist && (
+        <AddSongsToPlaylistModal
+          key={`add-songs-${managedPlaylist.id}`}
           playlist={managedPlaylist}
           library={queue}
           onToggle={(songId) => toggleSongInPlaylist(managedPlaylist.id, songId)}
-          onPlay={(song) => playPlaylist(managedPlaylist.id, song.id)}
-          onDelete={() => {
-            deletePlaylist(managedPlaylist.id);
-            selectPlaylist(null);
-          }}
-          onClose={() => selectPlaylist(null)}
+          onClose={() => setIsAddSongsOpen(false)}
         />
+      )}
+
+      {playlistToDelete && (
+        <div className="absolute inset-0 z-[70] flex items-center justify-center bg-black/80 p-6 backdrop-blur-sm">
+          <div className="w-full rounded-2xl border border-rose-500/30 bg-[#161318] p-4 text-center shadow-2xl">
+            <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-rose-500/10 text-rose-300">
+              <Trash2 className="h-5 w-5" />
+            </div>
+            <h4 className="text-sm font-bold text-white">Delete Playlist?</h4>
+            <p className="mt-1 text-[11px] text-slate-400">
+              Are you sure you want to delete “{playlistToDelete.name}”? The songs inside will remain in your library.
+            </p>
+            <div className="mt-4 flex justify-center gap-2">
+              <button
+                type="button"
+                onClick={() => setPlaylistToDelete(null)}
+                className="rounded-xl px-3.5 py-1.5 text-xs font-semibold text-slate-300 hover:bg-white/10"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  deletePlaylist(playlistToDelete.id);
+                  setPlaylistToDelete(null);
+                  selectPlaylist(null);
+                }}
+                className="rounded-xl bg-rose-500 px-4 py-1.5 text-xs font-bold text-white shadow-lg hover:bg-rose-600 active:scale-95"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {isCreatePlaylistOpen && (
@@ -877,6 +1363,17 @@ export const MusicDrawer: React.FC = () => {
             setPlaylistSong(null);
             setIsCreatePlaylistOpen(false);
             selectPlaylist(playlistId);
+          }}
+        />
+      )}
+
+      {renamingPlaylist && (
+        <RenamePlaylistDialog
+          playlist={renamingPlaylist}
+          onClose={() => setRenamingPlaylist(null)}
+          onSave={(newName) => {
+            renamePlaylist(renamingPlaylist.id, newName);
+            setRenamingPlaylist(null);
           }}
         />
       )}

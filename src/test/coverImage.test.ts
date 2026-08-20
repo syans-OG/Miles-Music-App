@@ -3,9 +3,11 @@ import { describe, expect, it } from 'vitest';
 import { getDisplayCoverUrl, handleCoverImageError } from '../utils/coverImage';
 
 describe('getDisplayCoverUrl', () => {
-  it('uses a compact YouTube thumbnail for display', () => {
+  it('preserves reliable YouTube thumbnail and upgrades default.jpg', () => {
     expect(getDisplayCoverUrl('https://i.ytimg.com/vi/dQw4w9WgXcQ/maxresdefault.jpg'))
-      .toBe('https://i.ytimg.com/vi/dQw4w9WgXcQ/mqdefault.jpg');
+      .toBe('https://i.ytimg.com/vi/dQw4w9WgXcQ/maxresdefault.jpg');
+    expect(getDisplayCoverUrl('https://i.ytimg.com/vi/dQw4w9WgXcQ/default.jpg'))
+      .toBe('https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg');
   });
 
   it('limits Unsplash display width', () => {

@@ -11,6 +11,7 @@ audioService.destroy();
 class FakeAudio implements AudioElementLike {
   currentTime = 0;
   duration = 180;
+  ended = false;
   error: { code: number } | null = null;
   preload = '';
   src = '';

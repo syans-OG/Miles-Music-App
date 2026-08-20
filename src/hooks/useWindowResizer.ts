@@ -23,20 +23,20 @@ export const useWindowResizer = () => {
       let targetHeight = 200;
 
       if (mode === 'control-bar') {
-        targetWidth = 460;
+        targetWidth = 440;
         targetHeight = isDrawerOpen
-          ? 620
+          ? 615
           : isUrlInputOpen
             ? youtubeImportTask?.report || spotifyImportTask?.report
-              ? 420
-              : youtubeImportTask || spotifyImportTask ? 330 : 285
-            : youtubeImportTask?.status === 'success' && youtubeImportTask.backgrounded ? 285 : 200;
+              ? 400
+              : youtubeImportTask || spotifyImportTask ? 310 : 270
+            : youtubeImportTask?.status === 'success' && youtubeImportTask.backgrounded ? 270 : 185;
       } else if (mode === 'vinyl-widget') {
-        targetWidth = 200;
-        targetHeight = 200;
+        targetWidth = 185;
+        targetHeight = 185;
       } else if (mode === 'micro-bubble') {
-        targetWidth = 160;
-        targetHeight = 100;
+        targetWidth = 64;
+        targetHeight = 64;
       }
 
       try {
