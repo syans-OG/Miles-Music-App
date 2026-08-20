@@ -17,7 +17,7 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 [build-dependencies]
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-sha2 = "0.10"
+sha2 = "0.11"
 tauri-build = { version = "2.6.3", features = [] }
 
 [dependencies]
@@ -26,7 +26,7 @@ serde = { version = "1.0", features = ["derive"] }
 log = "0.4"
 lofty = "0.24"
 image = { version = "0.25", default-features = false, features = ["jpeg", "png", "webp"] }
-sha2 = "0.10"
+sha2 = "0.11"
 tauri = { version = "2.11.3", features = ["protocol-asset", "tray-icon"] }
 url = "2.5"
 discord-rich-presence = "0.2.4"
