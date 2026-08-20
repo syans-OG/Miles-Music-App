@@ -2064,7 +2064,7 @@ dependencies = [
 
 [[package]]
 name = "miles-music-player"
-version = "1.0.5"
+version = "1.0.6"
 dependencies = [
  "discord-rich-presence",
  "image",
