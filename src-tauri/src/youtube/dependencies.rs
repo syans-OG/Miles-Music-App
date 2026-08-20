@@ -92,7 +92,13 @@ fn load_manifest() -> Result<SidecarManifest, VerificationError> {
         message: "Manifest dependency YouTube tidak valid".to_string(),
     })?;
 
-    let has_valid_provenance = manifest.target == "x86_64-pc-windows-msvc"
+    let is_supported_target = manifest.target == "x86_64-pc-windows-msvc"
+        || manifest.target == "x86_64-apple-darwin"
+        || manifest.target == "aarch64-apple-darwin"
+        || manifest.target == "x86_64-unknown-linux-gnu"
+        || manifest.target == "universal";
+
+    let has_valid_provenance = is_supported_target
         && manifest.binaries.iter().all(|binary| {
             binary.download_url.starts_with("https://github.com/")
                 && binary.publisher_asset_sha256.len() == 64
