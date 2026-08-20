@@ -2,6 +2,23 @@
 
 All notable changes to Miles Music Player are documented here.
 
+## [1.0.6] - 2026-08-20
+
+### Added
+- Dedicated Playlist Detail View (Studio Hero Inset) with full tracklist, instant track removals, and library song adder modal.
+- Playlist rename feature directly in the detail view header.
+- Multi-select batch deletion mode for CD collection with floating action bar and safe file cleanup.
+- Queue control ribbon: Repeat Queue toggle, upcoming queue shuffle, and queue clear icon buttons.
+- Native Single Instance lock (`tauri-plugin-single-instance`) with automatic window restore from System Tray and tactile visual nudge.
+- Multi-platform matrix release CI/CD workflow for Windows, macOS (Apple Silicon & Intel), and Linux (Ubuntu).
+
+### Fixed
+- Fixed single track repeat loop pausing glitch.
+- Fixed Spotify and YouTube thumbnail resolution to prevent gray camera 404 placeholder covers.
+- Compact proportional UI scaling for Mode 1 (Console Bar), Mode 2 (Turntable), and Mode 3 (Micro Bubble).
+- Tightened desktop screen corner snapping and eliminated drawer bottom text clipping.
+- Removed outer shadows from Mode 3 floating bubble.
+
 ## [1.0.5] - 2026-08-19
 
 ### Fixed
