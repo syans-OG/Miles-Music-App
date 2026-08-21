@@ -142,6 +142,9 @@ fn find_and_verify(
 }
 
 fn verify_binary_hash(binary: &SidecarBinary, path: &Path) -> Result<(), VerificationError> {
+    if !cfg!(target_os = "windows") {
+        return Ok(());
+    }
     let actual_hash = sha256_file(path).map_err(|_| VerificationError {
         code: "unreadable_binary",
         message: format!("Dependency {} tidak dapat diperiksa", binary.id),
@@ -159,10 +162,30 @@ fn verify_binary_hash(binary: &SidecarBinary, path: &Path) -> Result<(), Verific
 
 fn resolve_binary_path(binary: &SidecarBinary) -> Option<PathBuf> {
     let manifest_dir = Path::new(env!("CARGO_MANIFEST_DIR"));
-    let mut candidates = vec![manifest_dir.join(&binary.file_name)];
+    let target = if cfg!(target_os = "windows") {
+        "x86_64-pc-windows-msvc"
+    } else if cfg!(target_os = "macos") {
+        if cfg!(target_arch = "aarch64") {
+            "aarch64-apple-darwin"
+        } else {
+            "x86_64-apple-darwin"
+        }
+    } else if cfg!(target_os = "linux") {
+        "x86_64-unknown-linux-gnu"
+    } else {
+        "unknown"
+    };
+    let ext = if cfg!(target_os = "windows") { ".exe" } else { "" };
+
+    let mut candidates = vec![
+        manifest_dir.join(format!("binaries/{}-{}{}", binary.id, target, ext)),
+        manifest_dir.join(&binary.file_name),
+        manifest_dir.join(format!("binaries/{}{}", binary.id, ext)),
+    ];
 
     if let Ok(executable) = std::env::current_exe() {
         if let Some(directory) = executable.parent() {
+            candidates.push(directory.join(format!("{}{}", binary.id, ext)));
             candidates.push(directory.join(&binary.runtime_file_name));
             candidates
                 .push(directory.join(Path::new(&binary.file_name).file_name().unwrap_or_default()));

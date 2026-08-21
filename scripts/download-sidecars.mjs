@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 import fs from 'node:fs';
 import path from 'node:path';
-import crypto from 'node:crypto';
 import os from 'node:os';
 import { execSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
@@ -15,7 +14,6 @@ if (!fs.existsSync(binariesDir)) {
   fs.mkdirSync(binariesDir, { recursive: true });
 }
 
-// Determine target triple from platform & arch or env
 function getTargetTriple() {
   const platform = os.platform();
   const arch = os.arch();
@@ -67,6 +65,8 @@ async function setupSidecars() {
 
   const ytdlpDest = path.join(binariesDir, `yt-dlp-${targetTriple}${ext}`);
   const denoDest = path.join(binariesDir, `deno-${targetTriple}${ext}`);
+  const ytdlpFallback = path.join(binariesDir, `yt-dlp${ext}`);
+  const denoFallback = path.join(binariesDir, `deno${ext}`);
 
   // 1. Setup yt-dlp
   if (!fs.existsSync(ytdlpDest)) {
@@ -78,6 +78,14 @@ async function setupSidecars() {
     console.log(`✓ yt-dlp verified at ${ytdlpDest}`);
   } else {
     console.log(`✓ yt-dlp already exists at ${ytdlpDest}`);
+  }
+
+  // Also ensure non-target-prefixed copy exists for tests/dev
+  if (!fs.existsSync(ytdlpFallback)) {
+    fs.copyFileSync(ytdlpDest, ytdlpFallback);
+    if (!isWindows) {
+      fs.chmodSync(ytdlpFallback, 0o755);
+    }
   }
 
   // 2. Setup Deno
@@ -110,6 +118,14 @@ async function setupSidecars() {
     console.log(`✓ Deno verified at ${denoDest}`);
   } else {
     console.log(`✓ Deno already exists at ${denoDest}`);
+  }
+
+  // Also ensure non-target-prefixed copy exists for tests/dev
+  if (!fs.existsSync(denoFallback)) {
+    fs.copyFileSync(denoDest, denoFallback);
+    if (!isWindows) {
+      fs.chmodSync(denoFallback, 0o755);
+    }
   }
 
   console.log('✓ All sidecars successfully prepared for Tauri bundle.');
