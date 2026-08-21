@@ -72,30 +72,25 @@ jobs:
           tagName: ${{ github.ref_name }}
           releaseName: 'Miles v__VERSION__'
           releaseBody: |
-            # 🎵 Miles Music Player v__VERSION__
+            ## Features
+            - **Studio Hero Playlist View** - Dedicated drill-down view for playlists with high-resolution artwork, tracklist manager, and integrated song search.
+            - **Playlist Renaming** - Easily rename any playlist directly from the header without leaving the view.
+            - **Multi-Select Batch Deletion** - Select and delete multiple tracks simultaneously from your CD collection with safe disk cleanup.
+            - **Queue Control Ribbon** - Minimalist icon-only controls for Queue Repeat, Shuffle Upcoming Queue, and Clear Queue.
+            - **Single Instance Lock & Tray Restore** - Native OS lock that restores and focuses the active window from the System Tray with a gentle visual nudge.
 
-            ### 🌟 What's New (Added)
-            - **Studio Hero Inset (Playlist Detail View)**: Dedicated playlist detail view with high-res artwork, isolated tracklist, playback controls (Play All / Shuffle), and search modal to add songs directly from library.
-            - **Playlist Rename**: Rename playlists directly in the detail view header.
-            - **Multi-Select Batch Deletion**: Multi-selection mode for CD collection with floating action bar and safe file cleanup.
-            - **Queue Controls Ribbon**: Icon buttons for Repeat Queue, Shuffle Upcoming Queue, and Clear Queue.
-            - **Native Single Instance Lock**: Prevents duplicate running instances, restores and focuses from System Tray, with tactile visual nudge.
-            - **Cross-Platform Matrix Release**: Official native packages for Windows, macOS, and Linux.
+            ## Performance & Polish
+            - **Ultra-Low Memory Footprint** - Optimized resource usage holding steady at 50–90MB RAM during continuous audio playback and stream resolution.
+            - **Seamless Audio Loop** - Fixed audio loop pausing bug for continuous, zero-gap single track replay.
+            - **Smart Artwork Resolution** - Reliable YouTube and Spotify thumbnail caching that prevents 404 placeholder covers.
+            - **Refined 3-Mode Form Factors** - Calibrated sizes for Console Bar, Vinyl Turntable, and Micro Bubble with zero-shadow floating aesthetics.
 
-            ### 🔧 Bug Fixes & UI Polish (Fixed)
-            - Fixed single track repeat loop pausing glitch.
-            - Fixed Spotify & YouTube thumbnail resolution to prevent gray camera 404 placeholder covers.
-            - Compact proportional UI scaling for Mode 1 (Console Bar), Mode 2 (Turntable), and Mode 3 (Micro Bubble).
-            - Tightened desktop screen corner snapping (8px margin) and eliminated drawer bottom text clipping.
-            - Removed outer shadows from Mode 3 floating bubble.
-
-            ---
-            ### 📥 Download & Installation Guide
-            | Platform | Installer / Package | System Requirements |
-            | :--- | :--- | :--- |
-            | **Windows** | `Miles___VERSION___x64-setup.exe` / `.msi` | Windows 10/11 (64-bit) |
-            | **macOS (Apple Silicon)** | `Miles___VERSION___aarch64.dmg` | macOS 11+ (M1 / M2 / M3 / M4) |
-            | **Linux** | `Miles___VERSION____amd64.deb` / `.AppImage` | Ubuntu / Debian / Fedora / Arch |
+            ## Downloads
+            - [Windows (EXE Installer)](https://github.com/syans-OG/Miles-Music-App/releases/download/v__VERSION__/Miles___VERSION___x64-setup.exe)
+            - [Windows (MSI Package)](https://github.com/syans-OG/Miles-Music-App/releases/download/v__VERSION__/Miles___VERSION___x64_en-US.msi)
+            - [macOS (Apple Silicon)](https://github.com/syans-OG/Miles-Music-App/releases/download/v__VERSION__/Miles___VERSION___aarch64.dmg)
+            - [Linux (DEB Package)](https://github.com/syans-OG/Miles-Music-App/releases/download/v__VERSION__/Miles___VERSION____amd64.deb)
+            - [Linux (AppImage)](https://github.com/syans-OG/Miles-Music-App/releases/download/v__VERSION__/Miles___VERSION____amd64.AppImage)
           releaseDraft: false
           prerelease: false
           args: ${{ matrix.args }}
