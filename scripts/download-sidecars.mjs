@@ -1,134 +1,149 @@
 #!/usr/bin/env node
+import crypto from 'node:crypto';
 import fs from 'node:fs';
-import path from 'node:path';
 import os from 'node:os';
-import { execSync } from 'node:child_process';
+import path from 'node:path';
+import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const projectRoot = path.resolve(__dirname, '..');
+const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
+const projectRoot = path.resolve(scriptDirectory, '..');
 const tauriRoot = path.join(projectRoot, 'src-tauri');
-const binariesDir = path.join(tauriRoot, 'binaries');
+const binariesDirectory = path.join(tauriRoot, 'binaries');
+const manifestsDirectory = path.join(tauriRoot, 'sidecars');
 
-if (!fs.existsSync(binariesDir)) {
-  fs.mkdirSync(binariesDir, { recursive: true });
-}
-
-function getTargetTriple() {
+function getHostTarget() {
   const platform = os.platform();
-  const arch = os.arch();
+  const architecture = os.arch();
 
-  if (platform === 'win32') {
-    return 'x86_64-pc-windows-msvc';
-  } else if (platform === 'darwin') {
-    return arch === 'arm64' ? 'aarch64-apple-darwin' : 'x86_64-apple-darwin';
-  } else if (platform === 'linux') {
-    return arch === 'arm64' ? 'aarch64-unknown-linux-gnu' : 'x86_64-unknown-linux-gnu';
+  if (platform === 'win32' && architecture === 'x64') return 'x86_64-pc-windows-msvc';
+  if (platform === 'darwin' && architecture === 'arm64') return 'aarch64-apple-darwin';
+  if (platform === 'darwin' && architecture === 'x64') return 'x86_64-apple-darwin';
+  if (platform === 'linux' && architecture === 'x64') return 'x86_64-unknown-linux-gnu';
+  throw new Error(`Unsupported host platform: ${platform} ${architecture}`);
+}
+
+function sha256(contents) {
+  return crypto.createHash('sha256').update(contents).digest('hex');
+}
+
+function sha256File(filePath) {
+  return sha256(fs.readFileSync(filePath));
+}
+
+function assertHash(actual, expected, label) {
+  if (actual.toLowerCase() !== expected.toLowerCase()) {
+    throw new Error(`${label} checksum mismatch. Expected ${expected}, received ${actual}.`);
   }
-  throw new Error(`Unsupported platform: ${platform} ${arch}`);
 }
 
-const targetTriple = process.env.TAURI_TARGET || getTargetTriple();
-const isWindows = targetTriple.includes('windows');
-const ext = isWindows ? '.exe' : '';
-
-const YTDLP_VERSION = '2026.07.04';
-const DENO_VERSION = '2.9.4';
-
-function getYtDlpDownloadUrl(target) {
-  if (target.includes('windows')) {
-    return `https://github.com/yt-dlp/yt-dlp/releases/download/${YTDLP_VERSION}/yt-dlp.exe`;
+function readManifest(target) {
+  const manifestPath = path.join(manifestsDirectory, `${target}.json`);
+  if (!fs.existsSync(manifestPath)) {
+    throw new Error(`Unsupported sidecar target: ${target}`);
   }
-  return `https://github.com/yt-dlp/yt-dlp/releases/download/${YTDLP_VERSION}/yt-dlp`;
+
+  const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+  const extension = target.includes('windows') ? '.exe' : '';
+  if (manifest.schemaVersion !== 1 || manifest.target !== target || manifest.binaries?.length !== 2) {
+    throw new Error(`Invalid sidecar manifest for ${target}`);
+  }
+
+  for (const id of ['yt-dlp', 'deno']) {
+    const matches = manifest.binaries.filter((binary) => binary.id === id);
+    const binary = matches[0];
+    const expectedFileName = `binaries/${id}-${target}${extension}`;
+    const expectedRuntimeName = `${id}${extension}`;
+    const source = new URL(binary?.downloadUrl ?? '');
+    const hashesAreValid = [binary?.publisherAssetSha256, binary?.sha256].every(
+      (value) => typeof value === 'string' && /^[a-f0-9]{64}$/i.test(value),
+    );
+
+    if (
+      matches.length !== 1 ||
+      !binary.version ||
+      source.protocol !== 'https:' ||
+      source.hostname !== 'github.com' ||
+      !hashesAreValid ||
+      binary.fileName !== expectedFileName ||
+      binary.runtimeFileName !== expectedRuntimeName
+    ) {
+      throw new Error(`Invalid ${id} metadata for ${target}`);
+    }
+  }
+
+  return manifest;
 }
 
-function getDenoDownloadUrl(target) {
-  return `https://github.com/denoland/deno/releases/download/v${DENO_VERSION}/deno-${target}.zip`;
-}
-
-async function downloadFile(url, destPath) {
+async function downloadFile(url, destination) {
   console.log(`Downloading ${url}...`);
   const response = await fetch(url);
   if (!response.ok) {
-    throw new Error(`Failed to download ${url}: ${response.status} ${response.statusText}`);
+    throw new Error(`Download failed with ${response.status} ${response.statusText}: ${url}`);
   }
-  const buffer = Buffer.from(await response.arrayBuffer());
-  fs.writeFileSync(destPath, buffer);
-  return buffer;
+  const contents = Buffer.from(await response.arrayBuffer());
+  fs.writeFileSync(destination, contents);
+  return contents;
 }
 
-async function setupSidecars() {
-  console.log(`Setting up sidecars for target: ${targetTriple}`);
-
-  const ytdlpDest = path.join(binariesDir, `yt-dlp-${targetTriple}${ext}`);
-  const denoDest = path.join(binariesDir, `deno-${targetTriple}${ext}`);
-  const ytdlpFallback = path.join(binariesDir, `yt-dlp${ext}`);
-  const denoFallback = path.join(binariesDir, `deno${ext}`);
-
-  // 1. Setup yt-dlp
-  if (!fs.existsSync(ytdlpDest)) {
-    const ytdlpUrl = getYtDlpDownloadUrl(targetTriple);
-    await downloadFile(ytdlpUrl, ytdlpDest);
-    if (!isWindows) {
-      fs.chmodSync(ytdlpDest, 0o755);
-    }
-    console.log(`✓ yt-dlp verified at ${ytdlpDest}`);
+function extractZip(archivePath, destination) {
+  fs.mkdirSync(destination, { recursive: true });
+  if (os.platform() === 'win32') {
+    execFileSync('tar', ['-xf', archivePath, '-C', destination], { stdio: 'inherit' });
   } else {
-    console.log(`✓ yt-dlp already exists at ${ytdlpDest}`);
+    execFileSync('unzip', ['-o', archivePath, '-d', destination], { stdio: 'inherit' });
   }
-
-  // Also ensure non-target-prefixed copy exists for tests/dev
-  if (!fs.existsSync(ytdlpFallback)) {
-    fs.copyFileSync(ytdlpDest, ytdlpFallback);
-    if (!isWindows) {
-      fs.chmodSync(ytdlpFallback, 0o755);
-    }
-  }
-
-  // 2. Setup Deno
-  if (!fs.existsSync(denoDest)) {
-    const denoUrl = getDenoDownloadUrl(targetTriple);
-    const tempZip = path.join(os.tmpdir(), `deno-${targetTriple}-${Date.now()}.zip`);
-    await downloadFile(denoUrl, tempZip);
-
-    const tempExtract = path.join(os.tmpdir(), `deno-extract-${Date.now()}`);
-    fs.mkdirSync(tempExtract, { recursive: true });
-
-    if (isWindows) {
-      execSync(`powershell -command "Expand-Archive -Path '${tempZip}' -DestinationPath '${tempExtract}' -Force"`);
-    } else {
-      execSync(`unzip -o "${tempZip}" -d "${tempExtract}"`);
-    }
-
-    const extractedBinary = path.join(tempExtract, `deno${ext}`);
-    fs.copyFileSync(extractedBinary, denoDest);
-    if (!isWindows) {
-      fs.chmodSync(denoDest, 0o755);
-    }
-
-    // Cleanup temp
-    try {
-      fs.unlinkSync(tempZip);
-      fs.rmSync(tempExtract, { recursive: true, force: true });
-    } catch {}
-
-    console.log(`✓ Deno verified at ${denoDest}`);
-  } else {
-    console.log(`✓ Deno already exists at ${denoDest}`);
-  }
-
-  // Also ensure non-target-prefixed copy exists for tests/dev
-  if (!fs.existsSync(denoFallback)) {
-    fs.copyFileSync(denoDest, denoFallback);
-    if (!isWindows) {
-      fs.chmodSync(denoFallback, 0o755);
-    }
-  }
-
-  console.log('✓ All sidecars successfully prepared for Tauri bundle.');
 }
 
-setupSidecars().catch((err) => {
-  console.error('Failed to setup sidecars:', err);
-  process.exit(1);
+async function installBinary(binary, temporaryDirectory, isWindows) {
+  const destination = path.resolve(tauriRoot, binary.fileName);
+  if (path.dirname(destination) !== binariesDirectory) {
+    throw new Error(`Unsafe sidecar destination: ${binary.fileName}`);
+  }
+  if (fs.existsSync(destination) && sha256File(destination) === binary.sha256.toLowerCase()) {
+    console.log(`Verified existing ${binary.id} ${binary.version}.`);
+    return;
+  }
+
+  const assetName = path.basename(new URL(binary.downloadUrl).pathname);
+  const assetPath = path.join(temporaryDirectory, assetName);
+  const assetContents = await downloadFile(binary.downloadUrl, assetPath);
+  assertHash(sha256(assetContents), binary.publisherAssetSha256, `${binary.id} publisher asset`);
+
+  let executablePath = assetPath;
+  if (path.extname(assetName).toLowerCase() === '.zip') {
+    const extractDirectory = path.join(temporaryDirectory, `${binary.id}-extracted`);
+    extractZip(assetPath, extractDirectory);
+    executablePath = path.join(extractDirectory, binary.runtimeFileName);
+    if (!fs.existsSync(executablePath)) {
+      throw new Error(`${binary.runtimeFileName} was not found in the verified archive.`);
+    }
+  }
+
+  assertHash(sha256File(executablePath), binary.sha256, `${binary.id} executable`);
+  fs.copyFileSync(executablePath, destination);
+  if (!isWindows) fs.chmodSync(destination, 0o755);
+  console.log(`Installed and verified ${binary.id} ${binary.version}.`);
+}
+
+async function main() {
+  const target = process.env.TAURI_TARGET || getHostTarget();
+  const manifest = readManifest(target);
+  const temporaryDirectory = fs.mkdtempSync(path.join(os.tmpdir(), 'miles-sidecars-'));
+  fs.mkdirSync(binariesDirectory, { recursive: true });
+
+  console.log(`Preparing sidecars for ${target}...`);
+  try {
+    for (const binary of manifest.binaries) {
+      await installBinary(binary, temporaryDirectory, target.includes('windows'));
+    }
+    console.log(`Prepared and verified all sidecars for ${target}.`);
+  } finally {
+    fs.rmSync(temporaryDirectory, { recursive: true, force: true });
+  }
+}
+
+main().catch((error) => {
+  console.error('Failed to prepare sidecars:', error);
+  process.exitCode = 1;
 });

@@ -1,23 +1,22 @@
 # Bundled sidecars
 
-The Windows x64 sidecars are pinned in `../sidecars.json` and verified with
-SHA256 during every clean Rust build and before the first YouTube operation in
-each application process.
+The supported platform sidecars are pinned in `../sidecars/`. Rust selects the
+manifest matching Cargo's build target and verifies its SHA-256 metadata during
+every clean build and before the first YouTube operation in each process.
 
 The executables are intentionally excluded from Git. From the repository root,
 run `powershell -ExecutionPolicy Bypass -File scripts/download-sidecars.ps1` to
 download the pinned official assets and verify them before use.
 
-| Component | Version | Bundled file |
-| --- | --- | --- |
-| yt-dlp | 2026.07.04 | `yt-dlp-x86_64-pc-windows-msvc.exe` |
-| Deno | 2.9.4 | `deno-x86_64-pc-windows-msvc.exe` |
+Supported targets are Windows x64, macOS Apple Silicon, macOS Intel, and Linux
+x64. Set `TAURI_TARGET` before running `node scripts/download-sidecars.mjs` to
+prepare a target other than the current host.
 
 To update either component with a Miles release:
 
 1. Download the pinned asset and publisher checksum from its official GitHub release.
 2. Verify the downloaded asset before extracting or copying it here.
-3. Update the version, source URL, publisher asset checksum, and executable checksum in `../sidecars.json`.
+3. Update the version, source URL, publisher asset checksum, and executable checksum in every affected manifest under `../sidecars/`.
 4. Refresh the matching notices under `../licenses`.
 5. Run `cargo test` and a Tauri bundle build. A stale or altered executable must fail the Rust build.
 

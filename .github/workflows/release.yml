@@ -17,13 +17,16 @@ jobs:
         include:
           - platform: 'windows-latest'
             target: 'x86_64-pc-windows-msvc'
-            args: ''
-          - platform: 'macos-latest'
+            args: '--target x86_64-pc-windows-msvc --bundles nsis,msi'
+          - platform: 'macos-15'
             target: 'aarch64-apple-darwin'
-            args: '--target aarch64-apple-darwin'
+            args: '--target aarch64-apple-darwin --bundles dmg'
+          - platform: 'macos-15-intel'
+            target: 'x86_64-apple-darwin'
+            args: '--target x86_64-apple-darwin --bundles dmg'
           - platform: 'ubuntu-22.04'
             target: 'x86_64-unknown-linux-gnu'
-            args: ''
+            args: '--target x86_64-unknown-linux-gnu --bundles deb,appimage'
 
     runs-on: ${{ matrix.platform }}
     timeout-minutes: 60
@@ -61,7 +64,7 @@ jobs:
         run: npm test
 
       - name: Run backend tests
-        run: cargo test --lib
+        run: cargo test --lib --target ${{ matrix.target }}
         working-directory: src-tauri
 
       - name: Build Tauri release bundle
@@ -89,6 +92,7 @@ jobs:
             - [Windows (EXE Installer)](https://github.com/syans-OG/Miles-Music-App/releases/download/v__VERSION__/Miles___VERSION___x64-setup.exe)
             - [Windows (MSI Package)](https://github.com/syans-OG/Miles-Music-App/releases/download/v__VERSION__/Miles___VERSION___x64_en-US.msi)
             - [macOS (Apple Silicon)](https://github.com/syans-OG/Miles-Music-App/releases/download/v__VERSION__/Miles___VERSION___aarch64.dmg)
+            - [macOS (Intel)](https://github.com/syans-OG/Miles-Music-App/releases/download/v__VERSION__/Miles___VERSION___x64.dmg)
             - [Linux (DEB Package)](https://github.com/syans-OG/Miles-Music-App/releases/download/v__VERSION__/Miles___VERSION____amd64.deb)
             - [Linux (AppImage)](https://github.com/syans-OG/Miles-Music-App/releases/download/v__VERSION__/Miles___VERSION____amd64.AppImage)
           releaseDraft: false

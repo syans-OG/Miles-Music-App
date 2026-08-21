@@ -1,9 +1,12 @@
-use crate::sidecar_manifest::{parse_manifest, sha256_file, SidecarBinary, SidecarManifest};
+use crate::sidecar_manifest::{
+    parse_manifest, sha256_file, validate_for_target, SidecarBinary, SidecarManifest,
+};
 use serde::Serialize;
 use std::path::{Path, PathBuf};
 use std::sync::OnceLock;
 
-const SIDECAR_MANIFEST: &str = include_str!("../../sidecars.json");
+const SIDECAR_MANIFEST: &str = include_str!(env!("MILES_SIDECAR_MANIFEST"));
+const BUILD_TARGET: &str = env!("MILES_TARGET");
 static VERIFIED_SIDECARS: OnceLock<VerifiedSidecars> = OnceLock::new();
 
 #[derive(Clone)]
@@ -92,18 +95,7 @@ fn load_manifest() -> Result<SidecarManifest, VerificationError> {
         message: "Manifest dependency YouTube tidak valid".to_string(),
     })?;
 
-    let is_supported_target = manifest.target == "x86_64-pc-windows-msvc"
-        || manifest.target == "x86_64-apple-darwin"
-        || manifest.target == "aarch64-apple-darwin"
-        || manifest.target == "x86_64-unknown-linux-gnu"
-        || manifest.target == "universal";
-
-    let has_valid_provenance = is_supported_target
-        && manifest.binaries.iter().all(|binary| {
-            binary.download_url.starts_with("https://github.com/")
-                && binary.publisher_asset_sha256.len() == 64
-        });
-    if manifest.schema_version != 1 || manifest.binaries.len() != 2 || !has_valid_provenance {
+    if validate_for_target(&manifest, BUILD_TARGET).is_err() {
         return Err(VerificationError {
             code: "invalid_manifest",
             message: "Manifest dependency YouTube tidak didukung".to_string(),
@@ -142,9 +134,6 @@ fn find_and_verify(
 }
 
 fn verify_binary_hash(binary: &SidecarBinary, path: &Path) -> Result<(), VerificationError> {
-    if !cfg!(target_os = "windows") {
-        return Ok(());
-    }
     let actual_hash = sha256_file(path).map_err(|_| VerificationError {
         code: "unreadable_binary",
         message: format!("Dependency {} tidak dapat diperiksa", binary.id),
@@ -162,30 +151,10 @@ fn verify_binary_hash(binary: &SidecarBinary, path: &Path) -> Result<(), Verific
 
 fn resolve_binary_path(binary: &SidecarBinary) -> Option<PathBuf> {
     let manifest_dir = Path::new(env!("CARGO_MANIFEST_DIR"));
-    let target = if cfg!(target_os = "windows") {
-        "x86_64-pc-windows-msvc"
-    } else if cfg!(target_os = "macos") {
-        if cfg!(target_arch = "aarch64") {
-            "aarch64-apple-darwin"
-        } else {
-            "x86_64-apple-darwin"
-        }
-    } else if cfg!(target_os = "linux") {
-        "x86_64-unknown-linux-gnu"
-    } else {
-        "unknown"
-    };
-    let ext = if cfg!(target_os = "windows") { ".exe" } else { "" };
-
-    let mut candidates = vec![
-        manifest_dir.join(format!("binaries/{}-{}{}", binary.id, target, ext)),
-        manifest_dir.join(&binary.file_name),
-        manifest_dir.join(format!("binaries/{}{}", binary.id, ext)),
-    ];
+    let mut candidates = vec![manifest_dir.join(&binary.file_name)];
 
     if let Ok(executable) = std::env::current_exe() {
         if let Some(directory) = executable.parent() {
-            candidates.push(directory.join(format!("{}{}", binary.id, ext)));
             candidates.push(directory.join(&binary.runtime_file_name));
             candidates
                 .push(directory.join(Path::new(&binary.file_name).file_name().unwrap_or_default()));

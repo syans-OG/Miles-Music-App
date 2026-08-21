@@ -9,7 +9,8 @@
 /src-tauri/gen/schemas/
 
 # Sidecars are downloaded from pinned releases by scripts/download-sidecars.ps1
-/src-tauri/binaries/*.exe
+/src-tauri/binaries/*
+!/src-tauri/binaries/README.md
 
 # Installers and packaged artifacts belong in GitHub Releases
 *.msi

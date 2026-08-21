@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "target": "x86_64-unknown-linux-gnu",
+  "binaries": [
+    {
+      "id": "yt-dlp",
+      "version": "2026.07.04",
+      "downloadUrl": "https://github.com/yt-dlp/yt-dlp/releases/download/2026.07.04/yt-dlp_linux",
+      "publisherAssetSha256": "6bbb3d314cde4febe36e5fa1d55462e29c974f63444e707871834f6d8cc210ae",
+      "fileName": "binaries/yt-dlp-x86_64-unknown-linux-gnu",
+      "runtimeFileName": "yt-dlp",
+      "sha256": "6bbb3d314cde4febe36e5fa1d55462e29c974f63444e707871834f6d8cc210ae"
+    },
+    {
+      "id": "deno",
+      "version": "2.9.4",
+      "downloadUrl": "https://github.com/denoland/deno/releases/download/v2.9.4/deno-x86_64-unknown-linux-gnu.zip",
+      "publisherAssetSha256": "c24f955d9fbfe0ea5ae2b501c8e71ae76e31e4c9782390a54a284b3364fda725",
+      "fileName": "binaries/deno-x86_64-unknown-linux-gnu",
+      "runtimeFileName": "deno",
+      "sha256": "1d97ecaf9e6bbb2a99e991caaf64ba9d62bf98759e8ef9938b9005855772b017"
+    }
+  ]
+}

@@ -1,12 +1,12 @@
 # Miles Music Player
 
-Miles is a lightweight Windows desktop music player built with Tauri, Rust, React, and TypeScript. It plays managed local audio files, public YouTube videos and playlists, and public Spotify links (playlists, albums, tracks) through a compact, three-mode Hi-Fi vinyl interface.
+Miles is a lightweight cross-platform desktop music player built with Tauri, Rust, React, and TypeScript. It plays managed local audio files, public YouTube videos and playlists, and public Spotify links (playlists, albums, tracks) through a compact, three-mode Hi-Fi vinyl interface.
 
 ## Download
 
-[Download the latest Windows installer](https://github.com/syans-OG/Miles-Music-App/releases/latest)
+[Download the latest installer](https://github.com/syans-OG/Miles-Music-App/releases/latest)
 
-Miles currently targets Windows x64. Release installers are published as GitHub Release assets and are not committed to the source repository.
+Miles targets Windows x64, macOS Apple Silicon, macOS Intel, and Linux x64. Release installers are published as GitHub Release assets and are not committed to the source repository.
 
 ## Features
 
@@ -33,23 +33,22 @@ See [SECURITY.md](SECURITY.md) for private vulnerability reporting.
 
 Requirements:
 
-- Windows 10 or 11 x64 with WebView2
 - Node.js 22 or newer
-- Rust stable with the MSVC toolchain
-- PowerShell 5.1 or newer
+- Rust stable with the toolchain for your target
+- Tauri's system prerequisites for Windows, macOS, or Linux
 
 ```powershell
 git clone https://github.com/syans-OG/Miles-Music-App.git
 cd Miles-Music-App
 npm ci
-powershell -ExecutionPolicy Bypass -File scripts/download-sidecars.ps1
+node scripts/download-sidecars.mjs
 npm run tauri dev
 ```
 
 Create a release installer:
 
 ```powershell
-npm run tauri -- build --bundles nsis
+npm run tauri -- build
 ```
 
 Run validation:
@@ -65,7 +64,7 @@ cargo test
 
 ## Third-party components
 
-Binary distributions include yt-dlp and Deno. Their pinned versions, source URLs, and checksums are declared in `src-tauri/sidecars.json`; applicable notices are kept in `src-tauri/licenses/`.
+Binary distributions include yt-dlp and Deno. Their pinned versions, source URLs, and checksums are declared in `src-tauri/sidecars/`; applicable notices are kept in `src-tauri/licenses/`.
 
 Miles is not affiliated with or endorsed by Spotify, YouTube, yt-dlp, Deno, or Google. Use the application only for personal content or content you are authorized to access, in accordance with applicable terms and law.
 
