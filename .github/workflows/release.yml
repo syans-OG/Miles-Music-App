@@ -93,8 +93,8 @@ jobs:
             - [Windows (MSI Package)](https://github.com/syans-OG/Miles-Music-App/releases/download/v__VERSION__/Miles___VERSION___x64_en-US.msi)
             - [macOS (Apple Silicon)](https://github.com/syans-OG/Miles-Music-App/releases/download/v__VERSION__/Miles___VERSION___aarch64.dmg)
             - [macOS (Intel)](https://github.com/syans-OG/Miles-Music-App/releases/download/v__VERSION__/Miles___VERSION___x64.dmg)
-            - [Linux (DEB Package)](https://github.com/syans-OG/Miles-Music-App/releases/download/v__VERSION__/Miles___VERSION____amd64.deb)
-            - [Linux (AppImage)](https://github.com/syans-OG/Miles-Music-App/releases/download/v__VERSION__/Miles___VERSION____amd64.AppImage)
+            - [Linux (DEB Package)](https://github.com/syans-OG/Miles-Music-App/releases/download/v__VERSION__/Miles___VERSION___amd64.deb)
+            - [Linux (AppImage)](https://github.com/syans-OG/Miles-Music-App/releases/download/v__VERSION__/Miles___VERSION___amd64.AppImage)
           releaseDraft: false
           prerelease: false
           args: ${{ matrix.args }}
