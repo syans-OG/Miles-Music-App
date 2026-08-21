@@ -38,11 +38,8 @@ const DENO_VERSION = '2.9.4';
 function getYtDlpDownloadUrl(target) {
   if (target.includes('windows')) {
     return `https://github.com/yt-dlp/yt-dlp/releases/download/${YTDLP_VERSION}/yt-dlp.exe`;
-  } else if (target.includes('apple-darwin')) {
-    return `https://github.com/yt-dlp/yt-dlp/releases/download/${YTDLP_VERSION}/yt-dlp_macos`;
-  } else {
-    return `https://github.com/yt-dlp/yt-dlp/releases/download/${YTDLP_VERSION}/yt-dlp_linux`;
   }
+  return `https://github.com/yt-dlp/yt-dlp/releases/download/${YTDLP_VERSION}/yt-dlp`;
 }
 
 function getDenoDownloadUrl(target) {
