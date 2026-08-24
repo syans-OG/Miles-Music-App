@@ -75,18 +75,9 @@ jobs:
           tagName: ${{ github.ref_name }}
           releaseName: 'Miles v__VERSION__'
           releaseBody: |
-            ## Features
-            - **Studio Hero Playlist View** - Dedicated drill-down view for playlists with high-resolution artwork, tracklist manager, and integrated song search.
-            - **Playlist Renaming** - Easily rename any playlist directly from the header without leaving the view.
-            - **Multi-Select Batch Deletion** - Select and delete multiple tracks simultaneously from your CD collection with safe disk cleanup.
-            - **Queue Control Ribbon** - Minimalist icon-only controls for Queue Repeat, Shuffle Upcoming Queue, and Clear Queue.
-            - **Single Instance Lock & Tray Restore** - Native OS lock that restores and focuses the active window from the System Tray with a gentle visual nudge.
-
-            ## Performance & Polish
-            - **Ultra-Low Memory Footprint** - Optimized resource usage holding steady at 50–90MB RAM during continuous audio playback and stream resolution.
-            - **Seamless Audio Loop** - Fixed audio loop pausing bug for continuous, zero-gap single track replay.
-            - **Smart Artwork Resolution** - Reliable YouTube and Spotify thumbnail caching that prevents 404 placeholder covers.
-            - **Refined 3-Mode Form Factors** - Calibrated sizes for Console Bar, Vinyl Turntable, and Micro Bubble with zero-shadow floating aesthetics.
+            ## What's changed
+            - **System tray improvements** - A clearer tray menu and more reliable window restore behavior.
+            - **Playlist cover sync** - Playlist artwork now follows the first track automatically.
 
             ## Downloads
             - [Windows (EXE Installer)](https://github.com/syans-OG/Miles-Music-App/releases/download/v__VERSION__/Miles___VERSION___x64-setup.exe)
