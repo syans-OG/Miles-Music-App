@@ -428,10 +428,14 @@ export const usePlayerStore = create<PlayerStore>()(
             return;
           }
           if (!state.currentSong) {
-            if (state.playbackQueue.length > 0) {
-              get().playSong(state.playbackQueue[0]);
-            } else if (state.queue.length > 0) {
-              get().playSong(state.queue[0]);
+            const fallbackSong = state.playbackQueue[0]
+              || state.queue[0]
+              || state.topSongs[0]
+              || (state.playlists.length > 0 && state.playlists[0].songs.length > 0
+                ? state.playlists[0].songs[0]
+                : null);
+            if (fallbackSong) {
+              get().playSong(fallbackSong);
             }
             return;
           }
@@ -476,7 +480,9 @@ export const usePlayerStore = create<PlayerStore>()(
             : null,
         })),
         setDuration: (duration) => set({ duration }),
-        setVolume: (volume) => set({ volume }),
+        setVolume: (volume) => set({
+          volume: Math.max(0, Math.min(1, volume > 1 ? volume / 100 : volume)),
+        }),
         toggleMute: () => set((state) => ({ isMuted: !state.isMuted })),
 
         playSong: (song, reason = 'manual') => {
@@ -543,16 +549,24 @@ export const usePlayerStore = create<PlayerStore>()(
         },
 
         playNext: (reason = 'sequential') => {
-          const { playbackQueue, currentIndex, playSong } = get();
+          const { playbackQueue, currentSong, playSong } = get();
           if (playbackQueue.length === 0) return;
-          const nextIndex = (currentIndex + 1) % playbackQueue.length;
+          const currentIndex = currentSong
+            ? playbackQueue.findIndex((item) => item.id === currentSong.id)
+            : get().currentIndex;
+          const safeIndex = currentIndex === -1 ? 0 : currentIndex;
+          const nextIndex = (safeIndex + 1) % playbackQueue.length;
           playSong(playbackQueue[nextIndex], reason);
         },
 
         playPrev: (reason = 'manual') => {
-          const { playbackQueue, currentIndex, playSong } = get();
+          const { playbackQueue, currentSong, playSong } = get();
           if (playbackQueue.length === 0) return;
-          const prevIndex = (currentIndex - 1 + playbackQueue.length) % playbackQueue.length;
+          const currentIndex = currentSong
+            ? playbackQueue.findIndex((item) => item.id === currentSong.id)
+            : get().currentIndex;
+          const safeIndex = currentIndex === -1 ? 0 : currentIndex;
+          const prevIndex = (safeIndex - 1 + playbackQueue.length) % playbackQueue.length;
           playSong(playbackQueue[prevIndex], reason);
         },
 
@@ -1608,10 +1622,14 @@ export const usePlayerStore = create<PlayerStore>()(
                 ? currentState.selectionSerial + 1
                 : currentState.selectionSerial,
               selectionReason: deletedCurrentSong ? 'manual' : currentState.selectionReason,
-              playlists: currentState.playlists.map((playlist) => ({
-                ...playlist,
-                songs: playlist.songs.filter((item) => item.id !== songId),
-              })),
+              playlists: currentState.playlists.map((playlist) => {
+                const songs = playlist.songs.filter((item) => item.id !== songId);
+                return {
+                  ...playlist,
+                  songs,
+                  coverUrl: songs[0]?.coverUrl ?? playlist.coverUrl,
+                };
+              }),
               topSongs: sortTopSongs(queue),
               libraryNotice: `“${song.title}” removed from library`,
             };
@@ -1673,10 +1691,14 @@ export const usePlayerStore = create<PlayerStore>()(
                 ? currentState.selectionSerial + 1
                 : currentState.selectionSerial,
               selectionReason: deletedCurrent ? 'manual' : currentState.selectionReason,
-              playlists: currentState.playlists.map((playlist) => ({
-                ...playlist,
-                songs: playlist.songs.filter((item) => !targetIds.has(item.id)),
-              })),
+              playlists: currentState.playlists.map((playlist) => {
+                const songs = playlist.songs.filter((item) => !targetIds.has(item.id));
+                return {
+                  ...playlist,
+                  songs,
+                  coverUrl: songs[0]?.coverUrl ?? playlist.coverUrl,
+                };
+              }),
               topSongs: sortTopSongs(queue),
               libraryNotice: `${targetSongs.length} lagu berhasil dihapus`,
             };

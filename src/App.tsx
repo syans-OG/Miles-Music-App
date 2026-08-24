@@ -71,28 +71,85 @@ export const App: React.FC = () => {
 
   // System Tray & Single Instance IPC listeners
   useEffect(() => {
-    let unlistenPlayPause: (() => void) | undefined;
-    let unlistenNext: (() => void) | undefined;
-    let unlistenFocus: (() => void) | undefined;
+    let isMounted = true;
+    const unlisteners: Array<() => void> = [];
+    let lastTrayActionTime = 0;
+
+    const throttleTrayAction = (fn: () => void, ms = 200) => {
+      const now = Date.now();
+      if (now - lastTrayActionTime < ms) return;
+      lastTrayActionTime = now;
+      fn();
+    };
 
     const setupTrayListeners = async () => {
       try {
-        const { getCurrentWindow } = await import('@tauri-apps/api/window');
-        const win = getCurrentWindow();
+        const { listen } = await import('@tauri-apps/api/event');
+        if (!isMounted) return;
+
         const handlePlayPause = () => {
-          usePlayerStore.getState().togglePlayPause();
+          throttleTrayAction(() => {
+            usePlayerStore.getState().togglePlayPause();
+          });
         };
         const handleNext = () => {
-          usePlayerStore.getState().playNext();
+          throttleTrayAction(() => {
+            usePlayerStore.getState().playNext('manual');
+          });
+        };
+        const handlePrev = () => {
+          throttleTrayAction(() => {
+            usePlayerStore.getState().playPrev('manual');
+          });
+        };
+        const handleSetMode = (event: { payload: number }) => {
+          const m = event.payload;
+          if (m === 1) usePlayerStore.getState().setMode('control-bar');
+          else if (m === 2) usePlayerStore.getState().setMode('vinyl-widget');
+          else if (m === 3) usePlayerStore.getState().setMode('micro-bubble');
+        };
+        const handleToggleLoop = () => {
+          throttleTrayAction(() => {
+            usePlayerStore.getState().toggleLoop();
+          });
+        };
+        const handleShuffleQueue = () => {
+          throttleTrayAction(() => {
+            usePlayerStore.getState().shufflePlaybackQueue();
+          });
+        };
+        const handleClearQueue = () => {
+          throttleTrayAction(() => {
+            usePlayerStore.getState().clearPlaybackQueue();
+          });
         };
         const handleFocusNudge = () => {
           setIsFocusNudged(true);
           setTimeout(() => setIsFocusNudged(false), 800);
         };
 
-        unlistenPlayPause = await win.listen('tray-play-pause', handlePlayPause);
-        unlistenNext = await win.listen('tray-next-track', handleNext);
-        unlistenFocus = await win.listen('single-instance-focus', handleFocusNudge);
+        const u1 = await listen('tray-play-pause', handlePlayPause);
+        const u2 = await listen('tray-next-track', handleNext);
+        const u3 = await listen('tray-prev-track', handlePrev);
+        const u4 = await listen<number>('tray-set-mode', handleSetMode);
+        const u5 = await listen('tray-toggle-loop', handleToggleLoop);
+        const u6 = await listen('tray-shuffle-queue', handleShuffleQueue);
+        const u7 = await listen('tray-clear-queue', handleClearQueue);
+        const u8 = await listen('single-instance-focus', handleFocusNudge);
+
+        if (!isMounted) {
+          u1();
+          u2();
+          u3();
+          u4();
+          u5();
+          u6();
+          u7();
+          u8();
+          return;
+        }
+
+        unlisteners.push(u1, u2, u3, u4, u5, u6, u7, u8);
       } catch {
         // Browser fallback
       }
@@ -101,9 +158,8 @@ export const App: React.FC = () => {
     void setupTrayListeners();
 
     return () => {
-      if (unlistenPlayPause) unlistenPlayPause();
-      if (unlistenNext) unlistenNext();
-      if (unlistenFocus) unlistenFocus();
+      isMounted = false;
+      unlisteners.forEach((unsub) => unsub());
     };
   }, []);
 

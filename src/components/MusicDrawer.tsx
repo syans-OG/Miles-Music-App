@@ -150,7 +150,7 @@ const SongPlaylistDialog: React.FC<SongPlaylistDialogProps> = ({ song, playlists
           const included = playlist.songs.some((item) => item.id === song.id);
           return (
             <button key={playlist.id} type="button" onClick={() => onToggle(playlist.id)} className="flex w-full items-center gap-2.5 rounded-xl border border-white/5 bg-white/5 p-2 text-left hover:bg-white/10">
-              <img src={getDisplayCoverUrl(playlist.coverUrl, 96)} onError={handleCoverImageError} alt="" loading="lazy" decoding="async" className="h-8 w-8 rounded-lg object-cover" />
+              <img src={getDisplayCoverUrl(playlist.songs[0]?.coverUrl || playlist.coverUrl, 96)} onError={handleCoverImageError} alt="" loading="lazy" decoding="async" className="h-8 w-8 rounded-lg object-cover" />
               <span className="min-w-0 flex-1 truncate text-[11px] font-semibold text-white">{playlist.name}</span>
               <span className={`flex h-5 w-5 items-center justify-center rounded-md border ${included ? 'border-indigo-300 bg-indigo-400 text-dark-900' : 'border-white/20 text-transparent'}`}><Check className="h-3 w-3" /></span>
             </button>
@@ -945,7 +945,7 @@ export const MusicDrawer: React.FC = () => {
                   >
                     <div className="relative h-11 w-11 flex-shrink-0 overflow-hidden rounded-xl border border-white/10">
                       <img
-                        src={getDisplayCoverUrl(playlist.coverUrl, 96)}
+                        src={getDisplayCoverUrl(playlist.songs[0]?.coverUrl || playlist.coverUrl, 96)}
                         onError={handleCoverImageError}
                         alt={playlist.name}
                         loading="lazy"
@@ -998,7 +998,7 @@ export const MusicDrawer: React.FC = () => {
                 </button>
                 <div className="relative h-10 w-10 flex-shrink-0 overflow-hidden rounded-xl border border-white/10 shadow-sm">
                   <img
-                    src={getDisplayCoverUrl(managedPlaylist.coverUrl, 96)}
+                    src={getDisplayCoverUrl(managedPlaylist.songs[0]?.coverUrl || managedPlaylist.coverUrl, 96)}
                     onError={handleCoverImageError}
                     alt=""
                     className="h-full w-full object-cover"

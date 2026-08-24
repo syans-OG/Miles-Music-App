@@ -109,15 +109,23 @@ export class AudioService {
         },
       ),
       usePlayerStore.subscribe(
-        (state) => ({ volume: state.volume, isMuted: state.isMuted }),
-        ({ volume, isMuted }) => {
-          this.audio.volume = isMuted ? 0 : volume;
+        (state) => (state.isMuted ? 0 : Math.max(0, Math.min(1, state.volume))),
+        (effectiveVolume) => {
+          try {
+            this.audio.volume = effectiveVolume;
+          } catch {
+            // Safe fallback
+          }
         },
       ),
     );
 
     const restored = usePlayerStore.getState();
-    this.audio.volume = restored.isMuted ? 0 : restored.volume;
+    try {
+      this.audio.volume = restored.isMuted ? 0 : Math.max(0, Math.min(1, restored.volume));
+    } catch {
+      // Safe fallback
+    }
     window.addEventListener('beforeunload', this.handleBeforeUnload);
   }
 

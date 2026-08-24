@@ -5,7 +5,7 @@ use sha2::{Digest, Sha256};
 use std::io::Cursor;
 use std::path::{Path, PathBuf};
 use tauri::ipc::{InvokeBody, Request};
-use tauri::menu::{Menu, MenuItem};
+use tauri::menu::{Menu, MenuItem, PredefinedMenuItem, Submenu};
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
 use tauri::{AppHandle, Emitter, Manager, PhysicalPosition, Window};
 
@@ -585,13 +585,111 @@ pub fn run() {
             }
         }))
         .setup(|app| {
-            let show_item = MenuItem::with_id(app, "show", "Tampilkan Miles", true, None::<&str>)?;
-            let play_pause_item =
-                MenuItem::with_id(app, "play_pause", "Play / Pause", true, None::<&str>)?;
-            let next_item = MenuItem::with_id(app, "next", "Lagu Berikutnya", true, None::<&str>)?;
-            let quit_item = MenuItem::with_id(app, "quit", "Keluar", true, None::<&str>)?;
-            let menu =
-                Menu::with_items(app, &[&show_item, &play_pause_item, &next_item, &quit_item])?;
+            let header_item = MenuItem::with_id(
+                app,
+                "header",
+                "🎵 Miles v1.0.6",
+                false,
+                None::<&str>,
+            )?;
+            let sep1 = PredefinedMenuItem::separator(app)?;
+
+            let play_pause_item = MenuItem::with_id(
+                app,
+                "play_pause",
+                "⏯️ Play / Pause",
+                true,
+                None::<&str>,
+            )?;
+            let next_item =
+                MenuItem::with_id(app, "next", "⏭️ Next Track", true, None::<&str>)?;
+            let prev_item =
+                MenuItem::with_id(app, "prev", "⏮️ Prev Track", true, None::<&str>)?;
+            let sep2 = PredefinedMenuItem::separator(app)?;
+
+            // Submenu: Player Mode
+            let mode1_item = MenuItem::with_id(
+                app,
+                "mode_1",
+                "🎚️ Console Bar",
+                true,
+                None::<&str>,
+            )?;
+            let mode2_item = MenuItem::with_id(
+                app,
+                "mode_2",
+                "💿 Turntable",
+                true,
+                None::<&str>,
+            )?;
+            let mode3_item = MenuItem::with_id(
+                app,
+                "mode_3",
+                "🫧 Bubble",
+                true,
+                None::<&str>,
+            )?;
+            let mode_submenu = Submenu::with_items(
+                app,
+                "🎛️ Player Mode",
+                true,
+                &[&mode1_item, &mode2_item, &mode3_item],
+            )?;
+
+            // Submenu: Playback / Queue
+            let loop_item = MenuItem::with_id(
+                app,
+                "toggle_loop",
+                "🔂 Loop Track",
+                true,
+                None::<&str>,
+            )?;
+            let shuffle_item = MenuItem::with_id(
+                app,
+                "shuffle_queue",
+                "🔀 Shuffle Queue",
+                true,
+                None::<&str>,
+            )?;
+            let clear_queue_item = MenuItem::with_id(
+                app,
+                "clear_queue",
+                "🗑️ Clear Queue",
+                true,
+                None::<&str>,
+            )?;
+            let queue_submenu = Submenu::with_items(
+                app,
+                "🔁 Playback",
+                true,
+                &[&loop_item, &shuffle_item, &clear_queue_item],
+            )?;
+
+            let sep3 = PredefinedMenuItem::separator(app)?;
+
+            let quit_item = MenuItem::with_id(
+                app,
+                "quit",
+                "⏻ Exit Miles",
+                true,
+                None::<&str>,
+            )?;
+
+            let menu = Menu::with_items(
+                app,
+                &[
+                    &header_item,
+                    &sep1,
+                    &play_pause_item,
+                    &next_item,
+                    &prev_item,
+                    &sep2,
+                    &mode_submenu,
+                    &queue_submenu,
+                    &sep3,
+                    &quit_item,
+                ],
+            )?;
 
             let icon = app
                 .default_window_icon()
@@ -601,25 +699,49 @@ pub fn run() {
             let _tray = TrayIconBuilder::new()
                 .icon(icon)
                 .menu(&menu)
+                .tooltip("Miles Music Player")
                 .on_menu_event(|app, event| match event.id.as_ref() {
-                    "show" => {
+                    "play_pause" => {
+                        let _ = app.emit("tray-play-pause", ());
+                    }
+                    "next" => {
+                        let _ = app.emit("tray-next-track", ());
+                    }
+                    "prev" => {
+                        let _ = app.emit("tray-prev-track", ());
+                    }
+                    "mode_1" => {
                         if let Some(window) = app.get_webview_window("main") {
                             let _ = window.show();
                             let _ = window.unminimize();
                             let _ = window.set_focus();
                         }
+                        let _ = app.emit("tray-set-mode", 1);
                     }
-                    "play_pause" => {
+                    "mode_2" => {
                         if let Some(window) = app.get_webview_window("main") {
-                            let _ = window.emit("tray-play-pause", ());
+                            let _ = window.show();
+                            let _ = window.unminimize();
+                            let _ = window.set_focus();
                         }
-                        let _ = app.emit("tray-play-pause", ());
+                        let _ = app.emit("tray-set-mode", 2);
                     }
-                    "next" => {
+                    "mode_3" => {
                         if let Some(window) = app.get_webview_window("main") {
-                            let _ = window.emit("tray-next-track", ());
+                            let _ = window.show();
+                            let _ = window.unminimize();
+                            let _ = window.set_focus();
                         }
-                        let _ = app.emit("tray-next-track", ());
+                        let _ = app.emit("tray-set-mode", 3);
+                    }
+                    "toggle_loop" => {
+                        let _ = app.emit("tray-toggle-loop", ());
+                    }
+                    "shuffle_queue" => {
+                        let _ = app.emit("tray-shuffle-queue", ());
+                    }
+                    "clear_queue" => {
+                        let _ = app.emit("tray-clear-queue", ());
                     }
                     "quit" => {
                         app.exit(0);

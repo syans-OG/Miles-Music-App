@@ -182,12 +182,13 @@ const migratePlaylists = (value: unknown, libraryById: Map<string, Song>): Playl
       : spotifyPlaylistId && SPOTIFY_ID_PATTERN.test(spotifyPlaylistId)
         ? { kind: 'spotify' as const, spotifyId: spotifyPlaylistId }
         : { kind: 'local' as const };
+    const songs = songIds.flatMap((songId) => libraryById.get(songId) ?? []);
     return [{
       id,
       name,
       curator,
-      coverUrl,
-      songs: songIds.flatMap((songId) => libraryById.get(songId) ?? []),
+      coverUrl: songs[0]?.coverUrl || coverUrl,
+      songs,
       isPinned: item.isPinned === true || undefined,
       source,
     }];
@@ -231,6 +232,12 @@ export const migratePlayerPersistedState = (persistedState: unknown, _version: n
       ? Math.max(0, playbackQueue.findIndex((song) => song.id === currentSongId))
       : 0,
     resumePosition: resume,
+    volume: typeof persistedState.volume === 'number'
+      ? (persistedState.volume > 1
+        ? Math.max(0, Math.min(1, persistedState.volume / 100))
+        : Math.max(0, Math.min(1, persistedState.volume)))
+      : 0.8,
+    isMuted: Boolean(persistedState.isMuted),
     enableDiscordRpc: typeof persistedState.enableDiscordRpc === 'boolean'
       ? persistedState.enableDiscordRpc
       : true,

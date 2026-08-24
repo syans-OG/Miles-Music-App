@@ -38,15 +38,6 @@ desktop.ini
 *.temp
 *.bak
 
-# Local prototypes, agent configs, and internal planning history
-/.agents/
-/design-demos/
-/direction-approved.md
-/PROJECT_CONTEXT_HANDOVER.md
-/PROJECT_PLAN.md
-/PRODUCT.md
-/PHASE_*.md
-/RELEASE_VALIDATION_*.md
-/YOUTUBE_INTEGRATION_IMPLEMENTATION_PLAN.md
+# Local run scripts and development artifacts
 /run-miles.bat
-/CHANGELOG.md
+
