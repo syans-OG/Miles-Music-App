@@ -1,7 +1,7 @@
 {
   "name": "miles-music-player",
   "private": true,
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "A lightweight cross-platform music player for local audio and public YouTube links.",
   "author": "syans-OG",
   "license": "MIT",

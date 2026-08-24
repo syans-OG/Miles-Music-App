@@ -588,7 +588,7 @@ pub fn run() {
             let header_item = MenuItem::with_id(
                 app,
                 "header",
-                "🎵 Miles v1.0.6",
+                "🎵 Miles v1.0.7",
                 false,
                 None::<&str>,
             )?;

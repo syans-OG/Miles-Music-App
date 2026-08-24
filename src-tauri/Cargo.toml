@@ -1,6 +1,6 @@
 [package]
 name = "miles-music-player"
-version = "1.0.6"
+version = "1.0.7"
 description = "A lightweight cross-platform music player for local audio and public YouTube links."
 authors = ["syans-OG"]
 license = "MIT"
