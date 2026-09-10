@@ -320,6 +320,15 @@ const AddSongsToPlaylistModal: React.FC<AddSongsModalProps> = ({ playlist, libra
     if (!q) return library;
     return library.filter((s) => s.title.toLowerCase().includes(q) || s.artist.toLowerCase().includes(q));
   }, [library, search]);
+  const songsScrollRef = useRef<HTMLDivElement>(null);
+  const songsVirtualizer = useVirtualizer({
+    count: filtered.length,
+    getScrollElement: () => songsScrollRef.current,
+    estimateSize: () => 44,
+    gap: 4,
+    overscan: 4,
+    getItemKey: (index) => filtered[index]?.id ?? index,
+  });
 
   return (
     <div className="absolute inset-0 z-[70] flex items-center justify-center bg-black/80 p-4 backdrop-blur-md">
@@ -348,40 +357,46 @@ const AddSongsToPlaylistModal: React.FC<AddSongsModalProps> = ({ playlist, libra
         </div>
 
         {/* List of library songs with Checkbox */}
-        <div className="min-h-0 flex-1 space-y-1 overflow-y-auto pr-1">
-          {filtered.map((song) => {
-            const included = playlist.songs.some((s) => s.id === song.id);
-            return (
-              <div
-                key={song.id}
-                onClick={() => onToggle(song.id)}
-                className={`flex cursor-pointer items-center gap-2.5 rounded-xl p-1.5 transition-colors ${
-                  included ? 'border border-indigo-400/30 bg-indigo-500/10' : 'bg-white/[0.04] hover:bg-white/[0.08]'
-                }`}
-              >
-                <img
-                  src={getDisplayCoverUrl(song.coverUrl, 96)}
-                  onError={handleCoverImageError}
-                  alt=""
-                  loading="lazy"
-                  decoding="async"
-                  className="h-8 w-8 rounded-lg object-cover"
-                />
-                <div className="min-w-0 flex-1">
-                  <p className={`truncate text-[11px] font-semibold ${included ? 'text-indigo-200' : 'text-white'}`}>
-                    {song.title}
-                  </p>
-                  <p className="truncate text-[9px] text-slate-400">{song.artist}</p>
-                </div>
-                <div className={`flex h-5 w-5 items-center justify-center rounded-md border ${
-                  included ? 'border-indigo-400 bg-indigo-500 text-white' : 'border-white/20 text-transparent'
-                }`}>
-                  <Check className="h-3 w-3" />
-                </div>
-              </div>
-            );
-          })}
-          {filtered.length === 0 && (
+        <div ref={songsScrollRef} className="min-h-0 flex-1 overflow-y-auto pr-1">
+          {filtered.length > 0 ? (
+            <div className="relative w-full" style={{ height: songsVirtualizer.getTotalSize() }}>
+              {songsVirtualizer.getVirtualItems().map((virtualItem) => {
+                const song = filtered[virtualItem.index];
+                if (!song) return null;
+                const included = playlist.songs.some((s) => s.id === song.id);
+                return (
+                  <div
+                    key={virtualItem.key}
+                    onClick={() => onToggle(song.id)}
+                    style={{ transform: `translateY(${virtualItem.start}px)` }}
+                    className={`absolute inset-x-0 top-0 flex cursor-pointer items-center gap-2.5 rounded-xl p-1.5 transition-colors ${
+                      included ? 'border border-indigo-400/30 bg-indigo-500/10' : 'bg-white/[0.04] hover:bg-white/[0.08]'
+                    }`}
+                  >
+                    <img
+                      src={getDisplayCoverUrl(song.coverUrl, 96)}
+                      onError={handleCoverImageError}
+                      alt=""
+                      loading="lazy"
+                      decoding="async"
+                      className="h-8 w-8 rounded-lg object-cover"
+                    />
+                    <div className="min-w-0 flex-1">
+                      <p className={`truncate text-[11px] font-semibold ${included ? 'text-indigo-200' : 'text-white'}`}>
+                        {song.title}
+                      </p>
+                      <p className="truncate text-[9px] text-slate-400">{song.artist}</p>
+                    </div>
+                    <div className={`flex h-5 w-5 items-center justify-center rounded-md border ${
+                      included ? 'border-indigo-400 bg-indigo-500 text-white' : 'border-white/20 text-transparent'
+                    }`}>
+                      <Check className="h-3 w-3" />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
             <p className="py-8 text-center text-[11px] text-slate-500">No songs found.</p>
           )}
         </div>
