@@ -1,14 +1,19 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { usePlayerStore } from '../stores/usePlayerStore';
 import { usePlaybackMetrics } from '../stores/playbackMetrics';
-import type { Song, SongSource } from '../types/player';
+import type { Song } from '../types/player';
 
 const makeSong = (i: number): Song => ({
   id: `bench-${i}`,
   title: `Track ${i}`,
   artist: 'Benchmark',
   coverUrl: '',
-  source: { kind: 'local', localPath: `C:\\music\\${i}.mp3` } as SongSource,
+  source: {
+    kind: 'local',
+    audioUrl: `C:\\music\\${i}.mp3`,
+    filePath: `C:\\music\\${i}.mp3`,
+    managed: true,
+  },
   duration: 200,
   playCount: i % 20,
   listenedSeconds: i,
