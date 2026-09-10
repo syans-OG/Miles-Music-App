@@ -75,7 +75,7 @@ export class YoutubeServiceError extends Error {
 const isYoutubeErrorCode = (value: unknown): value is YoutubeErrorCode =>
   typeof value === 'string' && Object.prototype.hasOwnProperty.call(errorMessages, value);
 
-const toYoutubeServiceError = (error: unknown): YoutubeServiceError => {
+export const toYoutubeServiceError = (error: unknown): YoutubeServiceError => {
   if (error instanceof YoutubeServiceError) return error;
   if (typeof error === 'object' && error !== null) {
     const candidate = error as Partial<YoutubeCommandError>;

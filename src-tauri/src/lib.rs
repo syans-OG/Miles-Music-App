@@ -39,7 +39,7 @@ fn pixels_are_similar(pixel: &image::Rgba<u8>, background: &[u8; 3]) -> bool {
     pixel[3] < 16 || (0..3).all(|channel| pixel[channel].abs_diff(background[channel]) <= 22)
 }
 
-fn normalize_embedded_cover(data: &[u8]) -> Option<Vec<u8>> {
+pub(crate) fn normalize_embedded_cover(data: &[u8]) -> Option<Vec<u8>> {
     let source = image::load_from_memory(data).ok()?.to_rgba8();
     let (width, height) = source.dimensions();
     if width < 8 || height < 8 {
@@ -789,6 +789,8 @@ pub fn run() {
             youtube::commands::cancel_youtube_resolve,
             youtube::commands::match_spotify_track,
             youtube::commands::cancel_spotify_match,
+            youtube::commands::download_youtube_track,
+            youtube::commands::cancel_youtube_download,
             discord_rpc::set_discord_activity,
             discord_rpc::clear_discord_activity,
             spotify::fetch_spotify_playlist

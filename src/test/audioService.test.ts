@@ -327,12 +327,13 @@ describe('AudioService lazy YouTube playback', () => {
     expect(audio.src).toBe(local.source.kind === 'local' ? local.source.audioUrl : '');
   });
 
-  it('re-resolves a failed media source exactly once per load cycle', async () => {
+  it('re-resolves a failed media source twice silently before surfacing an error', async () => {
     const audio = new FakeAudio();
     const resolveTrack = vi
       .fn()
       .mockResolvedValueOnce(resolvedTrack('aaaaaaaaaaa', '-first'))
-      .mockResolvedValueOnce(resolvedTrack('aaaaaaaaaaa', '-retry'))
+      .mockResolvedValueOnce(resolvedTrack('aaaaaaaaaaa', '-retry-1'))
+      .mockResolvedValueOnce(resolvedTrack('aaaaaaaaaaa', '-retry-2'))
       .mockResolvedValueOnce(resolvedTrack('aaaaaaaaaaa', '-manual-retry'));
     const clearStreamCache = vi.fn();
     const song = youtubeSong('a', 'aaaaaaaaaaa');
@@ -346,19 +347,22 @@ describe('AudioService lazy YouTube playback', () => {
     await flush();
     audio.emit('error');
     await flush();
+    audio.emit('error');
+    await flush();
 
     expect(resolveTrack.mock.calls.map((call) => [call[0], call[1]])).toEqual([
       ['aaaaaaaaaaa', 'explicit_selection'],
       ['aaaaaaaaaaa', 'explicit_selection'],
+      ['aaaaaaaaaaa', 'explicit_selection'],
     ]);
-    expect(clearStreamCache).toHaveBeenCalledTimes(1);
+    expect(clearStreamCache).toHaveBeenCalledTimes(2);
     expect(usePlayerStore.getState().playbackError?.retryable).toBe(true);
 
     usePlayerStore.getState().requestPlaybackRetry();
     await flush();
 
-    expect(resolveTrack).toHaveBeenCalledTimes(3);
-    expect(clearStreamCache).toHaveBeenCalledTimes(2);
+    expect(resolveTrack).toHaveBeenCalledTimes(4);
+    expect(clearStreamCache).toHaveBeenCalledTimes(3);
     expect(usePlayerStore.getState().playbackError).toBeNull();
   });
 
@@ -646,5 +650,47 @@ describe('AudioService lazy YouTube playback', () => {
     }, 'playback');
     expect(resolveTrackMock).toHaveBeenCalledWith('matched12345', 'explicit_selection', expect.any(Function));
     expect(audio.src).toBe('https://rr1---sn-fixture.googlevideo.com/audio-matched12345');
+  });
+
+  it('shows an error instead of a free-form search when Spotify match fails', async () => {
+    const audio = new FakeAudio();
+    const unmatchedSong: Song = {
+      id: 'spotify-unmatched-2',
+      title: 'Unmatched Track',
+      artist: 'Artist',
+      coverUrl: 'https://i.scdn.co/image/fixture.jpg',
+      source: {
+        kind: 'spotify',
+        spotifyId: '4xF4ZBGPZKxECeDFrqSAG4',
+        searchQuery: 'Artist Unmatched Track',
+        matchedVideoId: '',
+        canonicalUrl: '',
+      },
+      duration: 180,
+      playCount: 0,
+    };
+    usePlayerStore.setState({ queue: [unmatchedSong], currentSong: unmatchedSong, playbackQueue: [unmatchedSong] });
+    const matchSpotifyTrackMock = vi.fn().mockResolvedValue({
+      status: 'skipped' as const,
+      spotifyId: '4xF4ZBGPZKxECeDFrqSAG4',
+      reason: 'no_candidates' as const,
+    });
+    const resolveTrackMock = vi.fn();
+    service = new AudioService({
+      audio,
+      matchSpotifyTrack: matchSpotifyTrackMock,
+      resolveTrack: resolveTrackMock,
+      getCachedStream: () => null,
+    });
+
+    usePlayerStore.getState().playSong(unmatchedSong);
+    await flush();
+
+    expect(resolveTrackMock).not.toHaveBeenCalled();
+    expect(usePlayerStore.getState().playbackStatus).toBe('error');
+    expect(usePlayerStore.getState().playbackError?.retryable).toBe(true);
+    expect(usePlayerStore.getState().playbackError?.message).toBe(
+      'Tidak dapat menemukan padanan lagu ini di YouTube.',
+    );
   });
 });

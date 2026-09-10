@@ -130,21 +130,37 @@ pub enum SpotifyMatchSkipReason {
 }
 
 #[derive(Clone, Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DownloadedTrack {
+    pub video_id: String,
+    pub file_path: String,
+    pub file_hash: String,
+    pub cover_path: Option<String>,
+    pub duration_seconds: u64,
+}
+
+#[derive(Clone, Debug, Serialize)]
 #[serde(rename_all = "camelCase", tag = "status")]
 pub enum SpotifyTrackMatchResult {
     #[serde(rename = "matched")]
     Matched {
+        #[serde(rename = "spotifyId")]
         spotify_id: String,
+        #[serde(rename = "videoId")]
         video_id: String,
         title: String,
         artist: String,
+        #[serde(rename = "durationSeconds")]
         duration_seconds: u64,
+        #[serde(rename = "thumbnailUrl")]
         thumbnail_url: Option<String>,
+        #[serde(rename = "canonicalUrl")]
         canonical_url: String,
         score: u8,
     },
     #[serde(rename = "skipped")]
     Skipped {
+        #[serde(rename = "spotifyId")]
         spotify_id: String,
         reason: SpotifyMatchSkipReason,
     },

@@ -215,6 +215,108 @@ body.is-app-hidden *::after {
   z-index: 10;
 }
 
+/* Download Status Ring (Ring A) — sibling of the rotating disc, not a child */
+.pure-cd-download-ring {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+  z-index: 2;
+  pointer-events: none;
+  box-shadow:
+    inset 0 0 0 1.5px rgba(251, 191, 36, 0.75),
+    0 0 6px rgba(251, 191, 36, 0.35),
+    0 0 18px rgba(251, 191, 36, 0.15);
+}
+
+/* Download Activity Pill */
+.download-activity-enter {
+  transform: translate(-50%, 0);
+  animation: activity-enter 0.42s cubic-bezier(0.16, 1, 0.3, 1);
+  animation-fill-mode: backwards;
+}
+
+@keyframes activity-enter {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -8px);
+    filter: blur(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+    filter: blur(0);
+  }
+}
+
+.download-activity-badge {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-weight: 800;
+}
+
+.download-activity-badge.success {
+  background: rgba(52, 211, 153, 0.16);
+  color: #34d399;
+}
+
+.download-activity-badge.error {
+  background: rgba(251, 113, 133, 0.16);
+  color: #fb7185;
+}
+
+.download-activity-badge.cancelled {
+  background: rgba(255, 255, 255, 0.08);
+  color: #94a3b8;
+}
+
+.download-activity-btn {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  border: 0;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.06);
+  color: #cbd5e1;
+  font-size: 10.5px;
+  font-weight: 600;
+  font-family: inherit;
+  padding: 5px 10px;
+  border-radius: 9px;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.download-activity-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+}
+
+.download-activity-btn.primary {
+  background: rgba(251, 191, 36, 0.16);
+  color: #fbbf24;
+}
+
+.download-activity-btn.primary:hover {
+  background: rgba(251, 191, 36, 0.26);
+  color: #fde68a;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .download-activity-enter {
+    animation-duration: 0.2s;
+    filter: none;
+  }
+}
+
 @keyframes drawerPullDown {
   from {
     opacity: 0;

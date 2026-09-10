@@ -4,12 +4,12 @@
   "binaries": [
     {
       "id": "yt-dlp",
-      "version": "2026.07.04",
-      "downloadUrl": "https://github.com/yt-dlp/yt-dlp/releases/download/2026.07.04/yt-dlp_macos",
-      "publisherAssetSha256": "498bd0dae17855c599d371d68ec5bafc439a9d8640e838be25c765a9792f261b",
+      "version": "2026.08.19",
+      "downloadUrl": "https://github.com/yt-dlp/yt-dlp/releases/download/2026.08.19/yt-dlp_macos",
+      "publisherAssetSha256": "0f192b7ec147ab6288885d6351d9ab67367640029b4377576ef46dd79cf7b202",
       "fileName": "binaries/yt-dlp-aarch64-apple-darwin",
       "runtimeFileName": "yt-dlp",
-      "sha256": "498bd0dae17855c599d371d68ec5bafc439a9d8640e838be25c765a9792f261b"
+      "sha256": "0f192b7ec147ab6288885d6351d9ab67367640029b4377576ef46dd79cf7b202"
     },
     {
       "id": "deno",

@@ -12,7 +12,7 @@ use tiny_http::{Header, Method, Request, Response, Server, StatusCode};
 use url::Url;
 
 const MAX_SESSIONS: usize = 8;
-const MAX_ACTIVE_REQUESTS: usize = 4;
+const MAX_ACTIVE_REQUESTS: usize = 8;
 const FALLBACK_SESSION_SECONDS: u64 = 6 * 60 * 60;
 const EXPIRY_SAFETY_SECONDS: u64 = 30;
 const UPSTREAM_USER_AGENT: &str =
@@ -145,7 +145,7 @@ impl MediaProxy {
             let _ = request.respond(empty_response(404));
             return;
         };
-        if self.inner.active_requests.fetch_add(1, Ordering::AcqRel) >= MAX_ACTIVE_REQUESTS {
+        if self.inner.active_requests.fetch_add(1, Ordering::AcqRel) > MAX_ACTIVE_REQUESTS {
             self.inner.active_requests.fetch_sub(1, Ordering::AcqRel);
             let _ = request.respond(empty_response(503));
             return;

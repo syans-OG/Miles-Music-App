@@ -1,13 +1,17 @@
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { AlertTriangle, ArrowLeft, Check, ChevronDown, ChevronUp, Clock, Disc, Flame, FolderHeart, FolderPlus, Heart, ListChecks, ListMusic, ListOrdered, ListPlus, MoreHorizontal, Pencil, Play, Plus, Repeat, Search, Settings, Shuffle, Sparkles, Trash2, X } from 'lucide-react';
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core';
+import { SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+import { AlertTriangle, ArrowLeft, Check, Clock, Disc, Download, Flame, FolderHeart, FolderPlus, GripVertical, Heart, ListChecks, ListMusic, ListOrdered, MoreHorizontal, Pencil, Play, Plus, Repeat, Search, Settings, Shuffle, Sparkles, Trash2, X } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
-import { usePlayerStore } from '../stores/usePlayerStore';
+import { usePlayerStore, getSongDownloadVideoId } from '../stores/usePlayerStore';
 import { Playlist, Song } from '../types/player';
 import { getDisplayCoverUrl, handleCoverImageError } from '../utils/coverImage';
 import { getFloatingMenuPosition } from '../utils/floatingMenuPosition';
 import { SettingsPanel } from './SettingsDialog';
+import { DownloadActivity } from './DownloadActivity';
 
 interface EditSongDialogProps {
   song: Song;
@@ -163,6 +167,145 @@ const SongPlaylistDialog: React.FC<SongPlaylistDialogProps> = ({ song, playlists
   </div>
 );
 
+interface BatchAddToPlaylistDialogProps {
+  count: number;
+  playlists: Playlist[];
+  onSelect: (playlistId: string) => void;
+  onCreate: () => void;
+  onClose: () => void;
+}
+
+const BatchAddToPlaylistDialog: React.FC<BatchAddToPlaylistDialogProps> = ({ count, playlists, onSelect, onCreate, onClose }) => (
+  <div className="absolute inset-0 z-[70] flex items-center justify-center bg-black/75 p-6 backdrop-blur-sm">
+    <div className="w-full rounded-2xl border border-white/10 bg-[#11141c] p-4 shadow-2xl">
+      <div className="mb-3 flex items-center justify-between">
+        <h4 className="text-sm font-bold text-white">Add to Playlist</h4>
+        <button type="button" onClick={onClose} className="rounded-lg p-1.5 text-slate-400 hover:bg-white/10 hover:text-white"><X className="h-4 w-4" /></button>
+      </div>
+      <p className="mb-2 text-[10px] text-slate-400">Add {count} selected songs to a playlist (existing songs are skipped).</p>
+      <div className="max-h-[190px] space-y-1 overflow-y-auto pr-1">
+        {playlists.map((playlist) => (
+          <button key={playlist.id} type="button" onClick={() => onSelect(playlist.id)} className="flex w-full items-center gap-2.5 rounded-xl border border-white/5 bg-white/5 p-2 text-left hover:bg-white/10">
+            <img src={getDisplayCoverUrl(playlist.songs[0]?.coverUrl || playlist.coverUrl, 96)} onError={handleCoverImageError} alt="" loading="lazy" decoding="async" className="h-8 w-8 rounded-lg object-cover" />
+            <span className="min-w-0 flex-1 truncate text-[11px] font-semibold text-white">{playlist.name}</span>
+            <span className="text-[10px] tabular-nums text-slate-500">{playlist.songs.length} songs</span>
+          </button>
+        ))}
+        {playlists.length === 0 && <p className="py-5 text-center text-[11px] text-slate-500">No playlists created yet.</p>}
+      </div>
+      <button type="button" onClick={onCreate} className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-indigo-400/30 py-2 text-[11px] font-semibold text-indigo-300 hover:bg-indigo-400/10"><Plus className="h-3.5 w-3.5" /> New Playlist</button>
+    </div>
+  </div>
+);
+
+interface PlaylistSortableRowProps {
+  song: Song;
+  index: number;
+  isCurrent: boolean;
+  onPlay: () => void;
+  onRemove: () => void;
+}
+
+const PlaylistSortableRow: React.FC<PlaylistSortableRowProps> = ({ song, index, isCurrent, onPlay, onRemove }) => {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: song.id });
+  return (
+    <div
+      ref={setNodeRef}
+      onClick={onPlay}
+      style={{ transform: CSS.Transform.toString(transform), transition }}
+      className={`group/song flex cursor-pointer items-center gap-2 rounded-xl border p-1.5 transition-all ${
+        isDragging ? 'z-10 opacity-30' : ''
+      } ${
+        isCurrent
+          ? 'border-indigo-400/40 bg-indigo-400/15 font-semibold'
+          : 'border-white/5 bg-white/[0.03] hover:border-white/10 hover:bg-white/[0.07]'
+      }`}
+    >
+      <button
+        type="button"
+        {...attributes}
+        {...listeners}
+        onClick={(e) => e.stopPropagation()}
+        className="cursor-grab rounded p-0.5 text-slate-600 hover:bg-white/10 hover:text-slate-300 active:cursor-grabbing"
+        title="Seret untuk mengubah urutan"
+        aria-label={`Atur ulang ${song.title}`}
+      >
+        <GripVertical className="h-3.5 w-3.5" />
+      </button>
+      <span className={`w-4 text-center font-mono text-[9px] ${isCurrent ? 'font-bold text-indigo-300' : 'text-slate-500'}`}>
+        {isCurrent ? '▶' : index + 1}
+      </span>
+      <img
+        src={getDisplayCoverUrl(song.coverUrl, 96)}
+        onError={handleCoverImageError}
+        alt=""
+        loading="lazy"
+        decoding="async"
+        className="h-8 w-8 flex-shrink-0 rounded-lg object-cover"
+      />
+      <div className="min-w-0 flex-1">
+        <p className={`truncate text-[11px] ${isCurrent ? 'text-indigo-200' : 'text-white'}`}>
+          {song.title}
+        </p>
+        <p className="truncate text-[9px] text-slate-500">{song.artist}</p>
+      </div>
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          onRemove();
+        }}
+        className="rounded p-1 text-slate-500 opacity-0 transition-opacity hover:bg-rose-500/20 hover:text-rose-300 group-hover/song:opacity-100"
+        title="Remove from playlist"
+      >
+        <X className="h-3.5 w-3.5" />
+      </button>
+    </div>
+  );
+};
+
+interface QueueSortableRowProps {
+  song: Song;
+  index: number;
+  isCurrent: boolean;
+  measureRef: (node: HTMLDivElement | null) => void;
+  onPlay: () => void;
+  onRemove: () => void;
+  positionStyle?: React.CSSProperties;
+}
+
+const QueueSortableRow: React.FC<QueueSortableRowProps> = ({ song, index, isCurrent, measureRef, onPlay, onRemove, positionStyle }) => {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: song.id });
+  return (
+    <div ref={measureRef} data-index={index} style={positionStyle} className="absolute left-0 top-0 w-full">
+      <div
+        ref={setNodeRef}
+        onClick={onPlay}
+        style={{ transform: CSS.Transform.toString(transform), transition }}
+        className={`group/queue flex cursor-pointer items-center gap-2 rounded-xl border p-1.5 transition-colors ${
+          isDragging ? 'z-10 opacity-30' : ''
+        } ${isCurrent ? 'border-emerald-400/30 bg-emerald-400/10' : 'border-transparent bg-white/[0.04] hover:bg-white/[0.08]'}`}
+      >
+        <button
+          type="button"
+          {...attributes}
+          {...listeners}
+          onClick={(e) => e.stopPropagation()}
+          className="cursor-grab rounded p-1 text-slate-600 hover:bg-white/10 hover:text-slate-300 active:cursor-grabbing"
+          title="Seret untuk mengubah urutan"
+          aria-label={`Atur ulang ${song.title}`}
+        >
+          <GripVertical className="h-3 w-3" />
+        </button>
+        <span className={`w-4 text-center text-[9px] font-mono ${isCurrent ? 'text-emerald-300' : 'text-slate-600'}`}>{isCurrent ? '▶' : index + 1}</span>
+        <img src={getDisplayCoverUrl(song.coverUrl, 96)} onError={handleCoverImageError} alt="" loading="lazy" decoding="async" className="h-8 w-8 flex-shrink-0 rounded-lg object-cover" />
+        <div className="min-w-0 flex-1"><p className={`truncate text-[11px] font-semibold ${isCurrent ? 'text-emerald-200' : 'text-white'}`}>{song.title}</p><p className="truncate text-[9px] text-slate-500">{song.artist}</p></div>
+        <button type="button" onClick={(e) => { e.stopPropagation(); onRemove(); }} disabled={isCurrent} className="rounded p-1 text-slate-500 hover:bg-rose-500/10 hover:text-rose-300 disabled:cursor-not-allowed disabled:opacity-20" title={isCurrent ? 'Now playing' : 'Remove'}><X className="h-3 w-3" /></button>
+      </div>
+    </div>
+  );
+};
+
 interface AddSongsModalProps {
   playlist: Playlist;
   library: Song[];
@@ -261,9 +404,9 @@ interface CdActionMenuProps {
   onClose: () => void;
   onEdit: () => void;
   onAddToPlaylist: () => void;
-  onPlayNext: () => void;
-  onAddToQueue: () => void;
   onDelete: () => void;
+  onDownload: () => void;
+  onRemoveOffline: () => void;
 }
 
 const CdActionMenu: React.FC<CdActionMenuProps> = ({
@@ -272,9 +415,9 @@ const CdActionMenu: React.FC<CdActionMenuProps> = ({
   onClose,
   onEdit,
   onAddToPlaylist,
-  onPlayNext,
-  onAddToQueue,
   onDelete,
+  onDownload,
+  onRemoveOffline,
 }) => {
   const menuRef = useRef<HTMLDivElement>(null);
   const [position, setPosition] = useState<{ left: number; top: number } | null>(null);
@@ -325,7 +468,7 @@ const CdActionMenu: React.FC<CdActionMenuProps> = ({
       ref={menuRef}
       role="menu"
       aria-label={`Actions for ${song.title}`}
-      className="fixed z-[120] w-28 overflow-hidden rounded-xl border border-white/10 bg-[#171923] p-1 text-left shadow-2xl"
+      className="fixed z-[120] w-32 overflow-hidden rounded-xl border border-white/10 bg-[#171923] p-1 text-left shadow-2xl"
       style={{
         left: position?.left ?? 0,
         top: position?.top ?? 0,
@@ -338,14 +481,106 @@ const CdActionMenu: React.FC<CdActionMenuProps> = ({
       <button role="menuitem" type="button" onClick={() => runAction(onAddToPlaylist)} className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-[10px] font-semibold text-indigo-200 hover:bg-indigo-400/10 focus-visible:bg-indigo-400/10 focus-visible:outline-none">
         <ListMusic className="h-3 w-3 text-indigo-300" /> To Playlist
       </button>
-      <button role="menuitem" type="button" onClick={() => runAction(onPlayNext)} className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-[10px] font-semibold text-emerald-200 hover:bg-emerald-400/10 focus-visible:bg-emerald-400/10 focus-visible:outline-none">
-        <Play className="h-3 w-3 text-emerald-300" /> Play Next
-      </button>
-      <button role="menuitem" type="button" onClick={() => runAction(onAddToQueue)} className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-[10px] font-semibold text-sky-200 hover:bg-sky-400/10 focus-visible:bg-sky-400/10 focus-visible:outline-none">
-        <ListPlus className="h-3 w-3 text-sky-300" /> To Queue
-      </button>
+      {song.offline || getSongDownloadVideoId(song) ? (
+        song.offline ? (
+          <button role="menuitem" type="button" onClick={() => runAction(onRemoveOffline)} className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-[10px] font-semibold text-amber-300 hover:bg-amber-400/10 focus-visible:bg-amber-400/10 focus-visible:outline-none">
+            <Trash2 className="h-3 w-3" /> Hapus Unduhan
+          </button>
+        ) : (
+          <button role="menuitem" type="button" onClick={() => runAction(onDownload)} className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-[10px] font-semibold text-amber-200 hover:bg-amber-400/10 focus-visible:bg-amber-400/10 focus-visible:outline-none">
+            <Download className="h-3 w-3 text-amber-300" /> Download
+          </button>
+        )
+      ) : null}
       <button role="menuitem" type="button" onClick={() => runAction(onDelete)} className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-[10px] font-semibold text-rose-300 hover:bg-rose-500/10 focus-visible:bg-rose-500/10 focus-visible:outline-none">
         <Trash2 className="h-3 w-3" /> Delete
+      </button>
+    </div>,
+    document.body,
+  );
+};
+
+interface PlaylistActionMenuProps {
+  anchor: HTMLButtonElement;
+  canPlay: boolean;
+  onShuffle: () => void;
+  onDownload: () => void;
+  onDelete: () => void;
+  onClose: () => void;
+}
+
+const PlaylistActionMenu: React.FC<PlaylistActionMenuProps> = ({
+  anchor,
+  canPlay,
+  onShuffle,
+  onDownload,
+  onDelete,
+  onClose,
+}) => {
+  const menuRef = useRef<HTMLDivElement>(null);
+  const [position, setPosition] = useState<{ left: number; top: number } | null>(null);
+
+  useLayoutEffect(() => {
+    const menu = menuRef.current;
+    if (!menu || !anchor) return;
+
+    const bounds = menu.getBoundingClientRect();
+    setPosition(getFloatingMenuPosition(
+      anchor.getBoundingClientRect(),
+      { width: bounds.width, height: bounds.height },
+      { width: window.innerWidth, height: window.innerHeight },
+    ));
+    menu.querySelector<HTMLButtonElement>('[role="menuitem"]')?.focus();
+  }, [anchor]);
+
+  useEffect(() => {
+    const handlePointerDown = (event: PointerEvent) => {
+      const target = event.target as Node;
+      if (!menuRef.current?.contains(target) && !anchor.contains(target)) onClose();
+    };
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      onClose();
+      window.requestAnimationFrame(() => anchor.focus());
+    };
+
+    document.addEventListener('pointerdown', handlePointerDown);
+    document.addEventListener('scroll', onClose, true);
+    window.addEventListener('resize', onClose);
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown);
+      document.removeEventListener('scroll', onClose, true);
+      window.removeEventListener('resize', onClose);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [anchor, onClose]);
+
+  const runAction = (action: () => void) => {
+    action();
+    onClose();
+  };
+
+  return createPortal(
+    <div
+      ref={menuRef}
+      role="menu"
+      aria-label="Playlist actions"
+      className="fixed z-[120] w-36 overflow-hidden rounded-xl border border-white/10 bg-[#171923] p-1 text-left shadow-2xl"
+      style={{
+        left: position?.left ?? 0,
+        top: position?.top ?? 0,
+        visibility: position ? 'visible' : 'hidden',
+      }}
+    >
+      <button role="menuitem" type="button" onClick={() => runAction(onShuffle)} disabled={!canPlay} className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-[10px] font-semibold text-slate-200 hover:bg-white/10 focus-visible:bg-white/10 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40">
+        <Shuffle className="h-3 w-3 text-slate-300" /> Shuffle Play
+      </button>
+      <button role="menuitem" type="button" onClick={() => runAction(onDownload)} className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-[10px] font-semibold text-amber-200 hover:bg-amber-400/10 focus-visible:bg-amber-400/10 focus-visible:outline-none">
+        <Download className="h-3 w-3 text-amber-300" /> Download Playlist
+      </button>
+      <button role="menuitem" type="button" onClick={() => runAction(onDelete)} disabled={!canPlay} className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-[10px] font-semibold text-rose-300 hover:bg-rose-500/10 focus-visible:bg-rose-500/10 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40">
+        <Trash2 className="h-3 w-3" /> Delete Playlist
       </button>
     </div>,
     document.body,
@@ -355,12 +590,14 @@ const CdActionMenu: React.FC<CdActionMenuProps> = ({
 export const MusicDrawer: React.FC = () => {
 
   const [cdMenu, setCdMenu] = useState<{ song: Song; anchor: HTMLButtonElement } | null>(null);
+  const [playlistMenu, setPlaylistMenu] = useState<{ anchor: HTMLButtonElement } | null>(null);
   const [editingSong, setEditingSong] = useState<Song | null>(null);
   const [deletingSong, setDeletingSong] = useState<Song | null>(null);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [isCreatePlaylistOpen, setIsCreatePlaylistOpen] = useState(false);
   const [playlistSong, setPlaylistSong] = useState<Song | null>(null);
+  const [isBatchAddOpen, setIsBatchAddOpen] = useState(false);
   const [isSelectMode, setIsSelectMode] = useState(false);
   const [selectedSongIds, setSelectedSongIds] = useState<Set<string>>(new Set());
   const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
@@ -379,16 +616,17 @@ export const MusicDrawer: React.FC = () => {
     selectPlaylist,
     youtubeImportTask,
     dismissYoutubeTask,
+    downloadTask,
+    enqueueDownloads,
+    removeOfflineDownload,
     topSongs,
     queue,
     playbackQueue,
     playSong,
     playSongList,
     playPlaylist,
-    addToPlaybackQueue,
-    playNextFromQueue,
     removeFromPlaybackQueue,
-    movePlaybackQueueItem,
+    reorderPlaybackQueue,
     shufflePlaybackQueue,
     toggleQueueRepeat,
     clearPlaybackQueue,
@@ -400,6 +638,8 @@ export const MusicDrawer: React.FC = () => {
     createPlaylist,
     renamePlaylist,
     toggleSongInPlaylist,
+    addSongsToPlaylist,
+    reorderPlaylistSongs,
     deletePlaylist,
     deleteSong,
     deleteMultipleSongs,
@@ -418,16 +658,17 @@ export const MusicDrawer: React.FC = () => {
     selectPlaylist: state.selectPlaylist,
     youtubeImportTask: state.youtubeImportTask,
     dismissYoutubeTask: state.dismissYoutubeTask,
+    downloadTask: state.downloadTask,
+    enqueueDownloads: state.enqueueDownloads,
+    removeOfflineDownload: state.removeOfflineDownload,
     topSongs: state.topSongs,
     queue: state.queue,
     playbackQueue: state.playbackQueue,
     playSong: state.playSong,
     playSongList: state.playSongList,
     playPlaylist: state.playPlaylist,
-    addToPlaybackQueue: state.addToPlaybackQueue,
-    playNextFromQueue: state.playNextFromQueue,
     removeFromPlaybackQueue: state.removeFromPlaybackQueue,
-    movePlaybackQueueItem: state.movePlaybackQueueItem,
+    reorderPlaybackQueue: state.reorderPlaybackQueue,
     shufflePlaybackQueue: state.shufflePlaybackQueue,
     toggleQueueRepeat: state.toggleQueueRepeat,
     clearPlaybackQueue: state.clearPlaybackQueue,
@@ -439,6 +680,8 @@ export const MusicDrawer: React.FC = () => {
     createPlaylist: state.createPlaylist,
     renamePlaylist: state.renamePlaylist,
     toggleSongInPlaylist: state.toggleSongInPlaylist,
+    addSongsToPlaylist: state.addSongsToPlaylist,
+    reorderPlaylistSongs: state.reorderPlaylistSongs,
     deletePlaylist: state.deletePlaylist,
     deleteSong: state.deleteSong,
     deleteMultipleSongs: state.deleteMultipleSongs,
@@ -451,6 +694,41 @@ export const MusicDrawer: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cdScrollRef = useRef<HTMLDivElement>(null);
   const queueScrollRef = useRef<HTMLDivElement>(null);
+
+  const downloadingSongId = downloadTask?.status === 'downloading'
+    ? downloadTask.currentSongId
+    : null;
+
+  const dndSensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
+
+  const handlePlaylistDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || !managedPlaylist) return;
+    if (active.id === over.id) return;
+    const oldIndex = managedPlaylist.songs.findIndex((song) => song.id === active.id);
+    const newIndex = managedPlaylist.songs.findIndex((song) => song.id === over.id);
+    if (oldIndex >= 0 && newIndex >= 0) reorderPlaylistSongs(managedPlaylist.id, oldIndex, newIndex);
+  };
+
+  const handleQueueDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over) return;
+    if (active.id === over.id) return;
+    const oldIndex = playbackQueue.findIndex((song) => song.id === active.id);
+    const newIndex = playbackQueue.findIndex((song) => song.id === over.id);
+    if (oldIndex >= 0 && newIndex >= 0) reorderPlaybackQueue(oldIndex, newIndex);
+  };
+
+  const handleBatchAddSelect = (playlistId: string) => {
+    const ids = Array.from(selectedSongIds);
+    addSongsToPlaylist(playlistId, ids);
+    setIsBatchAddOpen(false);
+    setIsSelectMode(false);
+    setSelectedSongIds(new Set());
+  };
 
   useEffect(() => {
     if (!libraryNotice) return;
@@ -466,7 +744,7 @@ export const MusicDrawer: React.FC = () => {
     let songs = cdSubTab === 'favorites'
       ? queue.filter((song) => song.isFavorite)
       : cdSubTab === 'recent'
-        ? [...queue].sort((a, b) => (b.lastPlayed || 0) - (a.lastPlayed || 0))
+        ? [...queue].filter((song) => song.lastPlayed).sort((a, b) => (b.lastPlayed || 0) - (a.lastPlayed || 0))
         : queue;
 
     const query = searchQuery.trim().toLocaleLowerCase();
@@ -533,6 +811,8 @@ export const MusicDrawer: React.FC = () => {
           {libraryNotice}
         </div>
       )}
+
+      <DownloadActivity />
 
       {youtubeImportTask?.status === 'success' && youtubeImportTask.report && (
         <div className="absolute bottom-3 left-1/2 z-[90] w-[356px] -translate-x-1/2 overflow-hidden rounded-xl border border-white/12 bg-[#11141c] shadow-2xl">
@@ -795,6 +1075,14 @@ export const MusicDrawer: React.FC = () => {
                             </>
                           )}
 
+                          {/* Offline / Download Status Ring (Ring A) — outside the rotating disc */}
+                          {(song.offline || downloadingSongId === song.id) && (
+                            <div
+                              className="pure-cd-download-ring"
+                              aria-hidden="true"
+                            />
+                          )}
+
                           {/* TOP: Pure Circular CD Disc */}
                           <div className={`pure-cd-disc vinyl-grooves relative flex items-center justify-center shadow-xl transition-transform ${isSelected ? 'ring-2 ring-amber-400 scale-[0.96]' : ''}`}>
                             <img
@@ -864,12 +1152,38 @@ export const MusicDrawer: React.FC = () => {
                   </button>
                   <button
                     type="button"
+                    onClick={() => {
+                      const ids = Array.from(selectedSongIds);
+                      setIsSelectMode(false);
+                      setSelectedSongIds(new Set());
+                      void enqueueDownloads(ids);
+                    }}
+                    disabled={selectedSongIds.size === 0}
+                    title="Download Offline"
+                    aria-label="Download Offline"
+                    className="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-400/90 text-dark-900 shadow-md hover:bg-amber-300 active:scale-95 disabled:opacity-30"
+                  >
+                    <Download className="h-3.5 w-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsBatchAddOpen(true)}
+                    disabled={selectedSongIds.size === 0}
+                    title="Add to Playlist"
+                    aria-label="Add to Playlist"
+                    className="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-500 text-white shadow-md hover:bg-indigo-600 active:scale-95 disabled:opacity-30"
+                  >
+                    <FolderPlus className="h-3.5 w-3.5" />
+                  </button>
+                  <button
+                    type="button"
                     onClick={() => setConfirmBulkDelete(true)}
                     disabled={selectedSongIds.size === 0}
-                    className="flex items-center gap-1 rounded-lg bg-rose-500 px-2.5 py-1 text-[10px] font-bold text-white shadow-md hover:bg-rose-600 active:scale-95 disabled:opacity-30"
+                    title="Delete Selected"
+                    aria-label="Delete Selected"
+                    className="flex h-7 w-7 items-center justify-center rounded-lg bg-rose-500 text-white shadow-md hover:bg-rose-600 active:scale-95 disabled:opacity-30"
                   >
-                    <Trash2 className="h-3 w-3" />
-                    <span>Delete ({selectedSongIds.size})</span>
+                    <Trash2 className="h-3.5 w-3.5" />
                   </button>
                 </div>
               </div>
@@ -911,6 +1225,17 @@ export const MusicDrawer: React.FC = () => {
                 </div>
               </div>
             </div>
+          )}
+
+          {/* Batch Add to Playlist Dialog */}
+          {isBatchAddOpen && (
+            <BatchAddToPlaylistDialog
+              count={selectedSongIds.size}
+              playlists={playlists}
+              onSelect={handleBatchAddSelect}
+              onCreate={() => setIsCreatePlaylistOpen(true)}
+              onClose={() => setIsBatchAddOpen(false)}
+            />
           )}
         </div>
       )}
@@ -1021,98 +1346,57 @@ export const MusicDrawer: React.FC = () => {
                     {managedPlaylist.songs.length} songs · {managedPlaylist.curator}
                   </p>
                 </div>
-                <div className="flex items-center gap-1">
+                <div className="flex flex-shrink-0 items-center gap-1">
                   <button
                     type="button"
                     onClick={() => playPlaylist(managedPlaylist.id)}
                     disabled={managedPlaylist.songs.length === 0}
-                    className="flex h-7 w-7 items-center justify-center rounded-lg border border-emerald-400/40 bg-emerald-400/20 text-emerald-300 shadow-sm transition-all hover:bg-emerald-400/30 active:scale-95 disabled:opacity-30"
+                    className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-500 text-emerald-950 shadow-lg shadow-emerald-500/20 transition-all hover:bg-emerald-400 active:scale-95 disabled:opacity-30 disabled:shadow-none"
                     title="Play All"
                   >
-                    <Play className="h-3.5 w-3.5 fill-current ml-0.5" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (managedPlaylist.songs.length > 0) {
-                        const shuffled = [...managedPlaylist.songs];
-                        for (let i = shuffled.length - 1; i > 0; i--) {
-                          const j = Math.floor(Math.random() * (i + 1));
-                          [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-                        }
-                        playSongList(shuffled, 0);
-                      }
-                    }}
-                    disabled={managedPlaylist.songs.length === 0}
-                    className="flex h-7 w-7 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-slate-400 transition-all hover:border-white/20 hover:bg-white/10 hover:text-white active:scale-95 disabled:opacity-30"
-                    title="Shuffle Play"
-                  >
-                    <Shuffle className="h-3.5 w-3.5" />
+                    <Play className="ml-0.5 h-4 w-4 fill-current" />
                   </button>
                   <button
                     type="button"
                     onClick={() => setIsAddSongsOpen(true)}
-                    className="flex h-7 w-7 items-center justify-center rounded-lg border border-indigo-400/30 bg-indigo-400/20 text-indigo-300 shadow-sm transition-all hover:bg-indigo-400/30 active:scale-95"
+                    className="flex h-8 w-8 items-center justify-center rounded-xl border border-indigo-400/30 bg-indigo-400/20 text-indigo-300 shadow-sm transition-all hover:bg-indigo-400/30 active:scale-95"
                     title="Add Songs to Playlist"
                   >
-                    <Plus className="h-3.5 w-3.5" />
+                    <Plus className="h-4 w-4" />
                   </button>
                   <button
                     type="button"
-                    onClick={() => setPlaylistToDelete(managedPlaylist)}
-                    className="flex h-7 w-7 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-slate-400 transition-all hover:border-rose-400/30 hover:bg-rose-500/20 hover:text-rose-300 active:scale-95"
-                    title="Delete Playlist"
+                    onClick={(event) => {
+                      const anchor = event.currentTarget;
+                      setPlaylistMenu((current) => current ? null : { anchor });
+                    }}
+                    className={`flex h-8 w-8 items-center justify-center rounded-xl border transition-all active:scale-95 ${playlistMenu ? 'border-white/30 bg-white text-dark-900 shadow-sm' : 'border-white/10 bg-white/5 text-slate-300 hover:border-white/20 hover:bg-white hover:text-dark-900'}`}
+                    title="Playlist Actions"
+                    aria-label="Playlist Actions"
+                    aria-haspopup="menu"
+                    aria-expanded={!!playlistMenu}
                   >
-                    <Trash2 className="h-3.5 w-3.5" />
+                    <MoreHorizontal className="h-4 w-4" />
                   </button>
                 </div>
               </div>
 
               {/* Tracks List (Strictly shows tracks in this playlist) */}
               <div className="mt-2 min-h-0 flex-1 space-y-1 overflow-y-auto overscroll-contain pr-1">
-                {managedPlaylist.songs.map((song, index) => {
-                  const isCurrent = currentSong?.id === song.id;
-                  return (
-                    <div
-                      key={song.id}
-                      onClick={() => playSongList(managedPlaylist.songs, index)}
-                      className={`group/song flex cursor-pointer items-center gap-2 rounded-xl border p-1.5 transition-all ${
-                        isCurrent
-                          ? 'border-indigo-400/40 bg-indigo-400/15 font-semibold'
-                          : 'border-white/5 bg-white/[0.03] hover:border-white/10 hover:bg-white/[0.07]'
-                      }`}
-                    >
-                      <span className={`w-4 text-center font-mono text-[9px] ${isCurrent ? 'font-bold text-indigo-300' : 'text-slate-500'}`}>
-                        {isCurrent ? '▶' : index + 1}
-                      </span>
-                      <img
-                        src={getDisplayCoverUrl(song.coverUrl, 96)}
-                        onError={handleCoverImageError}
-                        alt=""
-                        loading="lazy"
-                        decoding="async"
-                        className="h-8 w-8 flex-shrink-0 rounded-lg object-cover"
+                <DndContext sensors={dndSensors} collisionDetection={closestCenter} onDragEnd={handlePlaylistDragEnd}>
+                  <SortableContext items={managedPlaylist.songs.map((song) => song.id)} strategy={verticalListSortingStrategy}>
+                    {managedPlaylist.songs.map((song, index) => (
+                      <PlaylistSortableRow
+                        key={song.id}
+                        song={song}
+                        index={index}
+                        isCurrent={currentSong?.id === song.id}
+                        onPlay={() => playSongList(managedPlaylist.songs, index)}
+                        onRemove={() => toggleSongInPlaylist(managedPlaylist.id, song.id)}
                       />
-                      <div className="min-w-0 flex-1">
-                        <p className={`truncate text-[11px] ${isCurrent ? 'text-indigo-200' : 'text-white'}`}>
-                          {song.title}
-                        </p>
-                        <p className="truncate text-[9px] text-slate-500">{song.artist}</p>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          toggleSongInPlaylist(managedPlaylist.id, song.id);
-                        }}
-                        className="rounded p-1 text-slate-500 opacity-0 transition-opacity hover:bg-rose-500/20 hover:text-rose-300 group-hover/song:opacity-100"
-                        title="Remove from playlist"
-                      >
-                        <X className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
-                  );
-                })}
+                    ))}
+                  </SortableContext>
+                </DndContext>
                 {managedPlaylist.songs.length === 0 && (
                   <div className="flex h-[210px] flex-col items-center justify-center text-center">
                     <ListMusic className="mb-2 h-7 w-7 text-slate-600" />
@@ -1180,33 +1464,30 @@ export const MusicDrawer: React.FC = () => {
           </div>
           <div ref={queueScrollRef} className="h-[280px] overflow-y-auto overscroll-contain pr-1">
             {playbackQueue.length > 0 && (
-              <div className="relative w-full" style={{ height: queueVirtualizer.getTotalSize() }}>
-                {queueVirtualizer.getVirtualItems().map((virtualItem) => {
-                  const index = virtualItem.index;
-                  const song = playbackQueue[index];
-                  if (!song) return null;
-                  const isCurrent = currentSong?.id === song.id;
-                  return (
-                    <div
-                      key={virtualItem.key}
-                      ref={queueVirtualizer.measureElement}
-                      data-index={index}
-                      onClick={() => playSong(song)}
-                      className={`group/queue absolute left-0 top-0 flex w-full cursor-pointer items-center gap-2 rounded-xl border p-1.5 transition-colors ${isCurrent ? 'border-emerald-400/30 bg-emerald-400/10' : 'border-transparent bg-white/[0.04] hover:bg-white/[0.08]'}`}
-                      style={{ transform: `translateY(${virtualItem.start}px)` }}
-                    >
-                  <span className={`w-4 text-center text-[9px] font-mono ${isCurrent ? 'text-emerald-300' : 'text-slate-600'}`}>{isCurrent ? '▶' : index + 1}</span>
-                  <img src={getDisplayCoverUrl(song.coverUrl, 96)} onError={handleCoverImageError} alt="" loading="lazy" decoding="async" className="h-8 w-8 flex-shrink-0 rounded-lg object-cover" />
-                  <div className="min-w-0 flex-1"><p className={`truncate text-[11px] font-semibold ${isCurrent ? 'text-emerald-200' : 'text-white'}`}>{song.title}</p><p className="truncate text-[9px] text-slate-500">{song.artist}</p></div>
-                  <div onClick={(event) => event.stopPropagation()} className="flex items-center opacity-0 transition-opacity group-hover/queue:opacity-100">
-                    <button type="button" onClick={() => movePlaybackQueueItem(song.id, 'up')} disabled={index === 0} className="rounded p-1 text-slate-500 hover:bg-white/10 hover:text-white disabled:opacity-20" title="Move Up"><ChevronUp className="h-3 w-3" /></button>
-                    <button type="button" onClick={() => movePlaybackQueueItem(song.id, 'down')} disabled={index === playbackQueue.length - 1} className="rounded p-1 text-slate-500 hover:bg-white/10 hover:text-white disabled:opacity-20" title="Move Down"><ChevronDown className="h-3 w-3" /></button>
-                    <button type="button" onClick={() => removeFromPlaybackQueue(song.id)} disabled={isCurrent} className="rounded p-1 text-slate-500 hover:bg-rose-500/10 hover:text-rose-300 disabled:cursor-not-allowed disabled:opacity-20" title={isCurrent ? 'Now playing' : 'Remove'}><X className="h-3 w-3" /></button>
+              <DndContext sensors={dndSensors} collisionDetection={closestCenter} onDragEnd={handleQueueDragEnd}>
+                <SortableContext items={playbackQueue.map((song) => song.id)} strategy={verticalListSortingStrategy}>
+                  <div className="relative w-full" style={{ height: queueVirtualizer.getTotalSize() }}>
+                    {queueVirtualizer.getVirtualItems().map((virtualItem) => {
+                      const index = virtualItem.index;
+                      const song = playbackQueue[index];
+                      if (!song) return null;
+                      const isCurrent = currentSong?.id === song.id;
+                      return (
+                        <QueueSortableRow
+                          key={virtualItem.key}
+                          song={song}
+                          index={index}
+                          isCurrent={isCurrent}
+                          measureRef={queueVirtualizer.measureElement}
+                          onPlay={() => playSong(song)}
+                          onRemove={() => removeFromPlaybackQueue(song.id)}
+                          positionStyle={{ transform: `translateY(${virtualItem.start}px)` }}
+                        />
+                      );
+                    })}
                   </div>
-                    </div>
-                  );
-                })}
-              </div>
+                </SortableContext>
+              </DndContext>
             )}
             {playbackQueue.length === 0 && (
               <div className="flex h-[250px] flex-col items-center justify-center text-center"><ListOrdered className="mb-2 h-8 w-8 text-slate-600" /><p className="text-xs font-semibold text-slate-300">Queue is empty</p><p className="mt-1 max-w-[220px] text-[10px] text-slate-500">Double click any song or use the CD menu to add songs to Queue.</p></div>
@@ -1356,11 +1637,17 @@ export const MusicDrawer: React.FC = () => {
 
       {isCreatePlaylistOpen && (
         <CreatePlaylistDialog
-          onClose={() => setIsCreatePlaylistOpen(false)}
+          onClose={() => { setIsCreatePlaylistOpen(false); setIsBatchAddOpen(false); }}
           onCreate={(name) => {
             const playlistId = createPlaylist(name);
             if (playlistSong) toggleSongInPlaylist(playlistId, playlistSong.id);
+            if (isBatchAddOpen) {
+              addSongsToPlaylist(playlistId, Array.from(selectedSongIds));
+              setIsSelectMode(false);
+              setSelectedSongIds(new Set());
+            }
             setPlaylistSong(null);
+            setIsBatchAddOpen(false);
             setIsCreatePlaylistOpen(false);
             selectPlaylist(playlistId);
           }}
@@ -1390,6 +1677,29 @@ export const MusicDrawer: React.FC = () => {
         />
       )}
 
+      {playlistMenu && (
+        <PlaylistActionMenu
+          anchor={playlistMenu.anchor}
+          canPlay={(managedPlaylist?.songs.length ?? 0) > 0}
+          onShuffle={() => {
+            if (!managedPlaylist || managedPlaylist.songs.length === 0) return;
+            const shuffled = [...managedPlaylist.songs];
+            for (let i = shuffled.length - 1; i > 0; i--) {
+              const j = Math.floor(Math.random() * (i + 1));
+              [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+            }
+            playSongList(shuffled, 0);
+          }}
+          onDownload={() => {
+            if (managedPlaylist) void enqueueDownloads(managedPlaylist.songs.map((song) => song.id));
+          }}
+          onDelete={() => {
+            if (managedPlaylist) setPlaylistToDelete(managedPlaylist);
+          }}
+          onClose={() => setPlaylistMenu(null)}
+        />
+      )}
+
       {cdMenu && (
         <CdActionMenu
           song={cdMenu.song}
@@ -1397,9 +1707,9 @@ export const MusicDrawer: React.FC = () => {
           onClose={() => setCdMenu(null)}
           onEdit={() => setEditingSong(cdMenu.song)}
           onAddToPlaylist={() => setPlaylistSong(cdMenu.song)}
-          onPlayNext={() => playNextFromQueue(cdMenu.song.id)}
-          onAddToQueue={() => addToPlaybackQueue(cdMenu.song.id)}
           onDelete={() => setDeletingSong(cdMenu.song)}
+          onDownload={() => { void enqueueDownloads([cdMenu.song.id]); }}
+          onRemoveOffline={() => { void removeOfflineDownload(cdMenu.song.id); }}
         />
       )}
 

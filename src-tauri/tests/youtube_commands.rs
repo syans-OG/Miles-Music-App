@@ -129,3 +129,48 @@ fn spotify_match_command_selects_the_verified_candidate() {
         } if video_id == "ApXoWvfEYVU"
     ));
 }
+
+#[test]
+fn spotify_match_result_serializes_to_camel_case_fields() {
+    let matched = SpotifyTrackMatchResult::Matched {
+        spotify_id: "4xF4ZBGPZKxECeDFrqSAG4".to_string(),
+        video_id: "ApXoWvfEYVU".to_string(),
+        title: "Sunflower".to_string(),
+        artist: "Post Malone Swae Lee".to_string(),
+        duration_seconds: 158,
+        thumbnail_url: Some("https://i.ytimg.com/vi/ApXoWvfEYVU/maxresdefault.jpg".to_string()),
+        canonical_url: "https://www.youtube.com/watch?v=ApXoWvfEYVU".to_string(),
+        score: 100,
+    };
+    let json = serde_json::to_value(matched).expect("Matched must serialize");
+
+    for key in [
+        "status",
+        "spotifyId",
+        "videoId",
+        "title",
+        "artist",
+        "durationSeconds",
+        "thumbnailUrl",
+        "canonicalUrl",
+        "score",
+    ] {
+        assert!(
+            json.get(key).is_some(),
+            "expected camelCase key {key:?} in Matched serialization, got {json}"
+        );
+    }
+    assert_eq!(json["status"], serde_json::json!("matched"));
+    assert_eq!(json["videoId"], serde_json::json!("ApXoWvfEYVU"));
+
+    let skipped = SpotifyTrackMatchResult::Skipped {
+        spotify_id: "4xF4ZBGPZKxECeDFrqSAG4".to_string(),
+        reason: miles_music_player_lib::youtube::types::SpotifyMatchSkipReason::NoCandidates,
+    };
+    let json = serde_json::to_value(skipped).expect("Skipped must serialize");
+    assert!(
+        json.get("spotifyId").is_some(),
+        "Skipped must serialize camelCase spotifyId, got {json}"
+    );
+    assert_eq!(json["status"], serde_json::json!("skipped"));
+}

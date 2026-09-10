@@ -4,12 +4,12 @@
   "binaries": [
     {
       "id": "yt-dlp",
-      "version": "2026.07.04",
-      "downloadUrl": "https://github.com/yt-dlp/yt-dlp/releases/download/2026.07.04/yt-dlp_linux",
-      "publisherAssetSha256": "6bbb3d314cde4febe36e5fa1d55462e29c974f63444e707871834f6d8cc210ae",
+      "version": "2026.08.19",
+      "downloadUrl": "https://github.com/yt-dlp/yt-dlp/releases/download/2026.08.19/yt-dlp_linux",
+      "publisherAssetSha256": "58162f9bfdc27458ea47bfcb311cf47028f17d8154a8bf7d689861d46399230a",
       "fileName": "binaries/yt-dlp-x86_64-unknown-linux-gnu",
       "runtimeFileName": "yt-dlp",
-      "sha256": "6bbb3d314cde4febe36e5fa1d55462e29c974f63444e707871834f6d8cc210ae"
+      "sha256": "58162f9bfdc27458ea47bfcb311cf47028f17d8154a8bf7d689861d46399230a"
     },
     {
       "id": "deno",

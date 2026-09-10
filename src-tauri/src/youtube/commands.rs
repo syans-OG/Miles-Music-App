@@ -8,16 +8,19 @@ use super::process::{
 };
 use super::scheduler::{ResolvePriority, ScheduleError, YoutubeScheduler};
 use super::types::{
-    ResolvePurpose, ResolvedYoutubeTrack, SpotifyMatchPriority, SpotifyTrackMatchRequest,
-    SpotifyTrackMatchResult, YoutubePlaylistImport, YoutubeResource,
+    DownloadedTrack, ResolvePurpose, ResolvedYoutubeTrack, SpotifyMatchPriority,
+    SpotifyTrackMatchRequest, SpotifyTrackMatchResult, YoutubePlaylistImport, YoutubeResource,
 };
 use super::validation::{parse_youtube_url, validate_video_id};
 use crate::media_proxy::MediaProxy;
+use sha2::Digest;
 use std::collections::HashMap;
 use std::ffi::OsString;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
+use std::time::Duration;
+use tauri::Manager;
 
 const PLAYLIST_ARGUMENTS: [&str; 7] = [
     "--flat-playlist",
@@ -114,6 +117,147 @@ impl YoutubeCommandService {
         for cancellation in active.values() {
             cancellation.cancel();
         }
+    }
+
+    pub fn download_track_with(
+        &self,
+        video_id: String,
+        executables: YoutubeExecutables,
+        library_dir: PathBuf,
+    ) -> Result<DownloadedTrack, YoutubeError> {
+        validate_video_id(&video_id)?;
+        let target_url = format!("https://www.youtube.com/watch?v={video_id}");
+        let cancellation = CancellationToken::default();
+        let _permit = self
+            .scheduler
+            .acquire_download(cancellation.clone())
+            .map_err(schedule_error)?;
+
+        let temp_dir = std::env::temp_dir().join(format!("miles-dl-{video_id}"));
+        let _ = std::fs::remove_dir_all(&temp_dir);
+        std::fs::create_dir_all(&temp_dir)
+            .map_err(|_| YoutubeError::new(YoutubeErrorCode::ProcessFailed))?;
+
+        let output_template = temp_dir.join("audio.%(ext)s");
+        let output_str = output_template.to_string_lossy();
+        let operation_args = [
+            "--no-playlist",
+            "--no-cache-dir",
+            "--no-warnings",
+            "--format",
+            "ba[ext=m4a]/ba",
+            "--write-thumbnail",
+            "--output",
+            &output_str,
+        ];
+
+        let runner = ProcessRunner::with_limits(Duration::from_secs(300), 256 * 1024);
+        let create_request = || {
+            let mut arguments = executables.prefix_arguments.clone();
+            arguments.extend(isolated_ytdlp_arguments(
+                &executables.deno,
+                &operation_args,
+                &target_url,
+            ));
+            ProcessRequest {
+                program: executables.yt_dlp.clone(),
+                arguments,
+                operation: OperationKind::Download,
+            }
+        };
+        runner
+            .run_with_retry_if(
+                OperationKind::Download,
+                &cancellation,
+                create_request,
+                is_retryable_ytdlp_error,
+            )
+            .map_err(classify_process_error)?;
+
+        if cancellation.is_cancelled() {
+            let _ = std::fs::remove_dir_all(&temp_dir);
+            return Err(YoutubeError::new(YoutubeErrorCode::Cancelled));
+        }
+
+        let entries: Vec<_> = std::fs::read_dir(&temp_dir)
+            .map_err(|_| YoutubeError::new(YoutubeErrorCode::ProcessFailed))?
+            .filter_map(|entry| entry.ok())
+            .collect();
+
+        let audio_exts = ["m4a", "mp4", "webm", "opus", "ogg", "mp3"];
+        let image_exts = ["jpg", "jpeg", "png", "webp"];
+
+        let audio_entry = entries.iter().find(|entry| {
+            let name = entry.file_name().to_string_lossy().to_lowercase();
+            audio_exts
+                .iter()
+                .any(|ext| name.starts_with("audio.") && name.ends_with(ext))
+        });
+
+        let image_entry = entries.iter().find(|entry| {
+            let name = entry.file_name().to_string_lossy().to_lowercase();
+            image_exts.iter().any(|ext| name.ends_with(ext))
+        });
+
+        let audio_entry = audio_entry.ok_or_else(|| {
+            let _ = std::fs::remove_dir_all(&temp_dir);
+            YoutubeError::new(YoutubeErrorCode::AudioStreamUnavailable)
+        })?;
+
+        let audio_bytes = std::fs::read(audio_entry.path())
+            .map_err(|_| YoutubeError::new(YoutubeErrorCode::ProcessFailed))?;
+
+        if audio_bytes.len() > crate::MAX_LOCAL_AUDIO_FILE_BYTES {
+            let _ = std::fs::remove_dir_all(&temp_dir);
+            return Err(YoutubeError::with_detail(
+                YoutubeErrorCode::ProcessFailed,
+                "File audio melebihi batas 128 MB",
+            ));
+        }
+
+        let file_hash = format!("{:x}", sha2::Sha256::digest(&audio_bytes));
+        let extension = audio_entry
+            .path()
+            .extension()
+            .and_then(|e| e.to_str())
+            .unwrap_or("m4a")
+            .to_string();
+
+        std::fs::create_dir_all(&library_dir)
+            .map_err(|_| YoutubeError::new(YoutubeErrorCode::ProcessFailed))?;
+
+        let audio_destination = library_dir.join(format!("{file_hash}.{extension}"));
+        if !audio_destination.exists() {
+            std::fs::write(&audio_destination, &audio_bytes)
+                .map_err(|_| YoutubeError::new(YoutubeErrorCode::ProcessFailed))?;
+        }
+
+        let mut cover_path: Option<String> = None;
+        if let Some(img_entry) = image_entry {
+            if let Ok(img_bytes) = std::fs::read(img_entry.path()) {
+                let covers_dir = library_dir.join("covers");
+                let _ = std::fs::create_dir_all(&covers_dir);
+                let cover_destination = covers_dir.join(format!("{file_hash}.png"));
+                if let Some(normalized) = crate::normalize_embedded_cover(&img_bytes) {
+                    let _ = std::fs::write(&cover_destination, normalized);
+                    cover_path = Some(cover_destination.to_string_lossy().into_owned());
+                }
+            }
+        }
+
+        let _ = std::fs::remove_dir_all(&temp_dir);
+
+        Ok(DownloadedTrack {
+            video_id,
+            file_path: audio_destination.to_string_lossy().into_owned(),
+            file_hash,
+            cover_path,
+            duration_seconds: 0,
+        })
+    }
+
+    pub fn cancel_download(&self) {
+        self.scheduler.cancel_download();
     }
 
     pub fn import_playlist_with(
@@ -334,6 +478,30 @@ pub async fn match_spotify_track(
 #[tauri::command]
 pub fn cancel_spotify_match(service: tauri::State<'_, YoutubeCommandService>) {
     service.cancel_spotify_match();
+}
+
+#[tauri::command]
+pub async fn download_youtube_track(
+    app_handle: tauri::AppHandle,
+    service: tauri::State<'_, YoutubeCommandService>,
+    video_id: String,
+) -> Result<DownloadedTrack, YoutubeError> {
+    let service = service.inner().clone();
+    let library_dir = app_handle
+        .path()
+        .app_local_data_dir()
+        .map_err(|_| YoutubeError::new(YoutubeErrorCode::ProcessFailed))?
+        .join("library");
+    tauri::async_runtime::spawn_blocking(move || {
+        service.download_track_with(video_id, YoutubeExecutables::verified()?, library_dir)
+    })
+    .await
+    .unwrap_or_else(|_| Err(YoutubeError::new(YoutubeErrorCode::ProcessFailed)))
+}
+
+#[tauri::command]
+pub fn cancel_youtube_download(service: tauri::State<'_, YoutubeCommandService>) {
+    service.cancel_download();
 }
 
 impl From<ResolvePurpose> for ResolvePriority {

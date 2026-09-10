@@ -58,6 +58,13 @@ export interface SpotifyPlaylistSource {
 
 export type PlaylistSource = LocalPlaylistSource | YoutubePlaylistSource | SpotifyPlaylistSource;
 
+export interface OfflineInfo {
+  filePath: string;
+  fileHash: string;
+  coverPath?: string;
+  remoteCoverUrl?: string;
+}
+
 export interface Song {
   id: string;
   title: string;
@@ -70,6 +77,7 @@ export interface Song {
   playCount: number;
   listenedSeconds?: number;
   lastPlayed?: number; // timestamp
+  offline?: OfflineInfo;
 }
 
 export const isLocalSong = (song: Song): song is Song & { source: LocalSongSource } =>
@@ -115,4 +123,29 @@ export interface YoutubeImportTask {
   backgrounded?: boolean;
   targetPlaylistId?: string;
   report?: YoutubeImportReport;
+}
+
+export type DownloadTaskStatus = 'downloading' | 'success' | 'error' | 'cancelled';
+
+export interface DownloadQueueItem {
+  songId: string;
+  title: string;
+}
+
+export interface DownloadTaskReport {
+  succeeded: number;
+  failed: number;
+  failedSongIds: string[];
+}
+
+export interface DownloadTask {
+  requestId: number;
+  queue: DownloadQueueItem[];
+  currentSongId: string | null;
+  processed: number;
+  total: number;
+  status: DownloadTaskStatus;
+  message: string;
+  retryable: boolean;
+  report?: DownloadTaskReport;
 }

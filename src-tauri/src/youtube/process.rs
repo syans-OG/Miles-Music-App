@@ -21,6 +21,7 @@ static ACTIVE_PROCESS_IDS: OnceLock<Mutex<HashSet<u32>>> = OnceLock::new();
 pub enum OperationKind {
     Import,
     Resolve,
+    Download,
 }
 
 impl OperationKind {
@@ -28,6 +29,7 @@ impl OperationKind {
         match self {
             Self::Import => "import",
             Self::Resolve => "resolve",
+            Self::Download => "download",
         }
     }
 }
@@ -273,8 +275,6 @@ pub fn isolated_ytdlp_arguments(
         OsString::from("--no-js-runtimes"),
         OsString::from("--js-runtimes"),
         OsString::from(format!("deno:{}", deno_path.display())),
-        OsString::from("--extractor-args"),
-        OsString::from("youtube:player_client=web_embedded,web"),
     ];
     arguments.extend(operation_arguments.iter().map(OsString::from));
     arguments.push(OsString::from("--"));
@@ -488,8 +488,12 @@ mod tests {
 
         assert!(values.contains(&"--ignore-config".into()));
         assert!(values.contains(&"--no-js-runtimes".into()));
-        assert!(values.contains(&"--extractor-args".into()));
-        assert!(values.contains(&"youtube:player_client=web_embedded,web".into()));
+        assert!(values.contains(&"--js-runtimes".into()));
+        assert!(values.iter().any(|value| value.starts_with("deno:")));
+        assert!(
+            !values.iter().any(|value| value.contains("player_client")),
+            "player client must follow the yt-dlp default fallback chain"
+        );
         assert_eq!(values[values.len() - 2], "--");
         assert!(values
             .last()

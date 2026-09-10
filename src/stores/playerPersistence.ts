@@ -1,5 +1,6 @@
 import type {
   LocalSongSource,
+  OfflineInfo,
   Playlist,
   Song,
   SpotifySongSource,
@@ -126,6 +127,20 @@ const migrateSource = (song: UnknownRecord): LocalSongSource | YoutubeSongSource
   };
 };
 
+const migrateOffline = (value: UnknownRecord): OfflineInfo | undefined => {
+  const offline = isRecord(value.offline) ? value.offline : null;
+  if (!offline) return undefined;
+  const filePath = optionalString(offline.filePath);
+  const fileHash = optionalString(offline.fileHash);
+  if (!filePath || !fileHash) return undefined;
+  return {
+    filePath,
+    fileHash,
+    coverPath: optionalString(offline.coverPath),
+    remoteCoverUrl: optionalString(offline.remoteCoverUrl),
+  };
+};
+
 export const migrateSongToV2 = (value: unknown): Song | null => {
   if (!isRecord(value)) return null;
   const id = optionalString(value.id);
@@ -149,6 +164,7 @@ export const migrateSongToV2 = (value: unknown): Song | null => {
     lastPlayed: typeof value.lastPlayed === 'number' && Number.isFinite(value.lastPlayed)
       ? value.lastPlayed
       : undefined,
+    offline: migrateOffline(value),
   });
 };
 

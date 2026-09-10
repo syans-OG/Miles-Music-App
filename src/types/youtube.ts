@@ -74,3 +74,11 @@ export interface ResolvedYoutubeTrack {
   liveStatus: YoutubeLiveStatus;
   stream: YoutubeAudioStream;
 }
+
+export interface DownloadedTrack {
+  videoId: string;
+  filePath: string;
+  fileHash: string;
+  coverPath: string | null;
+  durationSeconds: number;
+}

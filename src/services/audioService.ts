@@ -1,5 +1,6 @@
 import type { Song } from '../types/player';
 import { usePlayerStore } from '../stores/usePlayerStore';
+import { convertFileSrc } from '@tauri-apps/api/core';
 import {
   clearYoutubeStreamCache,
   getCachedYoutubeStream,
@@ -73,6 +74,7 @@ export class AudioService {
   private prefetchGeneration = 0;
   private assignedSource: string | null = null;
   private mediaRetryUsed = false;
+  private silentMediaRetryCount = 0;
   private prefetchedKey: string | null = null;
   private autoSkipVisited = new Set<string>();
   private lastCountedSelection = -1;
@@ -143,6 +145,7 @@ export class AudioService {
     this.prefetchGeneration += 1;
     this.prefetchedKey = null;
     this.mediaRetryUsed = false;
+    this.silentMediaRetryCount = 0;
     if (state.selectionReason !== 'auto_skip') this.autoSkipVisited.clear();
     this.detachCurrentLoad();
     this.audio.pause();
@@ -176,6 +179,7 @@ export class AudioService {
     if (resolveKey) this.clearStreamCache(resolveKey);
     this.loadGeneration += 1;
     this.mediaRetryUsed = false;
+    this.silentMediaRetryCount = 0;
     this.audio.pause();
     this.clearAssignedSource();
     state.setPlaybackStatus('idle');
@@ -195,6 +199,13 @@ export class AudioService {
   }
 
   private async loadSong(song: Song, generation: number, selectionSerial: number) {
+    if (song.offline) {
+      usePlayerStore.getState().setPlaybackStatus('loading');
+      this.assignSource(song, convertFileSrc(song.offline.filePath), generation, selectionSerial);
+      await this.playAssignedSource(generation);
+      return;
+    }
+
     if (song.source.kind === 'local') {
       usePlayerStore.getState().setPlaybackStatus('loading');
       this.assignSource(song, song.source.audioUrl, generation, selectionSerial);
@@ -235,14 +246,18 @@ export class AudioService {
         console.warn('[Miles AudioService] Spotify track matching failed, falling back to search query:', err);
       }
       if (!resolveId) {
-        resolveId = `ytsearch1:${song.artist} ${song.title}`.trim();
+        if (!this.isCurrentSelection(generation, selectionSerial, song.id)) return;
+        usePlayerStore.getState().setPlaybackStatus('error');
+        usePlayerStore.getState().setPlaybackError({
+          songId: song.id,
+          message: 'Tidak dapat menemukan padanan lagu ini di YouTube.',
+          retryable: true,
+        });
+        return;
       }
     }
 
-    if (!resolveId) {
-      return;
-    }
-
+    if (!resolveId) return;
     if (song.source.kind === 'youtube' && song.source.availability !== 'available') {
       this.purgeAndSkipUnavailableSong(song, `${song.title} dihapus: tidak tersedia`);
       return;
@@ -288,24 +303,12 @@ export class AudioService {
     } catch (error) {
       console.error('[Miles AudioService] Track resolution failed for song:', song.title, 'resolveId:', resolveId, error);
       if (!this.isCurrentSelection(generation, selectionSerial, song.id)) return;
-      if (song.source.kind === 'spotify' && !this.mediaRetryUsed) {
+      if (error instanceof YoutubeServiceError && error.code === 'cancelled') {
         this.mediaRetryUsed = true;
         if (resolveId) this.clearStreamCache(resolveId);
-        if (error instanceof YoutubeServiceError && error.code === 'cancelled') {
-          const retryGeneration = ++this.loadGeneration;
-          void this.loadSong(song, retryGeneration, selectionSerial);
-          return;
-        }
-        const fallbackSearchId = `ytsearch1:${song.artist} ${song.title}`.trim();
-        if (resolveId !== fallbackSearchId) {
-          const retryGeneration = ++this.loadGeneration;
-          void this.loadSong(
-            { ...song, source: { ...song.source, matchedVideoId: fallbackSearchId } },
-            retryGeneration,
-            selectionSerial,
-          );
-          return;
-        }
+        const retryGeneration = ++this.loadGeneration;
+        void this.loadSong(song, retryGeneration, selectionSerial);
+        return;
       }
       if (error instanceof YoutubeServiceError && AUTO_SKIP_CODES.has(error.code)) {
         this.purgeAndSkipUnavailableSong(song, `${song.title} dihapus: ${skipReason(error)}`);
@@ -462,7 +465,8 @@ export class AudioService {
     usePlayerStore.getState().setPlaybackStatus('idle');
     const eligibleMediaFailure = this.audio.error?.code === 2 || this.audio.error?.code === 4;
     const resolveKey = youtubeResolveKey(song);
-    if (resolveKey && eligibleMediaFailure && !this.mediaRetryUsed) {
+    if (resolveKey && eligibleMediaFailure && this.silentMediaRetryCount < 2) {
+      this.silentMediaRetryCount += 1;
       this.mediaRetryUsed = true;
       this.clearStreamCache(resolveKey);
       this.clearAssignedSource();
@@ -504,7 +508,7 @@ export class AudioService {
       ? state.currentIndex + 1
       : state.queueEndBehavior === 'repeat-queue' ? 0 : -1;
     const next = nextIndex >= 0 ? state.playbackQueue[nextIndex] : null;
-    if (!next || next.source.kind !== 'youtube' || next.source.availability !== 'available') return;
+    if (!next || next.offline || next.source.kind !== 'youtube' || next.source.availability !== 'available') return;
     if (this.getCachedStream(next.source.videoId)) return;
 
     const queueKey = state.playbackQueue.map((song) => song.id).join('\u0000');

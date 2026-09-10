@@ -198,7 +198,7 @@ mod tests {
         let health = build_dependency_health();
 
         assert!(health.available);
-        assert_eq!(health.yt_dlp_version, "2026.07.04");
+        assert_eq!(health.yt_dlp_version, "2026.08.19");
         assert_eq!(health.deno_version, "2.9.4");
         assert!(health.issue.is_none());
     }

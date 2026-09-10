@@ -11,8 +11,6 @@ import {
   VolumeX,
   Layers,
   Plus,
-  ChevronLeft,
-  ChevronRight,
   FolderKanban,
   Repeat,
   Loader2,
@@ -51,8 +49,6 @@ export const ControlBar: React.FC = () => {
     toggleMute,
     isDrawerOpen,
     toggleDrawer,
-    isTopControlOpen,
-    toggleTopControl,
     cycleMode,
     youtubeImportTask,
     spotifyImportTask,
@@ -91,8 +87,6 @@ export const ControlBar: React.FC = () => {
     toggleMute: state.toggleMute,
     isDrawerOpen: state.isDrawerOpen,
     toggleDrawer: state.toggleDrawer,
-    isTopControlOpen: state.isTopControlOpen,
-    toggleTopControl: state.toggleTopControl,
     cycleMode: state.cycleMode,
     youtubeImportTask: state.youtubeImportTask,
     spotifyImportTask: state.spotifyImportTask,
@@ -367,7 +361,7 @@ export const ControlBar: React.FC = () => {
 
       {/* Main Mode 1 Card: Top Console Unit (~420px wide), with dockPosition aware animation */}
       <div
-        className={`mode-one-no-outer-shadow w-[420px] h-[160px] glass-panel drawer-top-console rounded-t-3xl rounded-b-2xl p-3 flex items-center gap-3 border border-white/10 relative z-20 overflow-hidden ${getAnimationClass()}`}
+        className={`mode-one-no-outer-shadow group/card w-[420px] h-[160px] glass-panel drawer-top-console rounded-t-3xl rounded-b-2xl p-3 flex items-center gap-3 border border-white/10 relative z-20 overflow-hidden ${getAnimationClass()}`}
       >
         {/* Dedicated Top Header Drag Strip (Tactile Drag Region) */}
         <div
@@ -421,86 +415,63 @@ export const ControlBar: React.FC = () => {
         <div className="flex-1 min-w-0 flex flex-col justify-between h-[114px] pt-1 pb-0.5">
 
           {/* Top Row: Track Details & Dock/Window Actions */}
-          <div className="flex items-start justify-between gap-2">
-            <div className="min-w-0 flex-1">
-              {/* Hi-Fi LED Digital Display Readout */}
-              <div className="flex items-center gap-1.5 mb-0.5">
-                <div className={`w-1.5 h-1.5 rounded-full transition-all duration-300 ${isPlaying ? 'hi-fi-led-on' : 'hi-fi-led-off'}`} />
-                <span className="text-[9px] font-mono font-bold tracking-widest text-amber-400 uppercase">{playbackLabel}</span>
-              </div>
+          <div className="min-w-0 flex-1">
+            {/* Hi-Fi LED Digital Display Readout + Window Actions */}
+            <div className="flex items-center gap-1.5 mb-0.5">
+              <div className={`w-1.5 h-1.5 rounded-full transition-all duration-300 ${isPlaying ? 'hi-fi-led-on' : 'hi-fi-led-off'}`} />
+              <span className="text-[9px] font-mono font-bold tracking-widest text-amber-400 uppercase">{playbackLabel}</span>
+              <span className="flex-1" />
 
-              <h4 className="text-sm font-bold text-white truncate tracking-wide font-sans">
-                {currentSong?.title || 'No track playing'}
-              </h4>
-              <p className="text-xs text-slate-400 truncate mt-0.5 font-sans">
-                {currentSong?.artist || 'Select from Music Drawer'}
-              </p>
+              {/* Window Actions: fade in on card hover, aligned with LED indicator */}
+              <div
+                className={`flex items-center gap-1 transition-all duration-150 ease-out opacity-0 translate-y-1 pointer-events-none group-hover/card:opacity-100 group-hover/card:translate-y-0 group-hover/card:pointer-events-auto group-focus-within/card:opacity-100 group-focus-within/card:translate-y-0 group-focus-within/card:pointer-events-auto`}
+              >
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    void handleMinimize();
+                  }}
+                  title="Minimize Widget"
+                  className="p-0.5 rounded-md text-slate-400 hover:text-amber-300 hover:bg-white/10 transition-colors"
+                >
+                  <Minus className="w-3 h-3" />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    void handleClose();
+                  }}
+                  title="Close Application"
+                  className="p-0.5 rounded-md text-slate-400 hover:text-rose-400 hover:bg-rose-500/20 transition-colors"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </div>
             </div>
 
-            {/* Action Buttons: Flat Inline Pushing Ribbon Controls */}
-            <div className="flex items-center gap-1">
-              {/* Always visible Add YT Link (+) */}
+            {/* Track Title + Always visible Add URL (+) */}
+            <div className="flex items-center gap-1.5">
+              <h4 className="flex-1 min-w-0 text-sm font-bold text-white truncate tracking-wide font-sans">
+                {currentSong?.title || 'No track playing'}
+              </h4>
               <button
                 onClick={() => {
                   if (!isUrlInputOpen && !inputUrl && importTask) setInputUrl(importTask.inputUrl);
                   setUrlInputOpen(!isUrlInputOpen);
                 }}
                 title="Add YouTube or Spotify link"
-                className={`relative rounded-lg p-1 transition-colors hover:bg-white/10 ${importTask && !isUrlInputOpen ? 'text-amber-300' : 'text-slate-400 hover:text-white'}`}
+                className={`relative flex-shrink-0 rounded-lg p-1 transition-colors hover:bg-white/10 ${importTask && !isUrlInputOpen ? 'text-amber-300' : 'text-slate-400 hover:text-white'}`}
               >
                 <Plus className="w-3.5 h-3.5" />
                 {isImportTaskActive && !isUrlInputOpen && <span className="absolute -right-0.5 -top-0.5 h-1.5 w-1.5 rounded-full bg-amber-300" />}
               </button>
-
-              {/* Expandable Window Actions (Minimize & Close) */}
-              {isTopControlOpen && (
-                <div className="flex items-center gap-1 animate-in fade-in slide-in-from-right-3 duration-300">
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      void handleMinimize();
-                    }}
-                    title="Minimize Widget"
-                    className="p-1 rounded-lg text-slate-400 hover:text-amber-300 hover:bg-white/10 transition-colors"
-                  >
-                    <Minus className="w-3.5 h-3.5" />
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      void handleClose();
-                    }}
-                    title="Close Application"
-                    className="p-1 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/20 transition-colors"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              )}
-
-              {/* Toggle Button: < (expand) / > (collapse) */}
-              <button
-                type="button"
-                onClick={toggleTopControl}
-                title={isTopControlOpen ? 'Sembunyikan Kontrol Jendela' : 'Tampilkan Kontrol Jendela (Minimize & Close)'}
-                className={`p-1 text-slate-400 hover:text-white transition-all rounded-lg hover:bg-white/10 ${
-                  isTopControlOpen ? 'text-amber-400 font-bold bg-white/10' : ''
-                }`}
-              >
-                {isTopControlOpen ? (
-                  <ChevronRight className="w-3.5 h-3.5 text-amber-400" />
-                ) : (
-                  <ChevronLeft className="w-3.5 h-3.5" />
-                )}
-              </button>
-
             </div>
-
-
-
+            <p className="text-xs text-slate-400 truncate mt-0.5 font-sans">
+              {currentSong?.artist || 'Select from Music Drawer'}
+            </p>
           </div>
 
           {/* Middle Row: Progress Slider */}
@@ -554,16 +525,16 @@ export const ControlBar: React.FC = () => {
 
               <button
                 onClick={() => togglePlayPause()}
-                className={`w-8.5 h-8.5 rounded-full flex items-center justify-center hover:scale-105 transition-transform shadow-lg shadow-white/10 ${playbackError ? 'bg-rose-400 text-white' : 'bg-white text-dark-900'}`}
+                className={`w-[22px] h-[22px] rounded-full flex items-center justify-center hover:scale-105 transition-transform shadow-lg shadow-white/10 ${playbackError ? 'bg-rose-400 text-white' : 'bg-white text-dark-900'}`}
                 title={playbackError ? `${playbackError.message} Coba lagi` : playbackIntent ? 'Pause' : 'Play'}
               >
                 {playbackError
-                  ? <RotateCcw className="w-4 h-4" />
+                  ? <RotateCcw className="w-3.5 h-3.5" />
                   : isPlaybackPending
-                    ? <Loader2 className="w-4 h-4 animate-spin" />
+                    ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
                     : playbackIntent
-                      ? <Pause className="w-4 h-4 fill-current" />
-                      : <Play className="w-4 h-4 fill-current ml-0.5" />}
+                      ? <Pause className="w-3.5 h-3.5 fill-current" />
+                      : <Play className="w-3.5 h-3.5 fill-current ml-0.5" />}
               </button>
 
               <button
@@ -578,14 +549,6 @@ export const ControlBar: React.FC = () => {
             {/* Right Utility: Mode Switcher (Cycle 1 -> 2 -> 3) & Pure Cabinet Drawer Button */}
             <div className="flex items-center gap-1.5">
               <button
-                onClick={cycleMode}
-                className="p-1.5 rounded-xl bg-white/5 hover:bg-white/15 text-slate-400 hover:text-white border border-white/5 transition-all"
-                title="Pindah ke Mode Berikutnya (Mode 2 Vinyl / Mode 3 Bubble)"
-              >
-                <Layers className="w-3.5 h-3.5" />
-              </button>
-
-              <button
                 onClick={toggleDrawer}
                 className={`p-1.5 rounded-xl border transition-all ${
                   isDrawerOpen
@@ -595,6 +558,14 @@ export const ControlBar: React.FC = () => {
                 title="Buka / Tutup Laci Musik"
               >
                 <FolderKanban className="w-3.5 h-3.5" />
+              </button>
+
+              <button
+                onClick={cycleMode}
+                className="p-1.5 rounded-xl bg-white/5 hover:bg-white/15 text-slate-400 hover:text-white border border-white/5 transition-all"
+                title="Pindah ke Mode Berikutnya (Mode 2 Vinyl / Mode 3 Bubble)"
+              >
+                <Layers className="w-3.5 h-3.5" />
               </button>
             </div>
           </div>

@@ -21,6 +21,7 @@ pub struct YoutubeScheduler {
     import: Arc<Slot>,
     resolve: Arc<Slot>,
     spotify_match: Arc<Slot>,
+    download: Arc<Slot>,
 }
 
 impl YoutubeScheduler {
@@ -53,6 +54,13 @@ impl YoutubeScheduler {
         self.spotify_match.acquire(priority_u8, false, cancellation)
     }
 
+    pub fn acquire_download(
+        &self,
+        cancellation: CancellationToken,
+    ) -> Result<SchedulePermit, ScheduleError> {
+        self.download.acquire(0, false, cancellation)
+    }
+
     pub fn cancel_import(&self) {
         self.import.cancel_all();
     }
@@ -63,6 +71,10 @@ impl YoutubeScheduler {
 
     pub fn cancel_spotify_match(&self) {
         self.spotify_match.cancel_all();
+    }
+
+    pub fn cancel_download(&self) {
+        self.download.cancel_all();
     }
 }
 
@@ -232,8 +244,11 @@ mod tests {
         let spotify_match = scheduler
             .acquire_spotify_match(SpotifyMatchPriority::Playback, CancellationToken::default())
             .expect("spotify match slot should be independently available");
+        let download = scheduler
+            .acquire_download(CancellationToken::default())
+            .expect("download slot should be independently available");
 
-        drop((import, resolve, spotify_match));
+        drop((import, resolve, spotify_match, download));
     }
 
     #[test]

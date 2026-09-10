@@ -4,7 +4,9 @@ import { convertFileSrc, invoke } from '@tauri-apps/api/core';
 import {
   AppMode,
   DockPosition,
+  DownloadTask,
   isLocalSong,
+  OfflineInfo,
   PlaybackErrorState,
   PlaybackSelectionReason,
   PlaybackStatus,
@@ -22,6 +24,7 @@ import {
   resolveYoutubeTrack,
   YoutubeServiceError,
 } from '../services/youtubeService';
+import { cancelYoutubeDownload, downloadYoutubeTrack } from '../services/downloadService';
 import {
   formatLocalImportNotice,
   getLocalAudioRejection,
@@ -75,6 +78,7 @@ export interface PlayerState {
   selectedPlaylistId: string | null;
   youtubeImportTask: YoutubeImportTask | null;
   spotifyImportTask: SpotifyImportTask | null;
+  downloadTask: DownloadTask | null;
   topSongs: Song[];
   isAlwaysOnTop: boolean;
   isTopControlOpen: boolean;
@@ -118,7 +122,7 @@ export interface PlayerActions {
   addToPlaybackQueue: (songId: string) => void;
   playNextFromQueue: (songId: string) => void;
   removeFromPlaybackQueue: (songId: string) => void;
-  movePlaybackQueueItem: (songId: string, direction: 'up' | 'down') => void;
+  reorderPlaybackQueue: (fromIndex: number, toIndex: number) => void;
   shufflePlaybackQueue: () => void;
   toggleQueueRepeat: () => void;
   clearPlaybackQueue: () => void;
@@ -131,6 +135,11 @@ export interface PlayerActions {
   cancelYoutubeTask: () => Promise<void>;
   retryYoutubeTask: () => Promise<void>;
   dismissYoutubeTask: () => void;
+  enqueueDownloads: (songIds: string[]) => Promise<void>;
+  cancelDownloadTask: () => Promise<void>;
+  retryDownloadTask: () => Promise<void>;
+  dismissDownloadTask: () => void;
+  removeOfflineDownload: (songId: string) => Promise<void>;
   selectPlaylist: (playlistId: string | null) => void;
   addLocalSong: (file: File) => Promise<void>;
   addMultipleLocalSongs: (files: FileList | File[]) => Promise<void>;
@@ -140,6 +149,8 @@ export interface PlayerActions {
   createPlaylist: (name: string) => string;
   renamePlaylist: (playlistId: string, newName: string) => void;
   toggleSongInPlaylist: (playlistId: string, songId: string) => void;
+  addSongsToPlaylist: (playlistId: string, songIds: string[]) => void;
+  reorderPlaylistSongs: (playlistId: string, fromIndex: number, toIndex: number) => void;
   deletePlaylist: (playlistId: string) => void;
   deleteSong: (songId: string) => Promise<void>;
   deleteMultipleSongs: (songIds: string[]) => Promise<void>;
@@ -163,6 +174,8 @@ let nextYoutubeImportRequestId = 1;
 let activeYoutubeImportRequestId = 0;
 let nextSpotifyImportRequestId = 1;
 let activeSpotifyImportRequestId = 0;
+let nextDownloadRequestId = 1;
+let activeDownloadRequestId = 0;
 const YOUTUBE_COVER_FALLBACK = 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=600&auto=format&fit=crop&q=80';
 const SPOTIFY_IMPORT_LIMIT = 100;
 const SPOTIFY_ID_PATTERN = /^[A-Za-z0-9]{22}$/;
@@ -221,6 +234,45 @@ const matchedSpotifySong = (
 const isVerifiedSpotifySong = (song: Song | undefined) => song?.source.kind === 'spotify'
   && SPOTIFY_ID_PATTERN.test(song.source.spotifyId)
   && VIDEO_ID_PATTERN.test(song.source.matchedVideoId);
+
+const getSongDownloadVideoId = (song: Song): string | null => {
+  if (song.source.kind === 'youtube') return song.source.videoId || null;
+  if (song.source.kind === 'spotify') {
+    return VIDEO_ID_PATTERN.test(song.source.matchedVideoId) ? song.source.matchedVideoId : null;
+  }
+  return null;
+};
+export { getSongDownloadVideoId };
+
+const withOfflineDownload = (song: Song, download: {
+  filePath: string;
+  fileHash: string;
+  coverPath?: string;
+}): Song => {
+  const remoteCoverUrl = song.coverUrl;
+  return {
+    ...song,
+    offline: {
+      filePath: download.filePath,
+      fileHash: download.fileHash,
+      coverPath: download.coverPath,
+      remoteCoverUrl,
+    },
+    coverUrl: download.coverPath ? convertFileSrc(download.coverPath) : song.coverUrl,
+  };
+};
+
+const withoutOfflineDownload = (song: Song): Song => song.offline
+  ? {
+      ...song,
+      offline: undefined,
+      coverUrl: song.offline.remoteCoverUrl || song.coverUrl,
+    }
+  : song;
+
+const offlineCoverPath = (offline: OfflineInfo | undefined) => offline?.coverPath
+  ? convertFileSrc(offline.coverPath)
+  : null;
 
 const waitForPlaybackResolution = async (requestId: number, getState: () => PlayerStore) => {
   await new Promise((resolve) => window.setTimeout(resolve, 150));
@@ -322,17 +374,22 @@ const saveAudioPermanently = async (file: File) => {
 
 const restoreSong = (song: Song): Song => {
   const normalizedSong = normalizeRestoredSong(song);
-  if (!isLocalSong(normalizedSong) || !normalizedSong.source.managed) return normalizedSong;
-  return {
-    ...normalizedSong,
-    source: {
-      ...normalizedSong.source,
-      audioUrl: convertFileSrc(normalizedSong.source.filePath),
-    },
-    coverUrl: normalizedSong.source.coverPath
-      ? convertFileSrc(normalizedSong.source.coverPath)
-      : normalizedSong.coverUrl,
-  };
+  const restoredLocal = isLocalSong(normalizedSong) && normalizedSong.source.managed
+    ? {
+        ...normalizedSong,
+        source: {
+          ...normalizedSong.source,
+          audioUrl: convertFileSrc(normalizedSong.source.filePath),
+        },
+        coverUrl: normalizedSong.source.coverPath
+          ? convertFileSrc(normalizedSong.source.coverPath)
+          : normalizedSong.coverUrl,
+      }
+    : normalizedSong;
+  const offlineCover = offlineCoverPath(restoredLocal.offline);
+  return offlineCover
+    ? { ...restoredLocal, coverUrl: offlineCover }
+    : restoredLocal;
 };
 
 const isRestorableSong = (song: Song) => {
@@ -373,6 +430,7 @@ export const usePlayerStore = create<PlayerStore>()(
         selectedPlaylistId: null,
         youtubeImportTask: null,
         spotifyImportTask: null,
+        downloadTask: null,
         topSongs: sortTopSongs(initialSongs),
         isAlwaysOnTop: true,
         isTopControlOpen: false,
@@ -621,13 +679,12 @@ export const usePlayerStore = create<PlayerStore>()(
           });
         },
 
-        movePlaybackQueueItem: (songId, direction) => {
+        reorderPlaybackQueue: (fromIndex, toIndex) => {
           set((state) => {
-            const index = state.playbackQueue.findIndex((item) => item.id === songId);
-            const targetIndex = direction === 'up' ? index - 1 : index + 1;
-            if (index < 0 || targetIndex < 0 || targetIndex >= state.playbackQueue.length) return state;
+            if (fromIndex < 0 || toIndex < 0 || fromIndex >= state.playbackQueue.length || toIndex >= state.playbackQueue.length || fromIndex === toIndex) return state;
             const playbackQueue = [...state.playbackQueue];
-            [playbackQueue[index], playbackQueue[targetIndex]] = [playbackQueue[targetIndex], playbackQueue[index]];
+            const [moved] = playbackQueue.splice(fromIndex, 1);
+            playbackQueue.splice(toIndex, 0, moved);
             return {
               playbackQueue,
               currentIndex: state.currentSong
@@ -1269,6 +1326,227 @@ export const usePlayerStore = create<PlayerStore>()(
           });
         },
 
+        enqueueDownloads: async (songIds) => {
+          const requestId = nextDownloadRequestId++;
+          activeDownloadRequestId = requestId;
+
+          const previous = get().downloadTask;
+          if (previous?.status === 'downloading') {
+            try {
+              await cancelYoutubeDownload();
+            } catch {
+              // Stale-result guards prevent the old task from committing.
+            }
+          }
+
+          const state = get();
+          const candidates = [...new Set(songIds)]
+            .map((id) => state.queue.find((song) => song.id === id))
+            .filter((song): song is Song => Boolean(song))
+            .filter((song) => !song.offline)
+            .filter((song) => getSongDownloadVideoId(song) !== null);
+          if (candidates.length === 0) {
+            set({ libraryNotice: 'Tidak ada lagu yang perlu diunduh.' });
+            return;
+          }
+
+          const queue = candidates.map((song) => ({ songId: song.id, title: song.title }));
+          set({
+            downloadTask: {
+              requestId,
+              queue,
+              currentSongId: queue[0].songId,
+              processed: 0,
+              total: queue.length,
+              status: 'downloading',
+              message: `Mengunduh 0 dari ${queue.length} lagu…`,
+              retryable: false,
+            },
+          });
+
+          const failedSongIds: string[] = [];
+          for (let index = 0; index < queue.length; index++) {
+            if (activeDownloadRequestId !== requestId) return;
+            const item = queue[index];
+            const markNext = () => set((current) => current.downloadTask
+              ? {
+                  downloadTask: {
+                    ...current.downloadTask,
+                    processed: current.downloadTask.processed + 1,
+                    currentSongId: queue[index + 1]?.songId ?? null,
+                  },
+                }
+              : current);
+
+            const song = get().queue.find((existing) => existing.id === item.songId);
+            if (!song || song.offline) {
+              markNext();
+              continue;
+            }
+            const videoId = getSongDownloadVideoId(song);
+            if (!videoId) {
+              failedSongIds.push(item.songId);
+              markNext();
+              continue;
+            }
+
+            set((current) => current.downloadTask
+              ? {
+                  downloadTask: {
+                    ...current.downloadTask,
+                    currentSongId: item.songId,
+                    message: `Mengunduh “${item.title}”…`,
+                  },
+                }
+              : current);
+
+            try {
+              const downloaded = await downloadYoutubeTrack(videoId);
+              if (activeDownloadRequestId !== requestId) return;
+              set((current) => {
+                const target = current.queue.find((existing) => existing.id === item.songId);
+                if (!target || target.offline) return current;
+                const offlineSong = withOfflineDownload(target, {
+                  filePath: downloaded.filePath,
+                  fileHash: downloaded.fileHash,
+                  coverPath: downloaded.coverPath ?? undefined,
+                });
+                const updateSong = (existing: Song) => existing.id === item.songId ? offlineSong : existing;
+                const queue = current.queue.map(updateSong);
+                return {
+                  queue,
+                  playbackQueue: current.playbackQueue.map(updateSong),
+                  currentSong: current.currentSong ? updateSong(current.currentSong) : null,
+                  playlists: current.playlists.map((playlist) => ({
+                    ...playlist,
+                    songs: playlist.songs.map(updateSong),
+                  })),
+                  topSongs: sortTopSongs(queue),
+                };
+              });
+            } catch (error) {
+              if (activeDownloadRequestId !== requestId) return;
+              console.error(`Gagal mengunduh ${item.title}:`, error);
+              failedSongIds.push(item.songId);
+            }
+
+            if (activeDownloadRequestId !== requestId) return;
+            set((current) => current.downloadTask
+              ? {
+                  downloadTask: {
+                    ...current.downloadTask,
+                    processed: current.downloadTask.processed + 1,
+                    currentSongId: queue[index + 1]?.songId ?? null,
+                    message: index + 1 < queue.length
+                      ? `Mengunduh ${index + 1} dari ${queue.length} lagu…`
+                      : current.downloadTask.message,
+                  },
+                }
+              : current);
+          }
+
+          if (activeDownloadRequestId !== requestId) return;
+          const succeeded = queue.length - failedSongIds.length;
+          const allFailed = failedSongIds.length === queue.length;
+          const status: DownloadTask['status'] = allFailed ? 'error' : 'success';
+          set({
+            downloadTask: {
+              requestId,
+              queue,
+              currentSongId: null,
+              processed: queue.length,
+              total: queue.length,
+              status,
+              message: allFailed
+                ? 'Gagal mengunduh lagu.'
+                : failedSongIds.length === 0
+                  ? `Berhasil mengunduh ${succeeded} lagu untuk diputar offline.`
+                  : `${succeeded} lagu berhasil diunduh, ${failedSongIds.length} gagal.`,
+              retryable: failedSongIds.length > 0,
+              report: {
+                succeeded,
+                failed: failedSongIds.length,
+                failedSongIds,
+              },
+            },
+            libraryNotice: allFailed
+              ? 'Gagal mengunduh lagu.'
+              : failedSongIds.length === 0
+                ? `${succeeded} lagu tersedia untuk diputar offline.`
+                : `${failedSongIds.length} lagu gagal diunduh.`,
+          });
+        },
+
+        cancelDownloadTask: async () => {
+          const task = get().downloadTask;
+          if (!task || task.status !== 'downloading') return;
+          activeDownloadRequestId = nextDownloadRequestId++;
+          set({
+            downloadTask: {
+              ...task,
+              status: 'cancelled',
+              message: 'Unduhan dibatalkan. Lagu yang selesai tetap tersimpan.',
+              retryable: true,
+            },
+          });
+          try {
+            await cancelYoutubeDownload();
+          } catch {
+            // The request-id guard prevents stale downloads from being committed.
+          }
+        },
+
+        retryDownloadTask: async () => {
+          const task = get().downloadTask;
+          if (!task || task.status === 'downloading') return;
+          const failedIds = task.report?.failedSongIds ?? [];
+          if (failedIds.length === 0) return;
+          await get().enqueueDownloads(failedIds);
+        },
+
+        dismissDownloadTask: () => {
+          const task = get().downloadTask;
+          if (!task || task.status === 'downloading') return;
+          set({ downloadTask: null });
+        },
+
+        removeOfflineDownload: async (songId) => {
+          const state = get();
+          const song = state.queue.find((item) => item.id === songId);
+          if (!song?.offline) return;
+          const offline = song.offline;
+          const sharedFile = state.queue.some((item) => item.id !== songId
+            && item.offline?.filePath === offline.filePath);
+          const sharedCover = offline.coverPath
+            && state.queue.some((item) => item.id !== songId
+              && item.offline?.coverPath === offline.coverPath);
+          try {
+            await invoke('delete_library_song', {
+              filePath: sharedFile ? null : offline.filePath,
+              coverPath: sharedCover ? null : offline.coverPath ?? null,
+            });
+          } catch (error) {
+            console.error(`Gagal menghapus unduhan ${song.title}:`, error);
+            set({ libraryNotice: `Gagal menghapus unduhan “${song.title}”.` });
+            return;
+          }
+          set((current) => {
+            const updateSong = (item: Song) => item.id === songId ? withoutOfflineDownload(item) : item;
+            const queue = current.queue.map(updateSong);
+            return {
+              queue,
+              playbackQueue: current.playbackQueue.map(updateSong),
+              currentSong: current.currentSong ? updateSong(current.currentSong) : null,
+              playlists: current.playlists.map((playlist) => ({
+                ...playlist,
+                songs: playlist.songs.map(updateSong),
+              })),
+              topSongs: sortTopSongs(queue),
+              libraryNotice: `Unduhan “${song.title}” dihapus.`,
+            };
+          });
+        },
+
         addLocalSong: async (file: File) => {
           const rejection = getLocalAudioRejection(file);
           if (rejection) {
@@ -1555,6 +1833,42 @@ export const usePlayerStore = create<PlayerStore>()(
           });
         },
 
+        addSongsToPlaylist: (playlistId, songIds) => {
+          set((state) => {
+            const available = new Map(state.queue.map((song) => [song.id, song]));
+            const playlist = state.playlists.find((item) => item.id === playlistId);
+            if (!playlist) return state;
+
+            const existing = new Set(playlist.songs.map((song) => song.id));
+            const toAdd = songIds.filter((id) => !existing.has(id)).map((id) => available.get(id)).filter((song): song is Song => Boolean(song));
+            if (toAdd.length === 0) return state;
+
+            const songs = [...playlist.songs, ...toAdd];
+            return {
+              playlists: state.playlists.map((item) =>
+                item.id === playlistId ? { ...item, songs, coverUrl: songs[0]?.coverUrl ?? item.coverUrl } : item
+              ),
+              libraryNotice: `${toAdd.length} lagu ditambahkan ke playlist “${playlist.name}”`,
+            };
+          });
+        },
+
+        reorderPlaylistSongs: (playlistId, fromIndex, toIndex) => {
+          set((state) => {
+            const playlist = state.playlists.find((item) => item.id === playlistId);
+            if (!playlist || fromIndex < 0 || toIndex < 0 || fromIndex >= playlist.songs.length || toIndex >= playlist.songs.length || fromIndex === toIndex) return state;
+
+            const songs = [...playlist.songs];
+            const [moved] = songs.splice(fromIndex, 1);
+            songs.splice(toIndex, 0, moved);
+            return {
+              playlists: state.playlists.map((item) =>
+                item.id === playlistId ? { ...item, songs, coverUrl: songs[0]?.coverUrl ?? item.coverUrl } : item
+              ),
+            };
+          });
+        },
+
         deletePlaylist: (playlistId) => {
           set((state) => {
             const playlist = state.playlists.find((item) => item.id === playlistId);
@@ -1582,12 +1896,25 @@ export const usePlayerStore = create<PlayerStore>()(
             && state.queue.some((item) => isLocalSong(item)
               && item.id !== songId
               && item.source.coverPath === localSource.coverPath);
+          const offline = song.offline;
+          const sharedOfflineFile = offline
+            && state.queue.some((item) => item.id !== songId
+              && item.offline?.filePath === offline.filePath);
+          const sharedOfflineCover = offline?.coverPath
+            && state.queue.some((item) => item.id !== songId
+              && item.offline?.coverPath === offline.coverPath);
 
           try {
             if (localSource?.managed) {
               await invoke('delete_library_song', {
                 filePath: sharedFile ? null : localSource.filePath,
                 coverPath: sharedCover ? null : localSource.coverPath ?? null,
+              });
+            }
+            if (offline) {
+              await invoke('delete_library_song', {
+                filePath: sharedOfflineFile ? null : offline.filePath,
+                coverPath: sharedOfflineCover ? null : offline.coverPath ?? null,
               });
             }
           } catch (error) {
@@ -1643,7 +1970,7 @@ export const usePlayerStore = create<PlayerStore>()(
           const targetSongs = state.queue.filter((item) => targetIds.has(item.id));
           if (targetSongs.length === 0) return;
 
-          // Delete managed local files
+          // Delete managed local files and downloaded offline files
           for (const song of targetSongs) {
             if (isLocalSong(song) && song.source.managed) {
               try {
@@ -1661,6 +1988,24 @@ export const usePlayerStore = create<PlayerStore>()(
                 });
               } catch (err) {
                 console.error(`Failed to delete local files for ${song.title}:`, err);
+              }
+            }
+            const offline = song.offline;
+            if (offline) {
+              try {
+                const sharedOfflineFile = state.queue.some((item) => isLocalSong(item)
+                  && !targetIds.has(item.id)
+                  && item.offline?.filePath === offline.filePath);
+                const sharedOfflineCover = offline.coverPath
+                  && state.queue.some((item) => isLocalSong(item)
+                    && !targetIds.has(item.id)
+                    && item.offline?.coverPath === offline.coverPath);
+                await invoke('delete_library_song', {
+                  filePath: sharedOfflineFile ? null : offline.filePath,
+                  coverPath: sharedOfflineCover ? null : offline.coverPath ?? null,
+                });
+              } catch (err) {
+                console.error(`Failed to delete offline files for ${song.title}:`, err);
               }
             }
           }
@@ -1825,7 +2170,7 @@ export const usePlayerStore = create<PlayerStore>()(
       }),
       {
         name: 'aura_music_player_storage',
-        version: 6,
+        version: 7,
         migrate: migratePlayerPersistedState,
         merge: (persistedState, currentState) => {
           const savedState = persistedState as Partial<PlayerStore>;
