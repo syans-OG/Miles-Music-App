@@ -204,18 +204,32 @@ impl YoutubeCommandService {
             YoutubeError::new(YoutubeErrorCode::AudioStreamUnavailable)
         })?;
 
-        let audio_bytes = std::fs::read(audio_entry.path())
-            .map_err(|_| YoutubeError::new(YoutubeErrorCode::ProcessFailed))?;
-
-        if audio_bytes.len() > crate::MAX_LOCAL_AUDIO_FILE_BYTES {
+        let audio_len = std::fs::metadata(audio_entry.path())
+            .map_err(|_| YoutubeError::new(YoutubeErrorCode::ProcessFailed))?
+            .len();
+        if audio_len > crate::MAX_LOCAL_AUDIO_FILE_BYTES as u64 {
             let _ = std::fs::remove_dir_all(&temp_dir);
             return Err(YoutubeError::with_detail(
                 YoutubeErrorCode::ProcessFailed,
-                "File audio melebihi batas 128 MB",
+                "Audio file exceeds the 128 MB limit",
             ));
         }
 
-        let file_hash = format!("{:x}", sha2::Sha256::digest(&audio_bytes));
+        let file_hash = {
+            let mut audio_source = std::fs::File::open(audio_entry.path())
+                .map_err(|_| YoutubeError::new(YoutubeErrorCode::ProcessFailed))?;
+            let mut hasher = sha2::Sha256::new();
+            let mut buffer = [0u8; 64 * 1024];
+            loop {
+                let bytes_read = std::io::Read::read(&mut audio_source, &mut buffer)
+                    .map_err(|_| YoutubeError::new(YoutubeErrorCode::ProcessFailed))?;
+                if bytes_read == 0 {
+                    break;
+                }
+                hasher.update(&buffer[..bytes_read]);
+            }
+            format!("{:x}", hasher.finalize())
+        };
         let extension = audio_entry
             .path()
             .extension()
@@ -228,7 +242,7 @@ impl YoutubeCommandService {
 
         let audio_destination = library_dir.join(format!("{file_hash}.{extension}"));
         if !audio_destination.exists() {
-            std::fs::write(&audio_destination, &audio_bytes)
+            std::fs::copy(audio_entry.path(), &audio_destination)
                 .map_err(|_| YoutubeError::new(YoutubeErrorCode::ProcessFailed))?;
         }
 

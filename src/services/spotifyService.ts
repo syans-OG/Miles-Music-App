@@ -51,7 +51,9 @@ export const importSpotifyResource = async (url: string): Promise<SpotifyPlaylis
     return result;
   } catch (error: unknown) {
     if (typeof error === 'object' && error !== null && 'message' in error && typeof error.message === 'string') {
-      throw new Error(error.message);
+      const wrapped = new Error(error.message) as Error & { cause?: unknown };
+      wrapped.cause = error;
+      throw wrapped;
     }
     throw new Error('Failed to import Spotify data. Please make sure the link is valid and public.');
   }
@@ -61,6 +63,7 @@ export class SpotifyMatchError extends Error {
   constructor(
     public readonly code: string,
     public readonly retryable: boolean,
+    public cause?: unknown,
   ) {
     super(code);
     this.name = 'SpotifyMatchError';
@@ -77,9 +80,9 @@ export const matchSpotifyTrack = async (
     if (typeof error === 'object' && error !== null && 'code' in error) {
       const code = typeof error.code === 'string' ? error.code : 'process_failed';
       const retryable = 'retryable' in error && error.retryable === true;
-      throw new SpotifyMatchError(code, retryable);
+      throw new SpotifyMatchError(code, retryable, error);
     }
-    throw new SpotifyMatchError('process_failed', true);
+    throw new SpotifyMatchError('process_failed', true, error);
   }
 };
 

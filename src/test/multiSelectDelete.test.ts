@@ -1,6 +1,13 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { usePlayerStore } from '../stores/usePlayerStore';
 import type { Song, Playlist } from '../types/player';
+import { invoke } from '@tauri-apps/api/core';
+
+vi.mock('@tauri-apps/api/core', () => ({
+  invoke: vi.fn(),
+}));
+
+const mockedInvoke = vi.mocked(invoke);
 
 const makeSong = (id: string, title: string): Song => ({
   id,
@@ -15,6 +22,8 @@ const makeSong = (id: string, title: string): Song => ({
 
 describe('Multi-Select Batch Song Deletion', () => {
   beforeEach(() => {
+    mockedInvoke.mockReset();
+    mockedInvoke.mockResolvedValue(undefined);
     const s1 = makeSong('s1', 'Song 1');
     const s2 = makeSong('s2', 'Song 2');
     const s3 = makeSong('s3', 'Song 3');
@@ -47,7 +56,7 @@ describe('Multi-Select Batch Song Deletion', () => {
     expect(state.queue.map((s) => s.id)).toEqual(['s1', 's4']);
     expect(state.playbackQueue.map((s) => s.id)).toEqual(['s1', 's4']);
     expect(state.playlists[0].songs.map((s) => s.id)).toEqual(['s1']);
-    expect(state.libraryNotice).toBe('2 lagu berhasil dihapus');
+    expect(state.libraryNotice).toBe('2 track(s) deleted');
   });
 
   it('gracefully switches currentSong if currentSong was deleted in batch', async () => {
@@ -56,6 +65,28 @@ describe('Multi-Select Batch Song Deletion', () => {
     const state = usePlayerStore.getState();
     expect(state.currentSong?.id).toBe('s3');
     expect(state.playbackIntent).toBe(false);
+  });
+
+  it('keeps songs and reports partial failure when file deletion fails', async () => {
+    mockedInvoke.mockRejectedValue(new Error('locked by another process'));
+
+    await usePlayerStore.getState().deleteMultipleSongs(['s2', 's3']);
+
+    const state = usePlayerStore.getState();
+    expect(state.queue.map((s) => s.id)).toEqual(['s1', 's2', 's3', 's4']);
+    expect(state.playbackQueue.map((s) => s.id)).toEqual(['s1', 's2', 's3', 's4']);
+    expect(state.currentSong?.id).toBe('s2');
+    expect(state.libraryNotice).toBe('0 track(s) deleted, 2 failed');
+  });
+
+  it('removes only songs whose files were deleted when deletion partially fails', async () => {
+    mockedInvoke.mockRejectedValueOnce(new Error('locked'));
+    await usePlayerStore.getState().deleteMultipleSongs(['s2', 's3']);
+
+    const state = usePlayerStore.getState();
+    expect(state.queue.map((s) => s.id)).toEqual(['s1', 's2', 's4']);
+    expect(state.playlists[0].songs.map((s) => s.id)).toEqual(['s1', 's2']);
+    expect(state.libraryNotice).toBe('1 track(s) deleted, 1 failed');
   });
 
   it('toggles song in playlist correctly', () => {

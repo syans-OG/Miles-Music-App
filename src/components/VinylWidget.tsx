@@ -99,7 +99,7 @@ export const VinylWidget: React.FC = () => {
           data-tauri-drag-region
           onMouseDown={handleStartDrag}
           className="absolute top-0 left-0 right-0 h-6 z-25 cursor-grab active:cursor-grabbing"
-          title="Geser Vinyl Widget"
+          title="Drag Vinyl Widget"
         />
 
 
@@ -157,7 +157,7 @@ export const VinylWidget: React.FC = () => {
         <button
           onClick={cycleMode}
           className="absolute bottom-2.5 right-2.5 p-1 rounded-lg bg-white/5 hover:bg-white/20 text-slate-300 hover:text-white border border-white/10 shadow-md transition-all z-20"
-          title="Pindah ke Mode Berikutnya"
+          title="Switch to Next Mode"
         >
           <Layers className="w-3 h-3" />
         </button>

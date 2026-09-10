@@ -40,7 +40,14 @@ fn pixels_are_similar(pixel: &image::Rgba<u8>, background: &[u8; 3]) -> bool {
 }
 
 pub(crate) fn normalize_embedded_cover(data: &[u8]) -> Option<Vec<u8>> {
-    let source = image::load_from_memory(data).ok()?.to_rgba8();
+    const MAX_COVER_DIM: u32 = 1024;
+    let decoded = image::load_from_memory(data).ok()?;
+    let source = if decoded.width() > MAX_COVER_DIM || decoded.height() > MAX_COVER_DIM {
+        decoded.thumbnail(MAX_COVER_DIM, MAX_COVER_DIM)
+    } else {
+        decoded
+    }
+    .to_rgba8();
     let (width, height) = source.dimensions();
     if width < 8 || height < 8 {
         return None;
@@ -126,7 +133,7 @@ pub(crate) fn normalize_embedded_cover(data: &[u8]) -> Option<Vec<u8>> {
 
 fn validate_audio_size(size: usize) -> Result<(), String> {
     if size > MAX_LOCAL_AUDIO_FILE_BYTES {
-        Err("Ukuran file audio melebihi batas 128 MB".to_string())
+        Err("Audio file size exceeds the 128 MB limit".to_string())
     } else {
         Ok(())
     }
@@ -151,15 +158,15 @@ fn parse_audio_payload(bytes: &[u8], extension: &str) -> Result<TaggedFile, Stri
     validate_audio_size(bytes.len())?;
     let probe = Probe::new(Cursor::new(bytes))
         .guess_file_type()
-        .map_err(|_| "Isi file audio tidak dapat dikenali".to_string())?;
+        .map_err(|_| "Audio file content could not be recognized".to_string())?;
     let file_type = probe
         .file_type()
         .filter(|file_type| file_type_matches_extension(*file_type, extension))
-        .ok_or_else(|| "Isi file tidak sesuai dengan format audio".to_string())?;
+        .ok_or_else(|| "File content does not match the audio format".to_string())?;
     debug_assert!(file_type_matches_extension(file_type, extension));
     probe
         .read()
-        .map_err(|_| "File audio rusak atau tidak didukung".to_string())
+        .map_err(|_| "Audio file is corrupted or unsupported".to_string())
 }
 
 #[tauri::command]
@@ -171,7 +178,7 @@ async fn save_imported_audio(
         .headers()
         .get("x-file-name")
         .and_then(|value| value.to_str().ok())
-        .ok_or_else(|| "Nama file audio tidak ditemukan".to_string())?;
+        .ok_or_else(|| "Audio file name not found".to_string())?;
 
     let safe_name: String = file_name
         .chars()
@@ -189,13 +196,13 @@ async fn save_imported_audio(
         .extension()
         .and_then(|value| value.to_str())
         .map(|value| value.to_ascii_lowercase())
-        .ok_or_else(|| "File audio harus memiliki ekstensi".to_string())?;
+        .ok_or_else(|| "Audio file must have an extension".to_string())?;
 
     if !matches!(
         extension.as_str(),
         "mp3" | "wav" | "flac" | "m4a" | "aac" | "ogg"
     ) {
-        return Err(format!("Format audio .{extension} tidak didukung"));
+        return Err(format!("Audio format .{extension} is not supported"));
     }
 
     let library_dir = app_handle
@@ -206,7 +213,7 @@ async fn save_imported_audio(
     std::fs::create_dir_all(&library_dir).map_err(|error| error.to_string())?;
 
     let InvokeBody::Raw(bytes) = request.body() else {
-        return Err("Payload file audio tidak valid".to_string());
+        return Err("Audio file payload is invalid".to_string());
     };
     let tagged_file = parse_audio_payload(bytes, &extension)?;
 
@@ -295,7 +302,7 @@ fn remove_managed_file(library_dir: &Path, file_path: Option<String>) -> Result<
     let canonical_candidate =
         std::fs::canonicalize(&candidate).map_err(|error| error.to_string())?;
     if !canonical_candidate.starts_with(&canonical_library) || !canonical_candidate.is_file() {
-        return Err("File berada di luar library aplikasi".to_string());
+        return Err("File is outside the application library".to_string());
     }
 
     std::fs::remove_file(canonical_candidate).map_err(|error| error.to_string())

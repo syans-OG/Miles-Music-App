@@ -225,8 +225,8 @@ export const App: React.FC = () => {
           <div className="w-20 h-20 rounded-full bg-amber-400/20 text-amber-300 flex items-center justify-center mb-4 shadow-2xl animate-bounce">
             <UploadCloud className="w-10 h-10" />
           </div>
-          <h3 className="text-xl font-bold text-white tracking-wide">Lepaskan File MP3 / Audio Di Sini</h3>
-          <p className="text-sm text-slate-400 mt-1">Lagu akan langsung ditambahkan ke koleksi CD Laci Musik Miles</p>
+          <h3 className="text-xl font-bold text-white tracking-wide">Drop MP3 / Audio Files Here</h3>
+          <p className="text-sm text-slate-400 mt-1">Songs will be added instantly to the Miles Music Drawer CD collection</p>
         </div>
       )}
 
@@ -238,16 +238,16 @@ export const App: React.FC = () => {
           <div className="min-w-0 flex-1">
             <p className="truncate text-[10px] font-semibold text-white">{youtubeImportTask.message}</p>
             {mode === 'control-bar' && youtubeImportTask.report && (
-              <p className="mt-0.5 text-[9px] text-slate-500">{youtubeImportTask.report.added} masuk · {youtubeImportTask.report.duplicates} duplikat · {youtubeImportTask.report.skipped} dilewati</p>
+              <p className="mt-0.5 text-[9px] text-slate-500">{youtubeImportTask.report.added} added · {youtubeImportTask.report.duplicates} duplicates · {youtubeImportTask.report.skipped} skipped</p>
             )}
           </div>
           {youtubeImportTask.status !== 'success' && youtubeImportTask.retryable && (
-            <button type="button" onClick={() => void retryYoutubeTask()} className="flex-shrink-0 text-amber-300 hover:text-amber-200" aria-label="Coba lagi"><RotateCcw className="h-3.5 w-3.5" /></button>
+            <button type="button" onClick={() => void retryYoutubeTask()} className="flex-shrink-0 text-amber-300 hover:text-amber-200" aria-label="Retry"><RotateCcw className="h-3.5 w-3.5" /></button>
           )}
           {mode === 'control-bar' && youtubeImportTask.targetPlaylistId && (
-            <button type="button" onClick={() => { setDrawerOpen(true); setDrawerTab('playlist'); selectPlaylist(youtubeImportTask.targetPlaylistId ?? null); }} className="text-[9px] font-semibold text-amber-300 hover:text-amber-200">Buka</button>
+            <button type="button" onClick={() => { setDrawerOpen(true); setDrawerTab('playlist'); selectPlaylist(youtubeImportTask.targetPlaylistId ?? null); }} className="text-[9px] font-semibold text-amber-300 hover:text-amber-200">Open</button>
           )}
-          <button type="button" onClick={dismissYoutubeTask} className="flex-shrink-0 rounded-[3px] p-1 text-slate-500 hover:bg-white/10 hover:text-white" aria-label="Tutup notifikasi impor"><X className="h-3.5 w-3.5" /></button>
+          <button type="button" onClick={dismissYoutubeTask} className="flex-shrink-0 rounded-[3px] p-1 text-slate-500 hover:bg-white/10 hover:text-white" aria-label="Close import notification"><X className="h-3.5 w-3.5" /></button>
         </div>
       )}
 

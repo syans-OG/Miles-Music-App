@@ -52,13 +52,13 @@ pub fn sha256_file(path: &Path) -> io::Result<String> {
 
 pub fn validate_for_target(manifest: &SidecarManifest, target: &str) -> Result<(), String> {
     if manifest.schema_version != 1 {
-        return Err("Versi schema manifest sidecar tidak didukung".to_string());
+        return Err("Sidecar manifest schema version is not supported".to_string());
     }
     if !SUPPORTED_TARGETS.contains(&target) || manifest.target != target {
-        return Err(format!("Sidecar tidak tersedia untuk target {target}"));
+        return Err(format!("Sidecar not available for target {target}"));
     }
     if manifest.binaries.len() != 2 {
-        return Err("Manifest harus berisi tepat dua sidecar".to_string());
+        return Err("Manifest must contain exactly two sidecars".to_string());
     }
 
     let extension = if target.contains("windows") {
@@ -73,7 +73,7 @@ pub fn validate_for_target(manifest: &SidecarManifest, target: &str) -> Result<(
             .filter(|binary| binary.id == id)
             .collect::<Vec<_>>();
         if matching.len() != 1 {
-            return Err(format!("Manifest harus berisi tepat satu sidecar {id}"));
+            return Err(format!("Manifest must contain exactly one {id} sidecar"));
         }
 
         let binary = matching[0];
@@ -88,7 +88,7 @@ pub fn validate_for_target(manifest: &SidecarManifest, target: &str) -> Result<(
             || binary.file_name != expected_file_name
             || binary.runtime_file_name != expected_runtime_file_name
         {
-            return Err(format!("Metadata sidecar {id} tidak valid untuk {target}"));
+            return Err(format!("Sidecar metadata {id} is invalid for {target}"));
         }
     }
 

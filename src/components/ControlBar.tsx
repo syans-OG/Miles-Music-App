@@ -23,12 +23,48 @@ import {
 } from 'lucide-react';
 
 import { usePlayerStore } from '../stores/usePlayerStore';
+import { usePlaybackMetrics } from '../stores/playbackMetrics';
 import { audioService } from '../services/audioService';
 import { isSpotifyUrl } from '../services/spotifyService';
 
 import { handleMagneticSnapOnRelease } from '../hooks/useWindowResizer';
 import { detectYoutubeResource } from '../services/youtubeService';
 import { getDisplayCoverUrl, handleCoverImageError } from '../utils/coverImage';
+
+const formatTime = (secs: number) => {
+  const minutes = Math.floor(secs / 60);
+  const seconds = Math.floor(secs % 60);
+  return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+};
+
+export const SongProgress: React.FC = () => {
+  const { currentTime, duration } = usePlaybackMetrics(
+    useShallow((state) => ({
+      currentTime: state.currentTime,
+      duration: state.duration,
+    })),
+  );
+
+  const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
+    audioService.seek(parseFloat(e.target.value));
+  };
+
+  return (
+    <div className="w-full flex items-center gap-2 text-[10px] text-slate-400 font-mono my-1">
+      <span>{formatTime(currentTime)}</span>
+      <input
+        type="range"
+        min="0"
+        max={duration || 100}
+        value={currentTime}
+        onChange={handleSeek}
+        aria-label="Song progress"
+        className="flex-1 h-1 bg-white/10 rounded-lg appearance-none cursor-pointer accent-white hover:bg-white/20 focus-visible:ring-2 focus-visible:ring-amber-400/50 focus-visible:outline-none"
+      />
+      <span>{formatTime(duration)}</span>
+    </div>
+  );
+};
 
 export const ControlBar: React.FC = () => {
   const {
@@ -42,8 +78,6 @@ export const ControlBar: React.FC = () => {
     toggleLoop,
     playNext,
     playPrev,
-    currentTime,
-    duration,
     volume,
     isMuted,
     toggleMute,
@@ -80,8 +114,6 @@ export const ControlBar: React.FC = () => {
     toggleLoop: state.toggleLoop,
     playNext: state.playNext,
     playPrev: state.playPrev,
-    currentTime: state.currentTime,
-    duration: state.duration,
     volume: state.volume,
     isMuted: state.isMuted,
     toggleMute: state.toggleMute,
@@ -130,17 +162,6 @@ export const ControlBar: React.FC = () => {
         : playbackStatus === 'buffering'
           ? 'BUFFERING…'
           : isPlaying ? 'PLAY' : 'READY';
-
-  const formatTime = (secs: number) => {
-    const minutes = Math.floor(secs / 60);
-    const seconds = Math.floor(secs % 60);
-    return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
-  };
-
-  const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const time = parseFloat(e.target.value);
-    audioService.seek(time);
-  };
 
   const handleUrlSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -271,7 +292,7 @@ export const ControlBar: React.FC = () => {
                 }}
                 disabled={isImportTaskActive}
                 autoFocus
-                className="w-full min-w-0 bg-transparent border-none outline-none text-white text-xs placeholder-white/40 font-medium disabled:text-white/30"
+                className="w-full min-w-0 bg-transparent border-none outline-none text-white text-xs placeholder-white/40 font-medium disabled:text-white/30 rounded-md focus-visible:ring-2 focus-visible:ring-amber-400/50 focus-visible:bg-white/5"
               />
             </div>
 
@@ -300,13 +321,13 @@ export const ControlBar: React.FC = () => {
                 <p className="truncate text-[10px] text-white/60 pl-6">{importTask.message}</p>
                 <div className="flex items-center gap-2">
                   {isImportTaskActive && (
-                    <button type="button" onClick={() => void cancelImportTask()} className="text-[10px] font-semibold text-rose-400 hover:text-rose-300 transition-colors">Batalkan</button>
+                    <button type="button" onClick={() => void cancelImportTask()} className="text-[10px] font-semibold text-rose-400 hover:text-rose-300 transition-colors">Cancel</button>
                   )}
                   {isImportFailure && importTask.retryable && (
-                    <button type="button" onClick={() => void retryImportTask()} className="flex items-center gap-1 text-[10px] font-semibold text-amber-400 hover:text-amber-300 transition-colors"><RotateCcw className="h-3 w-3" /> Coba lagi</button>
+                    <button type="button" onClick={() => void retryImportTask()} className="flex items-center gap-1 text-[10px] font-semibold text-amber-400 hover:text-amber-300 transition-colors"><RotateCcw className="h-3 w-3" /> Retry</button>
                   )}
                   {isImportSuccess && importTask.targetPlaylistId && (
-                    <button type="button" onClick={openImportedPlaylist} className="text-[10px] font-semibold text-amber-400 hover:text-amber-300 transition-colors">Buka playlist</button>
+                    <button type="button" onClick={openImportedPlaylist} className="text-[10px] font-semibold text-amber-400 hover:text-amber-300 transition-colors">Open playlist</button>
                   )}
                 </div>
               </div>
@@ -327,10 +348,10 @@ export const ControlBar: React.FC = () => {
                   >
                     <span className="flex gap-4">
                       {[
-                        ['Masuk', importTask.report.added],
-                        ['Duplikat', importTask.report.duplicates],
-                        ['Dilewati', importTask.report.skipped],
-                        ['Batas 100', importTask.report.truncated ? 'Ya' : '—'],
+                        ['Added', importTask.report.added],
+                        ['Duplicates', importTask.report.duplicates],
+                        ['Skipped', importTask.report.skipped],
+                        ['Limit 100', importTask.report.truncated ? 'Yes' : '—'],
                       ].map(([label, value]) => (
                         <span key={label} className="flex flex-col">
                           <strong className="font-mono text-[11px] text-white/90">{value}</strong>
@@ -339,7 +360,7 @@ export const ControlBar: React.FC = () => {
                       ))}
                     </span>
                     <span className="text-[10px] font-medium text-amber-400/80">
-                      {isReportOpen ? 'Tutup' : 'Detail'}
+                      {isReportOpen ? 'Close' : 'Details'}
                     </span>
                   </button>
                   {isReportOpen && importTask.report.skippedItems.length > 0 && (
@@ -368,7 +389,7 @@ export const ControlBar: React.FC = () => {
           data-tauri-drag-region
           onMouseDown={handleStartDrag}
           className="absolute top-0 left-0 right-0 h-6 z-30 cursor-grab active:cursor-grabbing flex items-center justify-center group"
-          title="Geser Widget (Drag Header)"
+          title="Drag Widget"
         >
           <div className="w-10 h-1 rounded-full bg-white/10 group-hover:bg-amber-400/40 transition-colors mt-1" />
         </div>
@@ -424,7 +445,7 @@ export const ControlBar: React.FC = () => {
 
               {/* Window Actions: fade in on card hover, aligned with LED indicator */}
               <div
-                className={`flex items-center gap-1 transition-all duration-150 ease-out opacity-0 translate-y-1 pointer-events-none group-hover/card:opacity-100 group-hover/card:translate-y-0 group-hover/card:pointer-events-auto group-focus-within/card:opacity-100 group-focus-within/card:translate-y-0 group-focus-within/card:pointer-events-auto`}
+                className={`flex items-center gap-1 transition-all duration-150 ease-out opacity-0 translate-y-1 pointer-events-none group-hover/card:opacity-100 group-hover/card:translate-y-0 group-hover/card:pointer-events-auto group-focus-within/card:opacity-100 group-focus-within/card:translate-y-0 group-focus-within/card:pointer-events-auto motion-reduce:translate-y-0 motion-reduce:transition-none`}
               >
                 <button
                   type="button"
@@ -433,7 +454,8 @@ export const ControlBar: React.FC = () => {
                     void handleMinimize();
                   }}
                   title="Minimize Widget"
-                  className="p-0.5 rounded-md text-slate-400 hover:text-amber-300 hover:bg-white/10 transition-colors"
+                  aria-label="Minimize Widget"
+                  className="p-0.5 rounded-md text-slate-400 hover:text-amber-300 hover:bg-white/10 transition-all active:scale-90 focus-visible:ring-2 focus-visible:ring-amber-400/70 focus-visible:outline-none"
                 >
                   <Minus className="w-3 h-3" />
                 </button>
@@ -445,7 +467,8 @@ export const ControlBar: React.FC = () => {
                     void handleClose();
                   }}
                   title="Close Application"
-                  className="p-0.5 rounded-md text-slate-400 hover:text-rose-400 hover:bg-rose-500/20 transition-colors"
+                  aria-label="Close Application"
+                  className="p-0.5 rounded-md text-slate-400 hover:text-rose-400 hover:bg-rose-500/20 transition-all active:scale-90 focus-visible:ring-2 focus-visible:ring-rose-400/70 focus-visible:outline-none"
                 >
                   <X className="w-3 h-3" />
                 </button>
@@ -463,7 +486,8 @@ export const ControlBar: React.FC = () => {
                   setUrlInputOpen(!isUrlInputOpen);
                 }}
                 title="Add YouTube or Spotify link"
-                className={`relative flex-shrink-0 rounded-lg p-1 transition-colors hover:bg-white/10 ${importTask && !isUrlInputOpen ? 'text-amber-300' : 'text-slate-400 hover:text-white'}`}
+                aria-label="Add YouTube or Spotify link"
+                className={`relative flex-shrink-0 rounded-lg p-1 transition-all active:scale-90 hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-amber-400/70 focus-visible:outline-none ${importTask && !isUrlInputOpen ? 'text-amber-300' : 'text-slate-400 hover:text-white'}`}
               >
                 <Plus className="w-3.5 h-3.5" />
                 {isImportTaskActive && !isUrlInputOpen && <span className="absolute -right-0.5 -top-0.5 h-1.5 w-1.5 rounded-full bg-amber-300" />}
@@ -475,18 +499,7 @@ export const ControlBar: React.FC = () => {
           </div>
 
           {/* Middle Row: Progress Slider */}
-          <div className="w-full flex items-center gap-2 text-[10px] text-slate-400 font-mono my-1">
-            <span>{formatTime(currentTime)}</span>
-            <input
-              type="range"
-              min="0"
-              max={duration || 100}
-              value={currentTime}
-              onChange={handleSeek}
-              className="flex-1 h-1 bg-white/10 rounded-lg appearance-none cursor-pointer accent-white hover:bg-white/20"
-            />
-            <span>{formatTime(duration)}</span>
-          </div>
+          <SongProgress />
 
           {/* Bottom Row: Perfect 2 - 3 - 2 Symmetric Hi-Fi Composition */}
           <div className="flex items-center justify-between mt-0.5">
@@ -494,20 +507,22 @@ export const ControlBar: React.FC = () => {
             <div className="flex items-center gap-1.5">
               <button
                 onClick={toggleMute}
-                className="p-1.5 text-slate-400 hover:text-white transition-colors rounded-xl hover:bg-white/5"
+                className="p-1.5 text-slate-400 hover:text-white transition-all active:scale-90 rounded-xl hover:bg-white/5 focus-visible:ring-2 focus-visible:ring-amber-400/70 focus-visible:outline-none"
                 title="Mute/Unmute"
+                aria-label="Mute/Unmute"
               >
                 {isMuted || volume === 0 ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
               </button>
 
               <button
                 onClick={toggleLoop}
-                className={`p-1.5 rounded-xl transition-all ${
+                className={`p-1.5 rounded-xl transition-all active:scale-90 focus-visible:ring-2 focus-visible:ring-amber-400/70 focus-visible:outline-none border ${
                   isLooping
-                    ? 'bg-amber-400/20 text-amber-300 border border-amber-400/40 shadow-sm'
-                    : 'text-slate-400 hover:text-white hover:bg-white/5'
+                    ? 'bg-amber-400/20 text-amber-300 border-amber-400/40 shadow-sm'
+                    : 'text-slate-400 hover:text-white hover:bg-white/5 border-transparent'
                 }`}
-                title={isLooping ? 'Loop: AKTIF (Ulangi Lagu Ini)' : 'Loop: NONAKTIF'}
+                title={isLooping ? 'Loop: ON (Repeat This Track)' : 'Loop: OFF'}
+                aria-label="Toggle Loop"
               >
                 <Repeat className="w-3.5 h-3.5" />
               </button>
@@ -517,16 +532,18 @@ export const ControlBar: React.FC = () => {
             <div className="flex items-center gap-3">
               <button
                 onClick={() => playPrev()}
-                className="text-slate-400 hover:text-white transition-colors p-1 hover:scale-110"
+                className="text-slate-400 hover:text-white transition-all p-1 hover:scale-110 active:scale-90 focus-visible:ring-2 focus-visible:ring-amber-400/70 focus-visible:outline-none rounded-lg"
                 title="Previous Track"
+                aria-label="Previous Track"
               >
                 <SkipBack className="w-3.5 h-3.5" />
               </button>
 
               <button
                 onClick={() => togglePlayPause()}
-                className={`w-[22px] h-[22px] rounded-full flex items-center justify-center hover:scale-105 transition-transform shadow-lg shadow-white/10 ${playbackError ? 'bg-rose-400 text-white' : 'bg-white text-dark-900'}`}
-                title={playbackError ? `${playbackError.message} Coba lagi` : playbackIntent ? 'Pause' : 'Play'}
+                className={`w-[22px] h-[22px] rounded-full flex items-center justify-center hover:scale-105 active:scale-90 transition-transform shadow-lg shadow-white/10 focus-visible:ring-2 focus-visible:ring-amber-400/70 focus-visible:outline-none ${playbackError ? 'bg-rose-400 text-white' : 'bg-white text-dark-900'}`}
+                title={playbackError ? `${playbackError.message} Retry` : playbackIntent ? 'Pause' : 'Play'}
+                aria-label={playbackError ? 'Retry' : playbackIntent ? 'Pause' : 'Play'}
               >
                 {playbackError
                   ? <RotateCcw className="w-3.5 h-3.5" />
@@ -539,8 +556,9 @@ export const ControlBar: React.FC = () => {
 
               <button
                 onClick={() => playNext()}
-                className="text-slate-400 hover:text-white transition-colors p-1 hover:scale-110"
+                className="text-slate-400 hover:text-white transition-all p-1 hover:scale-110 active:scale-90 focus-visible:ring-2 focus-visible:ring-amber-400/70 focus-visible:outline-none rounded-lg"
                 title="Next Track"
+                aria-label="Next Track"
               >
                 <SkipForward className="w-3.5 h-3.5" />
               </button>
@@ -550,20 +568,22 @@ export const ControlBar: React.FC = () => {
             <div className="flex items-center gap-1.5">
               <button
                 onClick={toggleDrawer}
-                className={`p-1.5 rounded-xl border transition-all ${
+                className={`p-1.5 rounded-xl border transition-all active:scale-90 focus-visible:ring-2 focus-visible:ring-amber-400/70 focus-visible:outline-none ${
                   isDrawerOpen
                     ? 'bg-white text-dark-900 border-white shadow-lg scale-105'
                     : 'bg-white/5 hover:bg-white/15 text-slate-300 border-white/10'
                 }`}
-                title="Buka / Tutup Laci Musik"
+                title="Open / Close Music Drawer"
+                aria-label="Open or Close Music Drawer"
               >
                 <FolderKanban className="w-3.5 h-3.5" />
               </button>
 
               <button
                 onClick={cycleMode}
-                className="p-1.5 rounded-xl bg-white/5 hover:bg-white/15 text-slate-400 hover:text-white border border-white/5 transition-all"
-                title="Pindah ke Mode Berikutnya (Mode 2 Vinyl / Mode 3 Bubble)"
+                className="p-1.5 rounded-xl bg-white/5 hover:bg-white/15 text-slate-400 hover:text-white border border-white/5 transition-all active:scale-90 focus-visible:ring-2 focus-visible:ring-amber-400/70 focus-visible:outline-none"
+                title="Switch to Next Mode (Mode 2 Vinyl / Mode 3 Bubble)"
+                aria-label="Switch to next mode"
               >
                 <Layers className="w-3.5 h-3.5" />
               </button>

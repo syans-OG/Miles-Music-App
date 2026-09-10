@@ -54,7 +54,10 @@ impl DiscordRpcState {
             self.client = Some(client);
         }
 
-        Ok(self.client.as_mut().unwrap())
+        Ok(self
+            .client
+            .as_mut()
+            .expect("client was just created in ensure_connected"))
     }
 
     fn update_activity(&mut self, input: DiscordActivityInput<'_>) -> Result<(), String> {

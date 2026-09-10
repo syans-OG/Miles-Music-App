@@ -1,5 +1,6 @@
 import type { Song } from '../types/player';
 import { usePlayerStore } from '../stores/usePlayerStore';
+import { usePlaybackMetrics } from '../stores/playbackMetrics';
 import { convertFileSrc } from '@tauri-apps/api/core';
 import {
   clearYoutubeStreamCache,
@@ -49,11 +50,11 @@ const AUTO_SKIP_CODES = new Set([
 ]);
 
 const skipReason = (error: YoutubeServiceError) => {
-  if (error.code === 'live_unsupported') return 'Live Stream tidak didukung';
-  if (error.code === 'upcoming_unsupported') return 'video belum tayang';
-  if (error.code === 'private_video') return 'video privat';
-  if (error.code === 'age_restricted') return 'batasan usia';
-  return 'tidak tersedia';
+  if (error.code === 'live_unsupported') return 'Live stream not supported';
+  if (error.code === 'upcoming_unsupported') return 'video not yet released';
+  if (error.code === 'private_video') return 'private video';
+  if (error.code === 'age_restricted') return 'age restricted';
+  return 'not available';
 };
 
 const youtubeResolveKey = (song: Song): string | null => {
@@ -80,6 +81,9 @@ export class AudioService {
   private lastCountedSelection = -1;
   private lastCountedSongId: string | null = null;
   private lastRecordedTime = 0;
+  private pendingListenedSeconds = 0;
+  private pendingSongId: string | null = null;
+  private lastStoreSync = 0;
   private handlingSelection = false;
 
   constructor(dependencies: AudioServiceDependencies = {}) {
@@ -250,7 +254,7 @@ export class AudioService {
         usePlayerStore.getState().setPlaybackStatus('error');
         usePlayerStore.getState().setPlaybackError({
           songId: song.id,
-          message: 'Tidak dapat menemukan padanan lagu ini di YouTube.',
+          message: 'Could not find a matching video for this song on YouTube.',
           retryable: true,
         });
         return;
@@ -259,7 +263,7 @@ export class AudioService {
 
     if (!resolveId) return;
     if (song.source.kind === 'youtube' && song.source.availability !== 'available') {
-      this.purgeAndSkipUnavailableSong(song, `${song.title} dihapus: tidak tersedia`);
+      this.purgeAndSkipUnavailableSong(song, `${song.title} removed: not available`);
       return;
     }
 
@@ -311,10 +315,10 @@ export class AudioService {
         return;
       }
       if (error instanceof YoutubeServiceError && AUTO_SKIP_CODES.has(error.code)) {
-        this.purgeAndSkipUnavailableSong(song, `${song.title} dihapus: ${skipReason(error)}`);
+        this.purgeAndSkipUnavailableSong(song, `${song.title} removed: ${skipReason(error)}`);
         return;
       }
-      const message = error instanceof Error ? error.message : 'Gagal menyiapkan audio.';
+      const message = error instanceof Error ? error.message : 'Failed to prepare audio.';
       usePlayerStore.getState().setPlaybackError({ songId: song.id, message, retryable: true });
     }
   }
@@ -333,13 +337,18 @@ export class AudioService {
     const detach = [
       on('loadedmetadata', () => {
         if (!isCurrent()) return;
+        this.flushListenedSeconds();
         const state = usePlayerStore.getState();
         const duration = Number.isFinite(this.audio.duration) ? this.audio.duration : song.duration;
         state.setDuration(duration);
+        usePlaybackMetrics.getState().setDuration(duration);
+        usePlaybackMetrics.getState().setCurrentTime(0);
+        this.lastStoreSync = 0;
         const resume = state.resumePosition?.songId === song.id ? state.resumePosition.time : 0;
         if (resume > 0 && resume < Math.max(0, duration - 3)) {
           this.audio.currentTime = resume;
           state.setCurrentTime(resume);
+          usePlaybackMetrics.getState().setCurrentTime(resume);
         } else if (resume > 0) {
           this.audio.currentTime = 0;
           state.checkpointPlaybackPosition(0);
@@ -351,11 +360,22 @@ export class AudioService {
         if (this.lastRecordedTime > 0 && currentTime > this.lastRecordedTime) {
           const delta = currentTime - this.lastRecordedTime;
           if (delta > 0.05 && delta < 3.0) {
-            usePlayerStore.getState().addListenedTime(song.id, delta);
+            if (this.pendingSongId !== song.id) {
+              this.flushListenedSeconds();
+              this.pendingSongId = song.id;
+            }
+            this.pendingListenedSeconds += delta;
+            if (this.pendingListenedSeconds >= 10) {
+              this.flushListenedSeconds();
+            }
           }
         }
         this.lastRecordedTime = currentTime;
-        usePlayerStore.getState().setCurrentTime(currentTime);
+        usePlaybackMetrics.getState().setCurrentTime(currentTime);
+        if (currentTime - this.lastStoreSync >= 5) {
+          this.lastStoreSync = currentTime;
+          usePlayerStore.getState().setCurrentTime(currentTime);
+        }
         this.maybePrefetchNext();
       }),
       on('seeking', () => {
@@ -384,6 +404,7 @@ export class AudioService {
       }),
       on('pause', () => {
         if (!isCurrent()) return;
+        this.flushListenedSeconds();
         this.lastRecordedTime = this.audio.currentTime;
         const state = usePlayerStore.getState();
         if (this.audio.ended || (state.isLooping && state.playbackIntent)) {
@@ -401,6 +422,7 @@ export class AudioService {
       }),
       on('ended', () => {
         if (!isCurrent()) return;
+        this.flushListenedSeconds();
         this.handleEnded();
       }),
       on('error', () => {
@@ -428,7 +450,7 @@ export class AudioService {
         this.startLoadCycle(false);
         return;
       }
-      const message = error instanceof Error ? error.message : 'Audio tidak dapat diputar.';
+      const message = error instanceof Error ? error.message : 'Audio could not be played.';
       usePlayerStore.getState().setPlaybackError({
         songId: state.currentSong?.id ?? '',
         message,
@@ -478,7 +500,7 @@ export class AudioService {
     if (!this.isCurrentSelection(generation, selectionSerial, song.id)) return;
     usePlayerStore.getState().setPlaybackError({
       songId: song.id,
-      message: 'Audio gagal dimuat. Silakan coba lagi.',
+      message: 'Failed to load audio. Please try again.',
       retryable: true,
     });
   }
@@ -520,7 +542,9 @@ export class AudioService {
       next.source.videoId,
       'prefetch',
       () => generation === this.prefetchGeneration && this.prefetchedKey === prefetchKey,
-    ).catch(() => undefined);
+    ).catch((error) => {
+      console.debug('[AudioService] prefetch failed:', error);
+    });
   }
 
   private isCurrentSelection(generation: number, selectionSerial: number, songId: string) {
@@ -535,6 +559,14 @@ export class AudioService {
     this.detachLoadListeners = null;
   }
 
+  private flushListenedSeconds() {
+    if (this.pendingListenedSeconds > 0 && this.pendingSongId !== null) {
+      usePlayerStore.getState().addListenedTime(this.pendingSongId, this.pendingListenedSeconds);
+    }
+    this.pendingListenedSeconds = 0;
+    this.pendingSongId = null;
+  }
+
   private clearAssignedSource() {
     this.detachCurrentLoad();
     this.assignedSource = null;
@@ -544,6 +576,7 @@ export class AudioService {
 
   public seek(time: number) {
     this.audio.currentTime = time;
+    usePlaybackMetrics.getState().setCurrentTime(time);
     usePlayerStore.getState().setCurrentTime(time);
     void syncDiscordActivity(true);
   }

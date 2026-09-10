@@ -50,7 +50,7 @@ describe('Playlist Batch Add', () => {
 
     const state = usePlayerStore.getState();
     expect(state.playlists[0].songs.map((song) => song.id)).toEqual(['s1', 's2', 's3', 's4']);
-    expect(state.libraryNotice).toBe('2 lagu ditambahkan ke playlist “Chill Vibes”');
+    expect(state.libraryNotice).toBe('2 track(s) added to playlist “Chill Vibes”');
   });
 
   it('does not duplicate songs when all already exist', () => {

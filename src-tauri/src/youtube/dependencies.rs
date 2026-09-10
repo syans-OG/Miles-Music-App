@@ -47,7 +47,7 @@ pub fn verify_runtime_sidecars() -> Result<&'static VerifiedSidecars, String> {
     let _ = VERIFIED_SIDECARS.set(sidecars);
     VERIFIED_SIDECARS
         .get()
-        .ok_or_else(|| "Verifikasi dependency tidak dapat disimpan".to_string())
+        .ok_or_else(|| "Dependency verification could not be stored".to_string())
 }
 
 #[tauri::command]
@@ -55,7 +55,7 @@ pub async fn get_youtube_dependency_health() -> DependencyHealth {
     tauri::async_runtime::spawn_blocking(build_dependency_health)
         .await
         .unwrap_or_else(|_| {
-            unavailable_health("verification_failed", "Verifikasi dependency gagal")
+            unavailable_health("verification_failed", "Dependency verification failed")
         })
 }
 
@@ -75,7 +75,7 @@ fn build_dependency_health() -> DependencyHealth {
         },
         Ok(_) => unavailable_health(
             "dependency_unavailable",
-            "Dependency YouTube tidak lagi tersedia",
+            "YouTube dependency no longer available",
         ),
         Err(message) => DependencyHealth {
             available: false,
@@ -92,13 +92,13 @@ fn build_dependency_health() -> DependencyHealth {
 fn load_manifest() -> Result<SidecarManifest, VerificationError> {
     let manifest = parse_manifest(SIDECAR_MANIFEST).map_err(|_| VerificationError {
         code: "invalid_manifest",
-        message: "Manifest dependency YouTube tidak valid".to_string(),
+        message: "YouTube dependency manifest is invalid".to_string(),
     })?;
 
     if validate_for_target(&manifest, BUILD_TARGET).is_err() {
         return Err(VerificationError {
             code: "invalid_manifest",
-            message: "Manifest dependency YouTube tidak didukung".to_string(),
+            message: "YouTube dependency manifest is not supported".to_string(),
         });
     }
 
@@ -123,11 +123,11 @@ fn find_and_verify(
         .find(|binary| binary.id == binary_id)
         .ok_or_else(|| VerificationError {
             code: "invalid_manifest",
-            message: format!("Dependency {binary_id} tidak terdaftar"),
+            message: format!("Dependency {binary_id} is not registered"),
         })?;
     let path = resolve_binary_path(binary).ok_or_else(|| VerificationError {
         code: "missing_binary",
-        message: format!("Dependency {} tidak ditemukan", binary.id),
+        message: format!("Dependency {} not found", binary.id),
     })?;
     verify_binary_hash(binary, &path)?;
     Ok(path)
@@ -136,13 +136,13 @@ fn find_and_verify(
 fn verify_binary_hash(binary: &SidecarBinary, path: &Path) -> Result<(), VerificationError> {
     let actual_hash = sha256_file(path).map_err(|_| VerificationError {
         code: "unreadable_binary",
-        message: format!("Dependency {} tidak dapat diperiksa", binary.id),
+        message: format!("Dependency {} could not be verified", binary.id),
     })?;
 
     if !actual_hash.eq_ignore_ascii_case(&binary.sha256) {
         return Err(VerificationError {
             code: "checksum_mismatch",
-            message: format!("Integritas dependency {} tidak valid", binary.id),
+            message: format!("Integrity of dependency {} is invalid", binary.id),
         });
     }
 

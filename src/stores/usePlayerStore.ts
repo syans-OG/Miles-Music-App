@@ -183,7 +183,7 @@ const VIDEO_ID_PATTERN = /^[A-Za-z0-9_-]{11}$/;
 
 const spotifySkipReason = (reason: string) => ({
   no_candidates: 'No YouTube candidates found',
-  live_unsupported: 'Live Stream tidak didukung',
+  live_unsupported: 'Live stream not supported',
   duration_mismatch: 'Candidate duration does not match',
   weak_match: 'No sufficiently close YouTube match',
   timeout: 'YouTube search timed out',
@@ -602,7 +602,7 @@ export const usePlayerStore = create<PlayerStore>()(
             playbackStatus: 'idle',
             selectionSerial: state.selectionSerial + 1,
             selectionReason: 'manual',
-            libraryNotice: `Memutar playlist “${playlist.name}”`,
+            libraryNotice: `Now playing playlist “${playlist.name}”`,
           }));
         },
 
@@ -633,11 +633,11 @@ export const usePlayerStore = create<PlayerStore>()(
             const song = state.queue.find((item) => item.id === songId);
             if (!song) return state;
             if (state.playbackQueue.some((item) => item.id === songId)) {
-              return { libraryNotice: `“${song.title}” sudah ada di antrean` };
+              return { libraryNotice: `“${song.title}” is already in the queue` };
             }
             return {
               playbackQueue: [...state.playbackQueue, song],
-              libraryNotice: `“${song.title}” ditambahkan ke antrean`,
+              libraryNotice: `“${song.title}” added to queue`,
             };
           });
         },
@@ -656,7 +656,7 @@ export const usePlayerStore = create<PlayerStore>()(
               currentIndex: state.currentSong
                 ? Math.max(0, playbackQueue.findIndex((item) => item.id === state.currentSong?.id))
                 : 0,
-              libraryNotice: `“${song.title}” akan diputar berikutnya`,
+              libraryNotice: `“${song.title}” will play next`,
             };
           });
         },
@@ -666,7 +666,7 @@ export const usePlayerStore = create<PlayerStore>()(
             const song = state.playbackQueue.find((item) => item.id === songId);
             if (!song) return state;
             if (state.currentSong?.id === songId) {
-              return { libraryNotice: 'Lagu yang sedang diputar tidak dapat dikeluarkan' };
+              return { libraryNotice: 'The currently playing track cannot be removed' };
             }
             const playbackQueue = state.playbackQueue.filter((item) => item.id !== songId);
             return {
@@ -674,7 +674,7 @@ export const usePlayerStore = create<PlayerStore>()(
               currentIndex: state.currentSong
                 ? Math.max(0, playbackQueue.findIndex((item) => item.id === state.currentSong?.id))
                 : 0,
-              libraryNotice: `“${song.title}” dikeluarkan dari antrean`,
+              libraryNotice: `“${song.title}” removed from queue`,
             };
           });
         },
@@ -718,7 +718,7 @@ export const usePlayerStore = create<PlayerStore>()(
             return {
               playbackQueue: nextQueue,
               currentIndex: currentSongId ? nextQueue.findIndex((item) => item.id === currentSongId) : 0,
-              libraryNotice: 'Antrean berikutnya berhasil diacak',
+              libraryNotice: 'Upcoming queue has been shuffled',
             };
           });
         },
@@ -728,7 +728,7 @@ export const usePlayerStore = create<PlayerStore>()(
             const next = state.queueEndBehavior === 'repeat-queue' ? 'stop' : 'repeat-queue';
             return {
               queueEndBehavior: next,
-              libraryNotice: next === 'repeat-queue' ? 'Ulang antrean: Aktif' : 'Ulang antrean: Mati',
+              libraryNotice: next === 'repeat-queue' ? 'Repeat queue: On' : 'Repeat queue: Off',
             };
           });
         },
@@ -737,7 +737,7 @@ export const usePlayerStore = create<PlayerStore>()(
           set((state) => ({
             playbackQueue: state.currentSong ? [state.currentSong] : [],
             currentIndex: 0,
-            libraryNotice: 'Antrean dibersihkan',
+            libraryNotice: 'Queue cleared',
           }));
         },
 
@@ -768,7 +768,7 @@ export const usePlayerStore = create<PlayerStore>()(
               inputUrl,
               resourceType: resource.resourceType,
               status: 'fetching',
-              message: 'Mengambil metadata Spotify...',
+              message: 'Fetching Spotify metadata...',
               retryable: true,
               report: createSpotifyReport('Spotify', 0, false),
             },
@@ -792,11 +792,11 @@ export const usePlayerStore = create<PlayerStore>()(
                   inputUrl,
                   resourceType: data.resource_type,
                   status: 'error',
-                  message: 'Tidak ada lagu yang ditemukan pada link Spotify ini.',
+                  message: 'No tracks found in this Spotify link.',
                   retryable: true,
                   report,
                 },
-                libraryNotice: 'Tidak ada lagu yang ditemukan pada link Spotify ini.',
+                libraryNotice: 'No tracks found in this Spotify link.',
               });
               return;
             }
@@ -830,7 +830,7 @@ export const usePlayerStore = create<PlayerStore>()(
                 inputUrl,
                 resourceType: data.resource_type,
                 status: 'matching',
-                message: `Mencocokkan 0 dari ${tracks.length} lagu...`,
+                message: `Matching 0 of ${tracks.length} tracks...`,
                 retryable: true,
                 targetPlaylistId,
                 report,
@@ -960,7 +960,7 @@ export const usePlayerStore = create<PlayerStore>()(
                   inputUrl,
                   resourceType: data.resource_type,
                   status: 'matching',
-                  message: `Mencocokkan ${report.processed} dari ${report.total} lagu...`,
+                  message: `Matching ${report.processed} of ${report.total} tracks...`,
                   retryable: true,
                   targetPlaylistId,
                   report,
@@ -984,15 +984,15 @@ export const usePlayerStore = create<PlayerStore>()(
                 resourceType: data.resource_type,
                 status,
                 message: status === 'error'
-                  ? 'Tidak ada lagu Spotify yang berhasil dicocokkan.'
-                  : `${report.added} lagu ditambahkan${report.skipped ? `, ${report.skipped} dilewati` : ''}.`,
+                  ? 'No Spotify tracks could be matched.'
+                  : `${report.added} tracks added${report.skipped ? `, ${report.skipped} skipped` : ''}.`,
                 retryable: status === 'error',
                 targetPlaylistId,
                 report,
               },
               libraryNotice: status === 'error'
-                ? 'Tidak ada lagu Spotify yang dapat diimpor.'
-                : `Import Spotify selesai: ${report.added} lagu ditambahkan.`,
+                ? 'No Spotify tracks could be imported.'
+                : `Spotify import complete: ${report.added} tracks added.`,
             });
           } catch (error: unknown) {
             if (activeSpotifyImportRequestId !== requestId) return;
@@ -1025,7 +1025,7 @@ export const usePlayerStore = create<PlayerStore>()(
                 inputUrl,
                 kind: 'video',
                 status: 'error',
-                message: 'Link YouTube tidak valid atau belum didukung.',
+                message: 'Invalid or unsupported YouTube link.',
                 retryable: false,
               },
             });
@@ -1039,8 +1039,8 @@ export const usePlayerStore = create<PlayerStore>()(
               kind: resource.kind,
               status: resource.kind === 'playlist' ? 'importing' : 'resolving',
               message: resource.kind === 'playlist'
-                ? 'Membaca playlist YouTube…'
-                : 'Menyiapkan audio YouTube…',
+                ? 'Reading YouTube playlist…'
+                : 'Preparing YouTube audio…',
               retryable: false,
             },
           });
@@ -1097,16 +1097,16 @@ export const usePlayerStore = create<PlayerStore>()(
                     kind: 'video',
                     status: 'success',
                     message: existingSong
-                      ? `“${song.title}” sudah tersedia.`
-                      : `“${song.title}” berhasil diimpor.`,
+                      ? `“${song.title}” is already available.`
+                      : `“${song.title}” imported successfully.`,
                     retryable: false,
                     backgrounded: state.youtubeImportTask?.requestId === requestId
                       ? state.youtubeImportTask.backgrounded
                       : undefined,
                   },
                   libraryNotice: existingSong
-                    ? `“${song.title}” sudah tersedia`
-                    : `“${song.title}” berhasil diimpor`,
+                    ? `“${song.title}” is already available`
+                    : `“${song.title}” imported successfully`,
                 };
               });
               return;
@@ -1150,8 +1150,8 @@ export const usePlayerStore = create<PlayerStore>()(
 
               if (newEntries.length === 0) {
                 const message = existingPlaylist
-                  ? 'Playlist sudah tersedia.'
-                  : 'Tidak ada lagu yang dapat diimpor.';
+                  ? 'Playlist is already in your library.'
+                  : 'No tracks could be imported.';
                 return {
                   youtubeImportTask: {
                     requestId,
@@ -1220,16 +1220,16 @@ export const usePlayerStore = create<PlayerStore>()(
                   kind: 'playlist',
                   status: 'success',
                   message: existingPlaylist
-                    ? `${newEntries.length} lagu baru ditambahkan.`
-                    : `Playlist “${result.title}” berhasil diimpor.`,
+                    ? `${newEntries.length} new tracks added.`
+                    : `Playlist “${result.title}” imported successfully.`,
                   retryable: false,
                   backgrounded: activeTask?.backgrounded,
                   targetPlaylistId: playlistId,
                   report,
                 },
                 libraryNotice: existingPlaylist
-                  ? `${newEntries.length} lagu baru ditambahkan ke “${result.title}”`
-                  : `Playlist “${result.title}” berhasil diimpor`,
+                  ? `${newEntries.length} new tracks added to “${result.title}”`
+                  : `Playlist “${result.title}” imported successfully`,
               };
             });
           } catch (error) {
@@ -1244,11 +1244,11 @@ export const usePlayerStore = create<PlayerStore>()(
                 inputUrl,
                 kind: resource.kind,
                 status: mapped?.code === 'cancelled' ? 'cancelled' : 'error',
-                message: mapped?.message ?? 'Gagal memproses link YouTube.',
+                message: mapped?.message ?? 'Failed to process YouTube link.',
                 retryable: mapped?.retryable ?? true,
                 backgrounded: activeTask?.backgrounded,
               },
-              libraryNotice: mapped?.message ?? 'Gagal memproses link YouTube.',
+              libraryNotice: mapped?.message ?? 'Failed to process YouTube link.',
             });
           }
         },
@@ -1261,7 +1261,7 @@ export const usePlayerStore = create<PlayerStore>()(
             spotifyImportTask: {
               ...task,
               status: 'cancelled',
-              message: 'Import Spotify dibatalkan. Lagu yang sudah cocok tetap tersimpan.',
+              message: 'Spotify import cancelled. Matched tracks are kept.',
               retryable: true,
             },
           });
@@ -1293,7 +1293,7 @@ export const usePlayerStore = create<PlayerStore>()(
             youtubeImportTask: {
               ...task,
               status: 'cancelled',
-              message: 'Proses YouTube dibatalkan.',
+              message: 'YouTube import cancelled.',
               retryable: true,
             },
           });
@@ -1346,7 +1346,7 @@ export const usePlayerStore = create<PlayerStore>()(
             .filter((song) => !song.offline)
             .filter((song) => getSongDownloadVideoId(song) !== null);
           if (candidates.length === 0) {
-            set({ libraryNotice: 'Tidak ada lagu yang perlu diunduh.' });
+            set({ libraryNotice: 'No tracks need downloading.' });
             return;
           }
 
@@ -1359,7 +1359,7 @@ export const usePlayerStore = create<PlayerStore>()(
               processed: 0,
               total: queue.length,
               status: 'downloading',
-              message: `Mengunduh 0 dari ${queue.length} lagu…`,
+              message: `Downloading 0 of ${queue.length} tracks…`,
               retryable: false,
             },
           });
@@ -1395,7 +1395,7 @@ export const usePlayerStore = create<PlayerStore>()(
                   downloadTask: {
                     ...current.downloadTask,
                     currentSongId: item.songId,
-                    message: `Mengunduh “${item.title}”…`,
+                    message: `Downloading “${item.title}”…`,
                   },
                 }
               : current);
@@ -1438,7 +1438,7 @@ export const usePlayerStore = create<PlayerStore>()(
                     processed: current.downloadTask.processed + 1,
                     currentSongId: queue[index + 1]?.songId ?? null,
                     message: index + 1 < queue.length
-                      ? `Mengunduh ${index + 1} dari ${queue.length} lagu…`
+                      ? `Downloading ${index + 1} of ${queue.length} tracks…`
                       : current.downloadTask.message,
                   },
                 }
@@ -1458,10 +1458,10 @@ export const usePlayerStore = create<PlayerStore>()(
               total: queue.length,
               status,
               message: allFailed
-                ? 'Gagal mengunduh lagu.'
+                ? 'Failed to download tracks.'
                 : failedSongIds.length === 0
-                  ? `Berhasil mengunduh ${succeeded} lagu untuk diputar offline.`
-                  : `${succeeded} lagu berhasil diunduh, ${failedSongIds.length} gagal.`,
+                  ? `Successfully downloaded ${succeeded} track(s) for offline playback.`
+                  : `${succeeded} track(s) downloaded, ${failedSongIds.length} failed.`,
               retryable: failedSongIds.length > 0,
               report: {
                 succeeded,
@@ -1470,10 +1470,10 @@ export const usePlayerStore = create<PlayerStore>()(
               },
             },
             libraryNotice: allFailed
-              ? 'Gagal mengunduh lagu.'
+              ? 'Failed to download tracks.'
               : failedSongIds.length === 0
-                ? `${succeeded} lagu tersedia untuk diputar offline.`
-                : `${failedSongIds.length} lagu gagal diunduh.`,
+                ? `${succeeded} track(s) available for offline playback.`
+                : `${failedSongIds.length} track(s) failed to download.`,
           });
         },
 
@@ -1485,7 +1485,7 @@ export const usePlayerStore = create<PlayerStore>()(
             downloadTask: {
               ...task,
               status: 'cancelled',
-              message: 'Unduhan dibatalkan. Lagu yang selesai tetap tersimpan.',
+              message: 'Download cancelled. Completed tracks are kept.',
               retryable: true,
             },
           });
@@ -1527,7 +1527,7 @@ export const usePlayerStore = create<PlayerStore>()(
             });
           } catch (error) {
             console.error(`Gagal menghapus unduhan ${song.title}:`, error);
-            set({ libraryNotice: `Gagal menghapus unduhan “${song.title}”.` });
+            set({ libraryNotice: `Failed to remove download “${song.title}”.` });
             return;
           }
           set((current) => {
@@ -1542,7 +1542,7 @@ export const usePlayerStore = create<PlayerStore>()(
                 songs: playlist.songs.map(updateSong),
               })),
               topSongs: sortTopSongs(queue),
-              libraryNotice: `Unduhan “${song.title}” dihapus.`,
+              libraryNotice: `Download “${song.title}” removed.`,
             };
           });
         },
@@ -1550,14 +1550,14 @@ export const usePlayerStore = create<PlayerStore>()(
         addLocalSong: async (file: File) => {
           const rejection = getLocalAudioRejection(file);
           if (rejection) {
-            set({ libraryNotice: `“${file.name}” ditolak: ${rejection}` });
+            set({ libraryNotice: `“${file.name}” rejected: ${rejection}` });
             return;
           }
           let savedAudio;
           try {
             savedAudio = await saveAudioPermanently(file);
           } catch {
-            set({ libraryNotice: `“${file.name}” bukan file audio yang valid` });
+            set({ libraryNotice: `“${file.name}” is not a valid audio file` });
             return;
           }
           const existingSong = get().queue.find((song) =>
@@ -1582,7 +1582,7 @@ export const usePlayerStore = create<PlayerStore>()(
               playbackStatus: 'idle',
               selectionSerial: state.selectionSerial + 1,
               selectionReason: 'manual',
-              libraryNotice: `“${existingSong.title}” sudah ada di library`,
+              libraryNotice: `“${existingSong.title}” is already in your library`,
             }));
             return;
           }
@@ -1848,7 +1848,7 @@ export const usePlayerStore = create<PlayerStore>()(
               playlists: state.playlists.map((item) =>
                 item.id === playlistId ? { ...item, songs, coverUrl: songs[0]?.coverUrl ?? item.coverUrl } : item
               ),
-              libraryNotice: `${toAdd.length} lagu ditambahkan ke playlist “${playlist.name}”`,
+              libraryNotice: `${toAdd.length} track(s) added to playlist “${playlist.name}”`,
             };
           });
         },
@@ -1970,8 +1970,11 @@ export const usePlayerStore = create<PlayerStore>()(
           const targetSongs = state.queue.filter((item) => targetIds.has(item.id));
           if (targetSongs.length === 0) return;
 
-          // Delete managed local files and downloaded offline files
+          // Delete managed local files and downloaded offline files.
+          // Songs whose file deletion fails stay in the library (no partial state / orphaned files).
+          const failedIds = new Set<string>();
           for (const song of targetSongs) {
+            let songFailed = false;
             if (isLocalSong(song) && song.source.managed) {
               try {
                 const localSource = song.source;
@@ -1987,6 +1990,7 @@ export const usePlayerStore = create<PlayerStore>()(
                   coverPath: sharedCover ? null : localSource.coverPath ?? null,
                 });
               } catch (err) {
+                songFailed = true;
                 console.error(`Failed to delete local files for ${song.title}:`, err);
               }
             }
@@ -2005,15 +2009,19 @@ export const usePlayerStore = create<PlayerStore>()(
                   coverPath: sharedOfflineCover ? null : offline.coverPath ?? null,
                 });
               } catch (err) {
+                songFailed = true;
                 console.error(`Failed to delete offline files for ${song.title}:`, err);
               }
             }
+            if (songFailed) failedIds.add(song.id);
           }
+          const removedIds = new Set([...targetIds].filter((id) => !failedIds.has(id)));
+          const removedCount = targetSongs.length - failedIds.size;
 
           set((currentState) => {
-            const queue = currentState.queue.filter((item) => !targetIds.has(item.id));
-            const playbackQueue = currentState.playbackQueue.filter((item) => !targetIds.has(item.id));
-            const deletedCurrent = currentState.currentSong && targetIds.has(currentState.currentSong.id);
+            const queue = currentState.queue.filter((item) => !removedIds.has(item.id));
+            const playbackQueue = currentState.playbackQueue.filter((item) => !removedIds.has(item.id));
+            const deletedCurrent = currentState.currentSong && removedIds.has(currentState.currentSong.id);
             const currentSong = deletedCurrent
               ? playbackQueue[Math.min(currentState.currentIndex, Math.max(0, playbackQueue.length - 1))] ?? null
               : currentState.currentSong;
@@ -2037,7 +2045,7 @@ export const usePlayerStore = create<PlayerStore>()(
                 : currentState.selectionSerial,
               selectionReason: deletedCurrent ? 'manual' : currentState.selectionReason,
               playlists: currentState.playlists.map((playlist) => {
-                const songs = playlist.songs.filter((item) => !targetIds.has(item.id));
+                const songs = playlist.songs.filter((item) => !removedIds.has(item.id));
                 return {
                   ...playlist,
                   songs,
@@ -2045,7 +2053,9 @@ export const usePlayerStore = create<PlayerStore>()(
                 };
               }),
               topSongs: sortTopSongs(queue),
-              libraryNotice: `${targetSongs.length} lagu berhasil dihapus`,
+              libraryNotice: failedIds.size > 0
+                ? `${removedCount} track(s) deleted, ${failedIds.size} failed`
+                : `${removedCount} track(s) deleted`,
             };
           });
         },
@@ -2094,7 +2104,7 @@ export const usePlayerStore = create<PlayerStore>()(
               playbackStatus: removedCurrentSong ? 'idle' : state.playbackStatus,
               isPlaying: removedCurrentSong ? false : state.isPlaying,
               playbackError: removedCurrentSong && !currentSong
-                ? { songId, message: 'Tidak ada lagu yang dapat diputar.', retryable: false }
+                ? { songId, message: 'No playable tracks available.', retryable: false }
                 : state.playbackError,
               selectionSerial: removedCurrentSong ? state.selectionSerial + 1 : state.selectionSerial,
               selectionReason: removedCurrentSong ? 'auto_skip' : state.selectionReason,

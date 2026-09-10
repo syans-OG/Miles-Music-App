@@ -473,7 +473,7 @@ describe('AudioService lazy YouTube playback', () => {
     expect(usePlayerStore.getState().playlists[0].songs).toHaveLength(0);
     expect(usePlayerStore.getState().currentSong).toBeNull();
     expect(usePlayerStore.getState().playbackIntent).toBe(false);
-    expect(usePlayerStore.getState().playbackError?.message).toBe('Tidak ada lagu yang dapat diputar.');
+    expect(usePlayerStore.getState().playbackError?.message).toBe('No playable tracks available.');
     expect(usePlayerStore.getState().playbackError?.retryable).toBe(false);
     expect(window.localStorage.getItem('aura_music_player_storage')).not.toContain('aaaaaaaaaaa');
     expect(window.localStorage.getItem('aura_music_player_storage')).not.toContain('bbbbbbbbbbb');
@@ -552,6 +552,10 @@ describe('AudioService lazy YouTube playback', () => {
     audio.emit('timeupdate');
     audio.currentTime = 2;
     audio.emit('timeupdate');
+
+    // Pause flushes accumulated listened seconds
+    audio.emit('pause');
+    await flush();
 
     const updatedSongA = usePlayerStore.getState().queue.find((s) => s.id === songA.id);
     expect(updatedSongA?.listenedSeconds).toBeGreaterThanOrEqual(11);
@@ -690,7 +694,7 @@ describe('AudioService lazy YouTube playback', () => {
     expect(usePlayerStore.getState().playbackStatus).toBe('error');
     expect(usePlayerStore.getState().playbackError?.retryable).toBe(true);
     expect(usePlayerStore.getState().playbackError?.message).toBe(
-      'Tidak dapat menemukan padanan lagu ini di YouTube.',
+      'Could not find a matching video for this song on YouTube.',
     );
   });
 });

@@ -227,8 +227,8 @@ const PlaylistSortableRow: React.FC<PlaylistSortableRowProps> = ({ song, index, 
         {...listeners}
         onClick={(e) => e.stopPropagation()}
         className="cursor-grab rounded p-0.5 text-slate-600 hover:bg-white/10 hover:text-slate-300 active:cursor-grabbing"
-        title="Seret untuk mengubah urutan"
-        aria-label={`Atur ulang ${song.title}`}
+        title="Drag to reorder"
+        aria-label={`Reorder ${song.title}`}
       >
         <GripVertical className="h-3.5 w-3.5" />
       </button>
@@ -292,8 +292,8 @@ const QueueSortableRow: React.FC<QueueSortableRowProps> = ({ song, index, isCurr
           {...listeners}
           onClick={(e) => e.stopPropagation()}
           className="cursor-grab rounded p-1 text-slate-600 hover:bg-white/10 hover:text-slate-300 active:cursor-grabbing"
-          title="Seret untuk mengubah urutan"
-          aria-label={`Atur ulang ${song.title}`}
+          title="Drag to reorder"
+          aria-label={`Reorder ${song.title}`}
         >
           <GripVertical className="h-3 w-3" />
         </button>
@@ -484,7 +484,7 @@ const CdActionMenu: React.FC<CdActionMenuProps> = ({
       {song.offline || getSongDownloadVideoId(song) ? (
         song.offline ? (
           <button role="menuitem" type="button" onClick={() => runAction(onRemoveOffline)} className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-[10px] font-semibold text-amber-300 hover:bg-amber-400/10 focus-visible:bg-amber-400/10 focus-visible:outline-none">
-            <Trash2 className="h-3 w-3" /> Hapus Unduhan
+            <Trash2 className="h-3 w-3" /> Remove Download
           </button>
         ) : (
           <button role="menuitem" type="button" onClick={() => runAction(onDownload)} className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-[10px] font-semibold text-amber-200 hover:bg-amber-400/10 focus-visible:bg-amber-400/10 focus-visible:outline-none">

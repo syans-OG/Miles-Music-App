@@ -110,7 +110,7 @@ describe('YouTube import UX state', () => {
 
     await usePlayerStore.getState().importYoutubeUrl(playlistUrl);
     expect(usePlayerStore.getState().playlists[0].songs).toHaveLength(3);
-    expect(usePlayerStore.getState().youtubeImportTask?.message).toBe('Playlist sudah tersedia.');
+    expect(usePlayerStore.getState().youtubeImportTask?.message).toBe('Playlist is already in your library.');
     expect(usePlayerStore.getState().youtubeImportTask?.report).toMatchObject({ added: 0, duplicates: 3 });
   });
 

@@ -57,15 +57,15 @@ export const DownloadActivity: React.FC = () => {
             <div className="min-w-0 flex-1">
               <p className="truncate text-[11.5px] font-bold text-white">
                 {downloadTask.total > 1
-                  ? `Mengunduh ${Math.min(downloadTask.processed + 1, downloadTask.total)} dari ${downloadTask.total}`
-                  : 'Mengunduh lagu'}
+                  ? `Downloading ${Math.min(downloadTask.processed + 1, downloadTask.total)} of ${downloadTask.total}`
+                  : 'Downloading track'}
               </p>
               {currentItem && (
                 <p className="truncate text-[10px] text-slate-400">{currentItem.title}</p>
               )}
             </div>
             <button type="button" onClick={() => void cancelDownloadTask()} className="download-activity-btn">
-              Batal
+              Cancel
             </button>
           </>
         ) : status === 'success' ? (
@@ -75,13 +75,13 @@ export const DownloadActivity: React.FC = () => {
               <p className="truncate text-[11.5px] font-bold text-white">{downloadTask.message}</p>
               {downloadTask.report && downloadTask.report.failed > 0 && (
                 <p className="truncate text-[10px] text-rose-300">
-                  {downloadTask.report.failed} lagu gagal diunduh.
+                  {downloadTask.report.failed} track(s) failed to download.
                 </p>
               )}
             </div>
             {retryable && downloadTask.report && downloadTask.report.failed > 0 && (
               <button type="button" onClick={() => void retryDownloadTask()} className="download-activity-btn primary">
-                <RotateCcw className="h-3 w-3" /> Coba Lagi
+                <RotateCcw className="h-3 w-3" /> Retry
               </button>
             )}
           </>
@@ -91,7 +91,7 @@ export const DownloadActivity: React.FC = () => {
             <p className="min-w-0 flex-1 truncate text-[11.5px] font-bold text-white">{downloadTask.message}</p>
             {retryable && (
               <button type="button" onClick={() => void retryDownloadTask()} className="download-activity-btn primary">
-                Coba Lagi
+                Retry
               </button>
             )}
           </>
@@ -104,7 +104,7 @@ export const DownloadActivity: React.FC = () => {
 
         {status === 'error' || status === 'cancelled' ? (
           <button type="button" onClick={dismissDownloadTask} className="download-activity-btn">
-            Tutup
+            Close
           </button>
         ) : null}
       </div>

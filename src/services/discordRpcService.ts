@@ -24,15 +24,15 @@ export const syncDiscordActivity = async (force = false) => {
           enabled: false,
           clientId,
         });
-      } catch {
-        // Silently handle if Discord IPC socket is not open
+      } catch (error) {
+        console.debug('[DiscordRPC] activity disable update failed:', error);
       }
     }
     return;
   }
 
   const title = currentSong ? currentSong.title : 'Miles Music Player';
-  const artist = currentSong ? currentSong.artist : 'Mendengarkan Musik';
+  const artist = currentSong ? currentSong.artist : 'Listening to Music';
   const rawCover = (currentSong?.offline?.remoteCoverUrl || currentSong?.coverUrl) ?? '';
   const isPublicWebCover =
     (rawCover.startsWith('http://') || rawCover.startsWith('https://')) &&
@@ -58,7 +58,7 @@ export const syncDiscordActivity = async (force = false) => {
       enabled: true,
       clientId,
     });
-  } catch {
-    // Silently handle if Discord IPC socket is not open
+  } catch (error) {
+    console.debug('[DiscordRPC] activity update failed:', error);
   }
 };

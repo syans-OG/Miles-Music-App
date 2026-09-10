@@ -174,7 +174,12 @@ impl Slot {
             if state.active.as_ref().is_some_and(|active| {
                 priority < active.priority || (preempt_equal && active.priority == priority)
             }) {
-                state.active.as_ref().unwrap().cancellation.cancel();
+                state
+                    .active
+                    .as_ref()
+                    .expect("active verified with is_some_and above")
+                    .cancellation
+                    .cancel();
             }
             if state.active.is_none() && is_next_waiter(&state, request_id) {
                 state.waiting.remove(&request_id);
