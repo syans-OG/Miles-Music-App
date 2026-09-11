@@ -4,7 +4,7 @@ import { useVirtualizer } from '@tanstack/react-virtual';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core';
 import { SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { AlertTriangle, ArrowLeft, Check, Clock, Disc, Download, Flame, FolderHeart, FolderPlus, GripVertical, Heart, ListChecks, ListMusic, ListOrdered, MoreHorizontal, Pencil, Play, Plus, Repeat, Search, Settings, Shuffle, Sparkles, Trash2, X } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, Check, Clock, Disc, Download, Flame, FolderPlus, GripVertical, Heart, ListChecks, ListMusic, ListOrdered, MoreHorizontal, Pencil, Play, Plus, Repeat, Search, Settings, Shuffle, Sparkles, Trash2, X } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
 import { usePlayerStore, getSongDownloadVideoId } from '../stores/usePlayerStore';
 import { Playlist, Song } from '../types/player';
@@ -36,29 +36,29 @@ const EditSongDialog: React.FC<EditSongDialogProps> = ({ song, onClose, onSave }
 
   return (
     <div className="absolute inset-0 z-[70] flex items-center justify-center bg-black/75 p-6 backdrop-blur-sm">
-      <form onSubmit={handleSubmit} className="w-full rounded-2xl border border-white/10 bg-[#11141c] p-4 shadow-2xl">
+      <form onSubmit={handleSubmit} className="w-full rounded-2xl border border-th-line bg-th-elevated p-4 shadow-2xl">
         <div className="mb-3 flex items-center justify-between">
-          <h4 className="text-sm font-bold text-white">Edit Song Info</h4>
-          <button type="button" onClick={onClose} className="rounded-lg p-1 text-slate-400 hover:bg-white/10 hover:text-white">
+          <h4 className="text-sm font-bold text-th-primary">Edit Song Info</h4>
+          <button type="button" onClick={onClose} className="rounded-lg p-1 text-slate-400 hover:bg-th-soft-strong hover:text-th-primary">
             <X className="h-4 w-4" />
           </button>
         </div>
         <div className="space-y-2.5">
           <div>
             <label className="text-[10px] font-semibold text-slate-400">Title</label>
-            <input value={title} onChange={(e) => setTitle(e.target.value)} className="mt-1 w-full rounded-xl border border-white/10 bg-white/5 px-2.5 py-1.5 text-xs text-white outline-none focus:border-amber-400" autoFocus />
+            <input value={title} onChange={(e) => setTitle(e.target.value)} className="mt-1 w-full rounded-xl border border-th-line bg-th-soft px-2.5 py-1.5 text-xs text-th-primary outline-none focus:border-amber-400" autoFocus />
           </div>
           <div>
             <label className="text-[10px] font-semibold text-slate-400">Artist</label>
-            <input value={artist} onChange={(e) => setArtist(e.target.value)} className="mt-1 w-full rounded-xl border border-white/10 bg-white/5 px-2.5 py-1.5 text-xs text-white outline-none focus:border-amber-400" />
+            <input value={artist} onChange={(e) => setArtist(e.target.value)} className="mt-1 w-full rounded-xl border border-th-line bg-th-soft px-2.5 py-1.5 text-xs text-th-primary outline-none focus:border-amber-400" />
           </div>
           <div>
             <label className="text-[10px] font-semibold text-slate-400">Album</label>
-            <input value={album} onChange={(e) => setAlbum(e.target.value)} className="mt-1 w-full rounded-xl border border-white/10 bg-white/5 px-2.5 py-1.5 text-xs text-white outline-none focus:border-amber-400" />
+            <input value={album} onChange={(e) => setAlbum(e.target.value)} className="mt-1 w-full rounded-xl border border-th-line bg-th-soft px-2.5 py-1.5 text-xs text-th-primary outline-none focus:border-amber-400" />
           </div>
         </div>
         <div className="mt-4 flex justify-end gap-2">
-          <button type="button" onClick={onClose} className="rounded-xl px-3 py-1.5 text-xs font-semibold text-slate-300 hover:bg-white/10">Cancel</button>
+          <button type="button" onClick={onClose} className="rounded-xl px-3 py-1.5 text-xs font-semibold text-slate-300 hover:bg-th-soft-strong">Cancel</button>
           <button type="submit" className="rounded-xl bg-amber-400 px-3.5 py-1.5 text-xs font-bold text-dark-900 shadow-md hover:bg-amber-300">Save</button>
         </div>
       </form>
@@ -82,18 +82,18 @@ const RenamePlaylistDialog: React.FC<RenamePlaylistDialogProps> = ({ playlist, o
 
   return (
     <div className="absolute inset-0 z-[70] flex items-center justify-center bg-black/75 p-6 backdrop-blur-sm">
-      <form onSubmit={handleSubmit} className="w-full rounded-2xl border border-white/10 bg-[#11141c] p-4 shadow-2xl">
+      <form onSubmit={handleSubmit} className="w-full rounded-2xl border border-th-line bg-th-elevated p-4 shadow-2xl">
         <div className="mb-3 flex items-center justify-between">
-          <h4 className="text-sm font-bold text-white">Rename Playlist</h4>
-          <button type="button" onClick={onClose} className="rounded-lg p-1 text-slate-400 hover:bg-white/10 hover:text-white"><X className="h-4 w-4" /></button>
+          <h4 className="text-sm font-bold text-th-primary">Rename Playlist</h4>
+          <button type="button" onClick={onClose} className="rounded-lg p-1 text-slate-400 hover:bg-th-soft-strong hover:text-th-primary"><X className="h-4 w-4" /></button>
         </div>
         <div>
           <label className="text-[10px] font-semibold text-slate-400">Playlist Name</label>
-          <input value={name} onChange={(e) => setName(e.target.value)} maxLength={60} className="mt-1 w-full rounded-xl border border-white/10 bg-white/5 px-2.5 py-1.5 text-xs text-white outline-none focus:border-indigo-400" autoFocus />
+          <input value={name} onChange={(e) => setName(e.target.value)} maxLength={60} className="mt-1 w-full rounded-xl border border-th-line bg-th-soft px-2.5 py-1.5 text-xs text-th-primary outline-none focus:border-th-accent" autoFocus />
         </div>
         <div className="mt-4 flex justify-end gap-2">
-          <button type="button" onClick={onClose} className="rounded-xl px-3 py-1.5 text-xs font-semibold text-slate-300 hover:bg-white/10">Cancel</button>
-          <button type="submit" disabled={!name.trim()} className="rounded-xl bg-indigo-500 px-3.5 py-1.5 text-xs font-bold text-white shadow-md hover:bg-indigo-400 disabled:opacity-40">Save</button>
+          <button type="button" onClick={onClose} className="rounded-xl px-3 py-1.5 text-xs font-semibold text-slate-300 hover:bg-th-soft-strong">Cancel</button>
+          <button type="submit" disabled={!name.trim()} className="rounded-xl bg-th-accent px-3.5 py-1.5 text-xs font-bold text-th-accent-ink shadow-md hover:bg-th-accent-hover disabled:opacity-40">Save</button>
         </div>
       </form>
     </div>
@@ -115,18 +115,18 @@ const CreatePlaylistDialog: React.FC<CreatePlaylistDialogProps> = ({ onClose, on
 
   return (
     <div className="absolute inset-0 z-[70] flex items-center justify-center bg-black/75 p-6 backdrop-blur-sm">
-      <form onSubmit={handleSubmit} className="w-full rounded-2xl border border-white/10 bg-[#11141c] p-4 shadow-2xl">
+      <form onSubmit={handleSubmit} className="w-full rounded-2xl border border-th-line bg-th-elevated p-4 shadow-2xl">
         <div className="mb-3 flex items-center justify-between">
-          <h4 className="text-sm font-bold text-white">Create Playlist</h4>
-          <button type="button" onClick={onClose} className="rounded-lg p-1 text-slate-400 hover:bg-white/10 hover:text-white"><X className="h-4 w-4" /></button>
+          <h4 className="text-sm font-bold text-th-primary">Create Playlist</h4>
+          <button type="button" onClick={onClose} className="rounded-lg p-1 text-slate-400 hover:bg-th-soft-strong hover:text-th-primary"><X className="h-4 w-4" /></button>
         </div>
         <div>
           <label className="text-[10px] font-semibold text-slate-400">Playlist Name</label>
-          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="My Favorite Jams" className="mt-1 w-full rounded-xl border border-white/10 bg-white/5 px-2.5 py-1.5 text-xs text-white outline-none focus:border-indigo-400" autoFocus />
+          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="My Favorite Jams" className="mt-1 w-full rounded-xl border border-th-line bg-th-soft px-2.5 py-1.5 text-xs text-th-primary outline-none focus:border-th-accent" autoFocus />
         </div>
         <div className="mt-4 flex justify-end gap-2">
-          <button type="button" onClick={onClose} className="rounded-xl px-3 py-1.5 text-xs font-semibold text-slate-300 hover:bg-white/10">Cancel</button>
-          <button type="submit" className="rounded-xl bg-indigo-500 px-3.5 py-1.5 text-xs font-bold text-white shadow-md hover:bg-indigo-400">Create</button>
+          <button type="button" onClick={onClose} className="rounded-xl px-3 py-1.5 text-xs font-semibold text-slate-300 hover:bg-th-soft-strong">Cancel</button>
+          <button type="submit" className="rounded-xl bg-th-accent px-3.5 py-1.5 text-xs font-bold text-th-accent-ink shadow-md hover:bg-th-accent-hover">Create</button>
         </div>
       </form>
     </div>
@@ -143,26 +143,26 @@ interface SongPlaylistDialogProps {
 
 const SongPlaylistDialog: React.FC<SongPlaylistDialogProps> = ({ song, playlists, onToggle, onCreate, onClose }) => (
   <div className="absolute inset-0 z-[70] flex items-center justify-center bg-black/75 p-6 backdrop-blur-sm">
-    <div className="w-full rounded-2xl border border-white/10 bg-[#11141c] p-4 shadow-2xl">
+    <div className="w-full rounded-2xl border border-th-line bg-th-elevated p-4 shadow-2xl">
       <div className="mb-3 flex items-center gap-3">
         <img src={getDisplayCoverUrl(song.coverUrl, 96)} onError={handleCoverImageError} alt="" loading="lazy" decoding="async" className="h-10 w-10 rounded-full object-cover" />
-        <div className="min-w-0 flex-1"><h4 className="truncate text-sm font-bold text-white">Add to Playlist</h4><p className="truncate text-[10px] text-slate-400">{song.title}</p></div>
-        <button type="button" onClick={onClose} className="rounded-lg p-1.5 text-slate-400 hover:bg-white/10 hover:text-white"><X className="h-4 w-4" /></button>
+        <div className="min-w-0 flex-1"><h4 className="truncate text-sm font-bold text-th-primary">Add to Playlist</h4><p className="truncate text-[10px] text-slate-400">{song.title}</p></div>
+        <button type="button" onClick={onClose} className="rounded-lg p-1.5 text-slate-400 hover:bg-th-soft-strong hover:text-th-primary"><X className="h-4 w-4" /></button>
       </div>
       <div className="max-h-[190px] space-y-1 overflow-y-auto pr-1">
         {playlists.map((playlist) => {
           const included = playlist.songs.some((item) => item.id === song.id);
           return (
-            <button key={playlist.id} type="button" onClick={() => onToggle(playlist.id)} className="flex w-full items-center gap-2.5 rounded-xl border border-white/5 bg-white/5 p-2 text-left hover:bg-white/10">
+            <button key={playlist.id} type="button" onClick={() => onToggle(playlist.id)} className="flex w-full items-center gap-2.5 rounded-xl border border-th-line bg-th-soft p-2 text-left hover:bg-th-soft-strong">
               <img src={getDisplayCoverUrl(playlist.songs[0]?.coverUrl || playlist.coverUrl, 96)} onError={handleCoverImageError} alt="" loading="lazy" decoding="async" className="h-8 w-8 rounded-lg object-cover" />
-              <span className="min-w-0 flex-1 truncate text-[11px] font-semibold text-white">{playlist.name}</span>
-              <span className={`flex h-5 w-5 items-center justify-center rounded-md border ${included ? 'border-indigo-300 bg-indigo-400 text-dark-900' : 'border-white/20 text-transparent'}`}><Check className="h-3 w-3" /></span>
+              <span className="min-w-0 flex-1 truncate text-[11px] font-semibold text-th-primary">{playlist.name}</span>
+              <span className={`flex h-5 w-5 items-center justify-center rounded-md border ${included ? 'border-th-accent bg-th-accent text-th-accent-ink' : 'border-th-line-strong text-transparent'}`}><Check className="h-3 w-3" /></span>
             </button>
           );
         })}
         {playlists.length === 0 && <p className="py-5 text-center text-[11px] text-slate-500">No playlists created yet.</p>}
       </div>
-      <button type="button" onClick={onCreate} className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-indigo-400/30 py-2 text-[11px] font-semibold text-indigo-300 hover:bg-indigo-400/10"><Plus className="h-3.5 w-3.5" /> New Playlist</button>
+      <button type="button" onClick={onCreate} className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-amber-400/30 py-2 text-[11px] font-semibold text-th-accent hover:bg-amber-400/10"><Plus className="h-3.5 w-3.5" /> New Playlist</button>
     </div>
   </div>
 );
@@ -177,23 +177,23 @@ interface BatchAddToPlaylistDialogProps {
 
 const BatchAddToPlaylistDialog: React.FC<BatchAddToPlaylistDialogProps> = ({ count, playlists, onSelect, onCreate, onClose }) => (
   <div className="absolute inset-0 z-[70] flex items-center justify-center bg-black/75 p-6 backdrop-blur-sm">
-    <div className="w-full rounded-2xl border border-white/10 bg-[#11141c] p-4 shadow-2xl">
+    <div className="w-full rounded-2xl border border-th-line bg-th-elevated p-4 shadow-2xl">
       <div className="mb-3 flex items-center justify-between">
-        <h4 className="text-sm font-bold text-white">Add to Playlist</h4>
-        <button type="button" onClick={onClose} className="rounded-lg p-1.5 text-slate-400 hover:bg-white/10 hover:text-white"><X className="h-4 w-4" /></button>
+        <h4 className="text-sm font-bold text-th-primary">Add to Playlist</h4>
+        <button type="button" onClick={onClose} className="rounded-lg p-1.5 text-slate-400 hover:bg-th-soft-strong hover:text-th-primary"><X className="h-4 w-4" /></button>
       </div>
       <p className="mb-2 text-[10px] text-slate-400">Add {count} selected songs to a playlist (existing songs are skipped).</p>
       <div className="max-h-[190px] space-y-1 overflow-y-auto pr-1">
         {playlists.map((playlist) => (
-          <button key={playlist.id} type="button" onClick={() => onSelect(playlist.id)} className="flex w-full items-center gap-2.5 rounded-xl border border-white/5 bg-white/5 p-2 text-left hover:bg-white/10">
+          <button key={playlist.id} type="button" onClick={() => onSelect(playlist.id)} className="flex w-full items-center gap-2.5 rounded-xl border border-th-line bg-th-soft p-2 text-left hover:bg-th-soft-strong">
             <img src={getDisplayCoverUrl(playlist.songs[0]?.coverUrl || playlist.coverUrl, 96)} onError={handleCoverImageError} alt="" loading="lazy" decoding="async" className="h-8 w-8 rounded-lg object-cover" />
-            <span className="min-w-0 flex-1 truncate text-[11px] font-semibold text-white">{playlist.name}</span>
+            <span className="min-w-0 flex-1 truncate text-[11px] font-semibold text-th-primary">{playlist.name}</span>
             <span className="text-[10px] tabular-nums text-slate-500">{playlist.songs.length} songs</span>
           </button>
         ))}
         {playlists.length === 0 && <p className="py-5 text-center text-[11px] text-slate-500">No playlists created yet.</p>}
       </div>
-      <button type="button" onClick={onCreate} className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-indigo-400/30 py-2 text-[11px] font-semibold text-indigo-300 hover:bg-indigo-400/10"><Plus className="h-3.5 w-3.5" /> New Playlist</button>
+      <button type="button" onClick={onCreate} className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-amber-400/30 py-2 text-[11px] font-semibold text-th-accent hover:bg-amber-400/10"><Plus className="h-3.5 w-3.5" /> New Playlist</button>
     </div>
   </div>
 );
@@ -217,8 +217,8 @@ const PlaylistSortableRow: React.FC<PlaylistSortableRowProps> = ({ song, index, 
         isDragging ? 'z-10 opacity-30' : ''
       } ${
         isCurrent
-          ? 'border-indigo-400/40 bg-indigo-400/15 font-semibold'
-          : 'border-white/5 bg-white/[0.03] hover:border-white/10 hover:bg-white/[0.07]'
+          ? 'border-amber-400/40 bg-amber-400/15 font-semibold'
+          : 'border-th-line bg-th-soft hover:border-th-line hover:bg-th-soft-strong'
       }`}
     >
       <button
@@ -226,13 +226,13 @@ const PlaylistSortableRow: React.FC<PlaylistSortableRowProps> = ({ song, index, 
         {...attributes}
         {...listeners}
         onClick={(e) => e.stopPropagation()}
-        className="cursor-grab rounded p-0.5 text-slate-600 hover:bg-white/10 hover:text-slate-300 active:cursor-grabbing"
+        className="cursor-grab rounded p-0.5 text-slate-600 hover:bg-th-soft-strong hover:text-slate-300 active:cursor-grabbing"
         title="Drag to reorder"
         aria-label={`Reorder ${song.title}`}
       >
         <GripVertical className="h-3.5 w-3.5" />
       </button>
-      <span className={`w-4 text-center font-mono text-[9px] ${isCurrent ? 'font-bold text-indigo-300' : 'text-slate-500'}`}>
+      <span className={`w-4 text-center font-mono text-[9px] ${isCurrent ? 'font-bold text-th-accent' : 'text-slate-500'}`}>
         {isCurrent ? '▶' : index + 1}
       </span>
       <img
@@ -244,7 +244,7 @@ const PlaylistSortableRow: React.FC<PlaylistSortableRowProps> = ({ song, index, 
         className="h-8 w-8 flex-shrink-0 rounded-lg object-cover"
       />
       <div className="min-w-0 flex-1">
-        <p className={`truncate text-[11px] ${isCurrent ? 'text-indigo-200' : 'text-white'}`}>
+        <p className={`truncate text-[11px] ${isCurrent ? 'text-th-accent' : 'text-th-primary'}`}>
           {song.title}
         </p>
         <p className="truncate text-[9px] text-slate-500">{song.artist}</p>
@@ -255,7 +255,7 @@ const PlaylistSortableRow: React.FC<PlaylistSortableRowProps> = ({ song, index, 
           e.stopPropagation();
           onRemove();
         }}
-        className="rounded p-1 text-slate-500 opacity-0 transition-opacity hover:bg-rose-500/20 hover:text-rose-300 group-hover/song:opacity-100"
+        className="rounded p-1 text-slate-500 opacity-0 transition-opacity hover:bg-rose-500/20 hover:text-th-err group-hover/song:opacity-100"
         title="Remove from playlist"
       >
         <X className="h-3.5 w-3.5" />
@@ -284,23 +284,23 @@ const QueueSortableRow: React.FC<QueueSortableRowProps> = ({ song, index, isCurr
         style={{ transform: CSS.Transform.toString(transform), transition }}
         className={`group/queue flex cursor-pointer items-center gap-2 rounded-xl border p-1.5 transition-colors ${
           isDragging ? 'z-10 opacity-30' : ''
-        } ${isCurrent ? 'border-emerald-400/30 bg-emerald-400/10' : 'border-transparent bg-white/[0.04] hover:bg-white/[0.08]'}`}
+        } ${isCurrent ? 'border-emerald-400/30 bg-emerald-400/10' : 'border-transparent bg-th-soft hover:bg-th-soft-strong'}`}
       >
         <button
           type="button"
           {...attributes}
           {...listeners}
           onClick={(e) => e.stopPropagation()}
-          className="cursor-grab rounded p-1 text-slate-600 hover:bg-white/10 hover:text-slate-300 active:cursor-grabbing"
+          className="cursor-grab rounded p-1 text-slate-600 hover:bg-th-soft-strong hover:text-slate-300 active:cursor-grabbing"
           title="Drag to reorder"
           aria-label={`Reorder ${song.title}`}
         >
           <GripVertical className="h-3 w-3" />
         </button>
-        <span className={`w-4 text-center text-[9px] font-mono ${isCurrent ? 'text-emerald-300' : 'text-slate-600'}`}>{isCurrent ? '▶' : index + 1}</span>
+        <span className={`w-4 text-center text-[9px] font-mono ${isCurrent ? 'text-th-np' : 'text-slate-600'}`}>{isCurrent ? '▶' : index + 1}</span>
         <img src={getDisplayCoverUrl(song.coverUrl, 96)} onError={handleCoverImageError} alt="" loading="lazy" decoding="async" className="h-8 w-8 flex-shrink-0 rounded-lg object-cover" />
-        <div className="min-w-0 flex-1"><p className={`truncate text-[11px] font-semibold ${isCurrent ? 'text-emerald-200' : 'text-white'}`}>{song.title}</p><p className="truncate text-[9px] text-slate-500">{song.artist}</p></div>
-        <button type="button" onClick={(e) => { e.stopPropagation(); onRemove(); }} disabled={isCurrent} className="rounded p-1 text-slate-500 hover:bg-rose-500/10 hover:text-rose-300 disabled:cursor-not-allowed disabled:opacity-20" title={isCurrent ? 'Now playing' : 'Remove'}><X className="h-3 w-3" /></button>
+        <div className="min-w-0 flex-1"><p className={`truncate text-[11px] font-semibold ${isCurrent ? 'text-th-np' : 'text-th-primary'}`}>{song.title}</p><p className="truncate text-[9px] text-slate-500">{song.artist}</p></div>
+        <button type="button" onClick={(e) => { e.stopPropagation(); onRemove(); }} disabled={isCurrent} className="rounded p-1 text-slate-500 hover:bg-rose-500/10 hover:text-th-err disabled:cursor-not-allowed disabled:opacity-20" title={isCurrent ? 'Now playing' : 'Remove'}><X className="h-3 w-3" /></button>
       </div>
     </div>
   );
@@ -332,25 +332,25 @@ const AddSongsToPlaylistModal: React.FC<AddSongsModalProps> = ({ playlist, libra
 
   return (
     <div className="absolute inset-0 z-[70] flex items-center justify-center bg-black/80 p-4 backdrop-blur-md">
-      <div className="flex max-h-[350px] w-full flex-col rounded-2xl border border-white/10 bg-[#11141c] p-4 shadow-2xl">
+      <div className="flex max-h-[350px] w-full flex-col rounded-2xl border border-th-line bg-th-elevated p-4 shadow-2xl">
         <div className="mb-3 flex items-center justify-between">
-          <h4 className="text-sm font-bold text-white">Add Songs to “{playlist.name}”</h4>
-          <button type="button" onClick={onClose} className="rounded-lg p-1 text-slate-400 hover:bg-white/10 hover:text-white">
+          <h4 className="text-sm font-bold text-th-primary">Add Songs to “{playlist.name}”</h4>
+          <button type="button" onClick={onClose} className="rounded-lg p-1 text-slate-400 hover:bg-th-soft-strong hover:text-th-primary">
             <X className="h-4 w-4" />
           </button>
         </div>
 
         {/* Search */}
-        <div className="mb-2.5 flex h-7 items-center gap-1.5 rounded-xl border border-white/10 bg-white/5 px-2">
+        <div className="mb-2.5 flex h-7 items-center gap-1.5 rounded-xl border border-th-line bg-th-soft px-2">
           <Search className="h-3 w-3 text-slate-400" />
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search songs in library..."
-            className="w-full bg-transparent text-[11px] text-white outline-none placeholder:text-slate-500"
+            className="w-full bg-transparent text-[11px] text-th-primary outline-none placeholder:text-slate-500"
           />
           {search && (
-            <button onClick={() => setSearch('')} className="text-slate-400 hover:text-white">
+            <button onClick={() => setSearch('')} className="text-slate-400 hover:text-th-primary">
               <X className="h-3 w-3" />
             </button>
           )}
@@ -370,7 +370,7 @@ const AddSongsToPlaylistModal: React.FC<AddSongsModalProps> = ({ playlist, libra
                     onClick={() => onToggle(song.id)}
                     style={{ transform: `translateY(${virtualItem.start}px)` }}
                     className={`absolute inset-x-0 top-0 flex cursor-pointer items-center gap-2.5 rounded-xl p-1.5 transition-colors ${
-                      included ? 'border border-indigo-400/30 bg-indigo-500/10' : 'bg-white/[0.04] hover:bg-white/[0.08]'
+                      included ? 'border border-amber-400/30 bg-amber-500/10' : 'bg-th-soft hover:bg-th-soft-strong'
                     }`}
                   >
                     <img
@@ -382,13 +382,13 @@ const AddSongsToPlaylistModal: React.FC<AddSongsModalProps> = ({ playlist, libra
                       className="h-8 w-8 rounded-lg object-cover"
                     />
                     <div className="min-w-0 flex-1">
-                      <p className={`truncate text-[11px] font-semibold ${included ? 'text-indigo-200' : 'text-white'}`}>
+                      <p className={`truncate text-[11px] font-semibold ${included ? 'text-th-accent' : 'text-th-primary'}`}>
                         {song.title}
                       </p>
                       <p className="truncate text-[9px] text-slate-400">{song.artist}</p>
                     </div>
                     <div className={`flex h-5 w-5 items-center justify-center rounded-md border ${
-                      included ? 'border-indigo-400 bg-indigo-500 text-white' : 'border-white/20 text-transparent'
+                      included ? 'border-th-accent bg-th-accent text-th-accent-ink' : 'border-th-line-strong text-transparent'
                     }`}>
                       <Check className="h-3 w-3" />
                     </div>
@@ -404,7 +404,7 @@ const AddSongsToPlaylistModal: React.FC<AddSongsModalProps> = ({ playlist, libra
         <button
           type="button"
           onClick={onClose}
-          className="mt-3 flex w-full items-center justify-center rounded-xl bg-indigo-500 py-1.5 text-xs font-semibold text-white shadow-md hover:bg-indigo-600 active:scale-[0.98]"
+          className="mt-3 flex w-full items-center justify-center rounded-xl bg-th-accent py-1.5 text-xs font-semibold text-th-accent-ink shadow-md hover:bg-th-accent-hover active:scale-[0.98]"
         >
           Done
         </button>
@@ -483,31 +483,31 @@ const CdActionMenu: React.FC<CdActionMenuProps> = ({
       ref={menuRef}
       role="menu"
       aria-label={`Actions for ${song.title}`}
-      className="fixed z-[120] w-32 overflow-hidden rounded-xl border border-white/10 bg-[#171923] p-1 text-left shadow-2xl"
+      className="fixed z-[120] w-32 overflow-hidden rounded-xl border border-th-line bg-th-elevated p-1 text-left shadow-2xl"
       style={{
         left: position?.left ?? 0,
         top: position?.top ?? 0,
         visibility: position ? 'visible' : 'hidden',
       }}
     >
-      <button role="menuitem" type="button" onClick={() => runAction(onEdit)} className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-[10px] font-semibold text-slate-200 hover:bg-white/10 focus-visible:bg-white/10 focus-visible:outline-none">
-        <Pencil className="h-3 w-3 text-amber-300" /> Edit
+      <button role="menuitem" type="button" onClick={() => runAction(onEdit)} className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-[10px] font-semibold text-slate-200 hover:bg-th-soft-strong focus-visible:bg-th-soft-strong focus-visible:outline-none">
+        <Pencil className="h-3 w-3 text-amber-500" /> Edit
       </button>
-      <button role="menuitem" type="button" onClick={() => runAction(onAddToPlaylist)} className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-[10px] font-semibold text-indigo-200 hover:bg-indigo-400/10 focus-visible:bg-indigo-400/10 focus-visible:outline-none">
-        <ListMusic className="h-3 w-3 text-indigo-300" /> To Playlist
+      <button role="menuitem" type="button" onClick={() => runAction(onAddToPlaylist)} className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-[10px] font-semibold text-th-accent hover:bg-amber-400/10 focus-visible:bg-amber-400/10 focus-visible:outline-none">
+        <ListMusic className="h-3 w-3 text-th-accent" /> To Playlist
       </button>
       {song.offline || getSongDownloadVideoId(song) ? (
         song.offline ? (
-          <button role="menuitem" type="button" onClick={() => runAction(onRemoveOffline)} className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-[10px] font-semibold text-amber-300 hover:bg-amber-400/10 focus-visible:bg-amber-400/10 focus-visible:outline-none">
+          <button role="menuitem" type="button" onClick={() => runAction(onRemoveOffline)} className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-[10px] font-semibold text-amber-500 hover:bg-amber-400/10 focus-visible:bg-amber-400/10 focus-visible:outline-none">
             <Trash2 className="h-3 w-3" /> Remove Download
           </button>
         ) : (
-          <button role="menuitem" type="button" onClick={() => runAction(onDownload)} className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-[10px] font-semibold text-amber-200 hover:bg-amber-400/10 focus-visible:bg-amber-400/10 focus-visible:outline-none">
-            <Download className="h-3 w-3 text-amber-300" /> Download
+          <button role="menuitem" type="button" onClick={() => runAction(onDownload)} className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-[10px] font-semibold text-amber-500 hover:bg-amber-400/10 focus-visible:bg-amber-400/10 focus-visible:outline-none">
+            <Download className="h-3 w-3 text-amber-500" /> Download
           </button>
         )
       ) : null}
-      <button role="menuitem" type="button" onClick={() => runAction(onDelete)} className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-[10px] font-semibold text-rose-300 hover:bg-rose-500/10 focus-visible:bg-rose-500/10 focus-visible:outline-none">
+      <button role="menuitem" type="button" onClick={() => runAction(onDelete)} className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-[10px] font-semibold text-th-err hover:bg-rose-500/10 focus-visible:bg-rose-500/10 focus-visible:outline-none">
         <Trash2 className="h-3 w-3" /> Delete
       </button>
     </div>,
@@ -581,20 +581,20 @@ const PlaylistActionMenu: React.FC<PlaylistActionMenuProps> = ({
       ref={menuRef}
       role="menu"
       aria-label="Playlist actions"
-      className="fixed z-[120] w-36 overflow-hidden rounded-xl border border-white/10 bg-[#171923] p-1 text-left shadow-2xl"
+      className="fixed z-[120] w-36 overflow-hidden rounded-xl border border-th-line bg-th-elevated p-1 text-left shadow-2xl"
       style={{
         left: position?.left ?? 0,
         top: position?.top ?? 0,
         visibility: position ? 'visible' : 'hidden',
       }}
     >
-      <button role="menuitem" type="button" onClick={() => runAction(onShuffle)} disabled={!canPlay} className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-[10px] font-semibold text-slate-200 hover:bg-white/10 focus-visible:bg-white/10 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40">
+      <button role="menuitem" type="button" onClick={() => runAction(onShuffle)} disabled={!canPlay} className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-[10px] font-semibold text-slate-200 hover:bg-th-soft-strong focus-visible:bg-th-soft-strong focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40">
         <Shuffle className="h-3 w-3 text-slate-300" /> Shuffle Play
       </button>
-      <button role="menuitem" type="button" onClick={() => runAction(onDownload)} className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-[10px] font-semibold text-amber-200 hover:bg-amber-400/10 focus-visible:bg-amber-400/10 focus-visible:outline-none">
-        <Download className="h-3 w-3 text-amber-300" /> Download Playlist
+      <button role="menuitem" type="button" onClick={() => runAction(onDownload)} className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-[10px] font-semibold text-amber-500 hover:bg-amber-400/10 focus-visible:bg-amber-400/10 focus-visible:outline-none">
+        <Download className="h-3 w-3 text-amber-500" /> Download Playlist
       </button>
-      <button role="menuitem" type="button" onClick={() => runAction(onDelete)} disabled={!canPlay} className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-[10px] font-semibold text-rose-300 hover:bg-rose-500/10 focus-visible:bg-rose-500/10 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40">
+      <button role="menuitem" type="button" onClick={() => runAction(onDelete)} disabled={!canPlay} className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-[10px] font-semibold text-th-err hover:bg-rose-500/10 focus-visible:bg-rose-500/10 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40">
         <Trash2 className="h-3 w-3" /> Delete Playlist
       </button>
     </div>,
@@ -819,10 +819,10 @@ export const MusicDrawer: React.FC = () => {
 
   return (
     /* Bottom Box (Physical Cabinet Drawer): Inset width (400px vs 440px top box) attached directly underneath top console */
-    <div className="w-[400px] self-center bg-dark-900/95 rounded-b-3xl p-4 border-x border-b border-white/10 drawer-cabinet-shadow animate-drawer-pull -mt-2 z-10 relative overflow-hidden">
+    <div className="w-[400px] self-center bg-[color-mix(in_srgb,var(--th-surface)_95%,transparent)] rounded-b-3xl p-4 border-x border-b border-th-line drawer-cabinet-shadow animate-drawer-pull -mt-2 z-10 relative overflow-hidden">
 
       {libraryNotice && (
-        <div className="absolute left-1/2 top-12 z-[60] max-w-[340px] -translate-x-1/2 rounded-xl border border-amber-400/25 bg-[#171923]/95 px-3 py-2 text-center text-[10px] font-semibold text-amber-200 shadow-xl">
+        <div className="absolute left-1/2 top-12 z-[60] max-w-[340px] -translate-x-1/2 rounded-xl border border-amber-400/25 bg-[color-mix(in_srgb,var(--th-elevated)_95%,transparent)] px-3 py-2 text-center text-[10px] font-semibold text-amber-200 shadow-xl">
           {libraryNotice}
         </div>
       )}
@@ -830,13 +830,13 @@ export const MusicDrawer: React.FC = () => {
       <DownloadActivity />
 
       {youtubeImportTask?.status === 'success' && youtubeImportTask.report && (
-        <div className="absolute bottom-3 left-1/2 z-[90] w-[356px] -translate-x-1/2 overflow-hidden rounded-xl border border-white/12 bg-[#11141c] shadow-2xl">
-          <div className="flex items-center border-b border-white/10 px-3 py-2">
+        <div className="absolute bottom-3 left-1/2 z-[90] w-[356px] -translate-x-1/2 overflow-hidden rounded-xl border border-th-line bg-th-elevated shadow-2xl">
+          <div className="flex items-center border-b border-th-line px-3 py-2">
             <Check className="mr-2 h-3.5 w-3.5 text-emerald-300" />
-            <p className="min-w-0 flex-1 truncate text-[10px] font-semibold text-white">{youtubeImportTask.message}</p>
-            <button type="button" onClick={dismissYoutubeTask} className="rounded p-1 text-slate-500 hover:bg-white/10 hover:text-white" aria-label="Close import report"><X className="h-3.5 w-3.5" /></button>
+            <p className="min-w-0 flex-1 truncate text-[10px] font-semibold text-th-primary">{youtubeImportTask.message}</p>
+            <button type="button" onClick={dismissYoutubeTask} className="rounded p-1 text-slate-500 hover:bg-th-soft-strong hover:text-th-primary" aria-label="Close import report"><X className="h-3.5 w-3.5" /></button>
           </div>
-          <div className="grid grid-cols-4 divide-x divide-white/10 border-b border-white/10">
+          <div className="grid grid-cols-4 divide-x divide-th-line border-b border-th-line">
             {[
               ['Added', youtubeImportTask.report.added],
               ['Duplicates', youtubeImportTask.report.duplicates],
@@ -844,7 +844,7 @@ export const MusicDrawer: React.FC = () => {
               ['100 Limit', youtubeImportTask.report.truncated ? 'Yes' : '—'],
             ].map(([label, value]) => (
               <div key={label} className="px-2 py-1.5">
-                <strong className="block font-mono text-[11px] text-white">{value}</strong>
+                <strong className="block font-mono text-[11px] text-th-primary">{value}</strong>
                 <span className="text-[8px] uppercase tracking-wider text-slate-500">{label}</span>
               </div>
             ))}
@@ -873,21 +873,21 @@ export const MusicDrawer: React.FC = () => {
       />
 
       {/* Top Drawer Pull Lip Line (Physical Shadow Accent) */}
-      <div className="w-16 h-1 bg-white/20 rounded-full mx-auto -mt-1 mb-3 shadow-inner opacity-70" />
+      <div className="w-16 h-1 bg-th-soft-strong rounded-full mx-auto -mt-1 mb-3 shadow-inner opacity-70" />
 
       {/* Main Header: primary music navigation, utility action, and drawer close */}
-      <div className="mb-3 flex items-center gap-2 border-b border-white/10 pb-3">
-        <div className="grid min-w-0 flex-1 grid-cols-4 gap-1 rounded-2xl border border-white/5 bg-white/5 p-1">
+      <div className="mb-3 flex items-center gap-2 border-b border-th-line pb-3">
+        <div className="grid min-w-0 flex-1 grid-cols-4 gap-1 rounded-2xl border border-th-line bg-th-soft p-1">
           {/* CD Category Tab */}
           <button
             onClick={() => { setSettingsOpen(false); setDrawerTab('cd'); }}
             className={`flex min-w-0 items-center justify-center gap-1 rounded-xl px-1 py-1.5 text-[10px] font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-amber-300/50 active:scale-[0.98] ${
               drawerTab === 'cd' && !isSettingsOpen
-                ? 'bg-white text-dark-900 shadow-md font-bold'
-                : 'text-slate-400 hover:text-white'
+                ? 'bg-th-pill-active text-th-pill-active-text shadow-md font-bold'
+                : 'text-slate-400 hover:text-th-primary'
             }`}
           >
-            <Disc className={`h-3 w-3 flex-shrink-0 ${drawerTab === 'cd' && !isSettingsOpen ? 'text-amber-500' : ''}`} />
+            <Disc className="h-3 w-3 flex-shrink-0" />
             <span>CD</span>
           </button>
 
@@ -896,11 +896,11 @@ export const MusicDrawer: React.FC = () => {
             onClick={() => { setSettingsOpen(false); setDrawerTab('playlist'); }}
             className={`flex min-w-0 items-center justify-center gap-1 rounded-xl px-1 py-1.5 text-[10px] font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-amber-300/50 active:scale-[0.98] ${
               drawerTab === 'playlist' && !isSettingsOpen
-                ? 'bg-white text-dark-900 shadow-md font-bold'
-                : 'text-slate-400 hover:text-white'
+                ? 'bg-th-pill-active text-th-pill-active-text shadow-md font-bold'
+                : 'text-slate-400 hover:text-th-primary'
             }`}
           >
-            <FolderHeart className={`h-3 w-3 flex-shrink-0 ${drawerTab === 'playlist' && !isSettingsOpen ? 'text-amber-500' : ''}`} />
+            <ListMusic className="h-3 w-3 flex-shrink-0" />
             <span>Playlist</span>
           </button>
 
@@ -909,11 +909,11 @@ export const MusicDrawer: React.FC = () => {
             onClick={() => { setSettingsOpen(false); setDrawerTab('queue'); }}
             className={`flex min-w-0 items-center justify-center gap-1 rounded-xl px-1 py-1.5 text-[10px] font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-amber-300/50 active:scale-[0.98] ${
               drawerTab === 'queue' && !isSettingsOpen
-                ? 'bg-white text-dark-900 shadow-md font-bold'
-                : 'text-slate-400 hover:text-white'
+                ? 'bg-th-pill-active text-th-pill-active-text shadow-md font-bold'
+                : 'text-slate-400 hover:text-th-primary'
             }`}
           >
-            <ListOrdered className={`h-3 w-3 flex-shrink-0 ${drawerTab === 'queue' && !isSettingsOpen ? 'text-amber-500' : ''}`} />
+            <ListOrdered className="h-3 w-3 flex-shrink-0" />
             <span>Queue</span>
           </button>
 
@@ -922,28 +922,28 @@ export const MusicDrawer: React.FC = () => {
             onClick={() => { setSettingsOpen(false); setDrawerTab('top'); }}
             className={`flex min-w-0 items-center justify-center gap-1 rounded-xl px-1 py-1.5 text-[10px] font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-amber-300/50 active:scale-[0.98] ${
               drawerTab === 'top' && !isSettingsOpen
-                ? 'bg-white text-dark-900 shadow-md font-bold'
-                : 'text-slate-400 hover:text-white'
+                ? 'bg-th-pill-active text-th-pill-active-text shadow-md font-bold'
+                : 'text-slate-400 hover:text-th-primary'
             }`}
           >
-            <Flame className={`h-3 w-3 flex-shrink-0 ${drawerTab === 'top' && !isSettingsOpen ? 'text-amber-500 fill-amber-500' : 'text-amber-500/80'}`} />
+            <Flame className="h-3 w-3 flex-shrink-0" />
             <span>TOP</span>
           </button>
 
         </div>        <button
           type="button"
           onClick={() => setSettingsOpen(true)}
-          className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl border transition-colors focus-visible:ring-2 focus-visible:ring-amber-300/50 active:scale-[0.96] ${isSettingsOpen ? 'border-white bg-white text-dark-900 shadow-md' : 'border-white/10 bg-white/5 text-slate-400 hover:border-white/20 hover:bg-white/10 hover:text-white'}`}
+          className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl border transition-colors focus-visible:ring-2 focus-visible:ring-amber-300/50 active:scale-[0.96] ${isSettingsOpen ? 'border-th-pill-active bg-th-pill-active text-th-pill-active-text shadow-md' : 'border-th-line bg-th-soft text-slate-400 hover:border-th-line-strong hover:bg-th-soft-strong hover:text-th-primary'}`}
           title="Open Settings"
           aria-label="Open Settings"
           aria-pressed={isSettingsOpen}
         >
-          <Settings className={`h-4 w-4 ${isSettingsOpen ? 'text-amber-500' : ''}`} strokeWidth={1.8} />
+          <Settings className="h-4 w-4" strokeWidth={1.8} />
         </button>
 
         <button
           onClick={() => { setSettingsOpen(false); toggleDrawer(); }}
-          className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl text-slate-400 transition-colors hover:bg-white/10 hover:text-white focus-visible:ring-2 focus-visible:ring-amber-300/50 active:scale-[0.96]"
+          className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl text-slate-400 transition-colors hover:bg-th-soft-strong hover:text-th-primary focus-visible:ring-2 focus-visible:ring-amber-300/50 active:scale-[0.96]"
           title="Close Drawer"
           aria-label="Close Drawer"
         >
@@ -959,32 +959,32 @@ export const MusicDrawer: React.FC = () => {
           {/* Sub-Category Pills & Import MP3 Button */}
           <div className="flex items-center justify-between px-1">
             {isSearchOpen ? (
-              <div className="flex h-[25px] w-full items-center gap-1.5 rounded-xl border border-amber-400/30 bg-white/5 px-2">
+              <div className="flex h-[25px] w-full items-center gap-1.5 rounded-xl border border-amber-400/30 bg-th-soft px-2">
                 <Search className="h-3.5 w-3.5 flex-shrink-0 text-amber-300" />
                 <input
                   value={searchQuery}
                   onChange={(event) => setSearchQuery(event.target.value)}
                   placeholder="Search title, artist, or album..."
                   autoFocus
-                  className="min-w-0 flex-1 bg-transparent text-[11px] text-white outline-none placeholder:text-slate-500"
+                  className="min-w-0 flex-1 bg-transparent text-[11px] text-th-primary outline-none placeholder:text-slate-500"
                 />
                 {searchQuery && <span className="text-[9px] text-slate-500">{filteredCDs.length}</span>}
-                <button type="button" onClick={() => { setSearchQuery(''); setIsSearchOpen(false); }} className="rounded p-0.5 text-slate-400 hover:text-white" aria-label="Close search">
+                <button type="button" onClick={() => { setSearchQuery(''); setIsSearchOpen(false); }} className="rounded p-0.5 text-slate-400 hover:text-th-primary" aria-label="Close search">
                   <X className="h-3.5 w-3.5" />
                 </button>
               </div>
             ) : (
               <>
                 <div className="flex items-center gap-1.5">
-                  <button onClick={() => setCdSubTab('all')} className={`px-2.5 py-0.5 rounded-lg text-[11px] font-medium transition-all ${cdSubTab === 'all' ? 'bg-amber-400/20 text-amber-300 border border-amber-400/40 font-semibold' : 'bg-white/5 text-slate-400 hover:text-slate-200'}`}>ALL</button>
-                  <button onClick={() => setCdSubTab('recent')} className={`px-2.5 py-0.5 rounded-lg text-[11px] font-medium transition-all ${cdSubTab === 'recent' ? 'bg-amber-400/20 text-amber-300 border border-amber-400/40 font-semibold' : 'bg-white/5 text-slate-400 hover:text-slate-200'}`}>Recent</button>
-                  <button onClick={() => setCdSubTab('favorites')} className={`px-2.5 py-0.5 rounded-lg text-[11px] font-medium transition-all ${cdSubTab === 'favorites' ? 'bg-amber-400/20 text-amber-300 border border-amber-400/40 font-semibold' : 'bg-white/5 text-slate-400 hover:text-slate-200'}`}>Favorites</button>
+                  <button onClick={() => setCdSubTab('all')} className={`px-2.5 py-0.5 rounded-lg text-[11px] font-medium transition-all ${cdSubTab === 'all' ? 'bg-amber-400/20 text-amber-300 border border-amber-400/40 font-semibold' : 'bg-th-soft text-slate-400 hover:text-slate-200'}`}>ALL</button>
+                  <button onClick={() => setCdSubTab('recent')} className={`px-2.5 py-0.5 rounded-lg text-[11px] font-medium transition-all ${cdSubTab === 'recent' ? 'bg-amber-400/20 text-amber-300 border border-amber-400/40 font-semibold' : 'bg-th-soft text-slate-400 hover:text-slate-200'}`}>Recent</button>
+                  <button onClick={() => setCdSubTab('favorites')} className={`px-2.5 py-0.5 rounded-lg text-[11px] font-medium transition-all ${cdSubTab === 'favorites' ? 'bg-amber-400/20 text-amber-300 border border-amber-400/40 font-semibold' : 'bg-th-soft text-slate-400 hover:text-slate-200'}`}>Favorites</button>
                 </div>
                 <div className="flex items-center gap-1">
                   <button
                     type="button"
                     onClick={() => setIsSearchOpen(true)}
-                    className="flex h-7 w-7 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-slate-400 transition-colors hover:border-white/20 hover:bg-white/10 hover:text-white"
+                    className="flex h-7 w-7 items-center justify-center rounded-lg border border-th-line bg-th-soft text-slate-400 transition-colors hover:border-th-line-strong hover:bg-th-soft-strong hover:text-th-primary"
                     title="Search songs"
                     aria-label="Search songs"
                   >
@@ -999,7 +999,7 @@ export const MusicDrawer: React.FC = () => {
                     className={`flex h-7 w-7 items-center justify-center rounded-lg border transition-all ${
                       isSelectMode
                         ? 'border-amber-400/40 bg-amber-400/20 text-amber-300 shadow-sm'
-                        : 'border-white/10 bg-white/5 text-slate-400 hover:border-white/20 hover:bg-white/10 hover:text-white'
+                        : 'border-th-line bg-th-soft text-slate-400 hover:border-th-line-strong hover:bg-th-soft-strong hover:text-th-primary'
                     }`}
                     title={isSelectMode ? 'Cancel Select' : 'Select multiple songs to delete'}
                     aria-label="Select multiple songs"
@@ -1059,7 +1059,7 @@ export const MusicDrawer: React.FC = () => {
                           {/* Selection Checkbox Overlay */}
                           {isSelectMode ? (
                             <div className={`absolute left-0 top-0 z-40 flex h-6 w-6 items-center justify-center rounded-full border shadow-md transition-all ${
-                              isSelected ? 'border-amber-400 bg-amber-400 text-dark-900 font-bold' : 'border-white/40 bg-black/70 text-transparent'
+                              isSelected ? 'border-amber-400 bg-amber-400 text-dark-900 font-bold' : 'border-th-line-strong bg-black/70 text-transparent'
                             }`}>
                               <Check className="h-3.5 w-3.5 stroke-[3]" />
                             </div>
@@ -1068,7 +1068,7 @@ export const MusicDrawer: React.FC = () => {
                               <button
                                 type="button"
                                 onClick={(event) => { event.stopPropagation(); toggleFavorite(song.id); }}
-                                className={`absolute left-0 top-0 z-40 rounded-lg p-1 shadow-md transition-all ${song.isFavorite ? 'bg-rose-500 text-white opacity-100' : 'bg-black/60 text-slate-300 opacity-0 hover:bg-rose-500 hover:text-white group-hover/cd:opacity-100'}`}
+                                className={`absolute left-0 top-0 z-40 rounded-lg p-1 shadow-md transition-all ${song.isFavorite ? 'bg-rose-500 text-white opacity-100' : 'bg-black/60 text-white opacity-0 hover:bg-rose-500 hover:text-white group-hover/cd:opacity-100'}`}
                                 aria-label={song.isFavorite ? `Remove ${song.title} from Favorites` : `Add ${song.title} to Favorites`}
                               >
                                 <Heart className={`h-3.5 w-3.5 ${song.isFavorite ? 'fill-current' : ''}`} />
@@ -1080,7 +1080,7 @@ export const MusicDrawer: React.FC = () => {
                                   const anchor = event.currentTarget;
                                   setCdMenu((current) => current?.song.id === song.id ? null : { song, anchor });
                                 }}
-                                className={`absolute right-0 top-0 z-40 rounded-lg bg-black/60 p-1 text-slate-300 shadow-md transition-all hover:bg-white hover:text-dark-900 group-hover/cd:opacity-100 ${cdMenu?.song.id === song.id ? 'opacity-100' : 'opacity-0'}`}
+                                className={`absolute right-0 top-0 z-40 rounded-lg bg-black/60 p-1 text-white shadow-md transition-all hover:bg-white hover:text-dark-900 group-hover/cd:opacity-100 ${cdMenu?.song.id === song.id ? 'opacity-100' : 'opacity-0'}`}
                                 aria-label={`Menu ${song.title}`}
                                 aria-haspopup="menu"
                                 aria-expanded={cdMenu?.song.id === song.id}
@@ -1099,7 +1099,7 @@ export const MusicDrawer: React.FC = () => {
                           )}
 
                           {/* TOP: Pure Circular CD Disc */}
-                          <div className={`pure-cd-disc vinyl-grooves relative flex items-center justify-center shadow-xl transition-transform ${isSelected ? 'ring-2 ring-amber-400 scale-[0.96]' : ''}`}>
+                          <div className={`pure-cd-disc vinyl-grooves relative flex items-center justify-center transition-transform ${isSelected ? 'ring-2 ring-amber-400 scale-[0.96]' : ''}`}>
                             <img
                               src={getDisplayCoverUrl(song.coverUrl, 128)}
                               onError={handleCoverImageError}
@@ -1124,7 +1124,7 @@ export const MusicDrawer: React.FC = () => {
 
                           {/* BOTTOM: Text Information (Line 1: Title, Line 2: Artist) */}
                           <div className="mt-2 w-full">
-                            <h5 className="text-[11px] font-bold text-white truncate group-hover/cd:text-amber-300 transition-colors font-sans px-0.5">
+                            <h5 className="text-[11px] font-bold text-th-primary truncate group-hover/cd:text-amber-300 transition-colors font-sans px-0.5">
                               {song.title}
                             </h5>
                             <p className="text-[10px] text-slate-400 truncate mt-0.5">
@@ -1141,7 +1141,7 @@ export const MusicDrawer: React.FC = () => {
 
             {/* Floating Multi-Select Action Bar */}
             {isSelectMode && (
-              <div className="sticky bottom-0 left-0 right-0 z-50 flex items-center justify-between rounded-xl border border-white/15 bg-dark-900/95 p-2 shadow-2xl backdrop-blur-md">
+              <div className="sticky bottom-0 left-0 right-0 z-50 flex items-center justify-between rounded-xl border border-th-line-strong bg-[color-mix(in_srgb,var(--th-surface)_95%,transparent)] p-2 shadow-2xl backdrop-blur-md">
                 <div className="flex items-center gap-2">
                   <span className="rounded-lg bg-amber-400/20 px-2 py-0.5 text-[10px] font-bold text-amber-300">
                     {selectedSongIds.size} Selected
@@ -1152,7 +1152,7 @@ export const MusicDrawer: React.FC = () => {
                       if (selectedSongIds.size === filteredCDs.length) setSelectedSongIds(new Set());
                       else setSelectedSongIds(new Set(filteredCDs.map((s) => s.id)));
                     }}
-                    className="rounded-lg px-2 py-0.5 text-[10px] font-medium text-slate-300 hover:bg-white/10"
+                    className="rounded-lg px-2 py-0.5 text-[10px] font-medium text-slate-300 hover:bg-th-soft-strong"
                   >
                     {selectedSongIds.size === filteredCDs.length ? 'Deselect All' : 'Select All'}
                   </button>
@@ -1161,7 +1161,7 @@ export const MusicDrawer: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => { setIsSelectMode(false); setSelectedSongIds(new Set()); }}
-                    className="rounded-lg px-2 py-0.5 text-[10px] text-slate-400 hover:bg-white/10 hover:text-white"
+                    className="rounded-lg px-2 py-0.5 text-[10px] text-slate-400 hover:bg-th-soft-strong hover:text-th-primary"
                   >
                     Cancel
                   </button>
@@ -1186,9 +1186,9 @@ export const MusicDrawer: React.FC = () => {
                     disabled={selectedSongIds.size === 0}
                     title="Add to Playlist"
                     aria-label="Add to Playlist"
-                    className="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-500 text-white shadow-md hover:bg-indigo-600 active:scale-95 disabled:opacity-30"
+                    className="flex h-7 w-7 items-center justify-center rounded-lg bg-th-accent text-th-accent-ink shadow-md hover:bg-th-accent-hover active:scale-95 disabled:opacity-30"
                   >
-                    <FolderPlus className="h-3.5 w-3.5" />
+                    <ListMusic className="h-3.5 w-3.5" />
                   </button>
                   <button
                     type="button"
@@ -1208,10 +1208,10 @@ export const MusicDrawer: React.FC = () => {
           {/* Confirm Bulk Delete Dialog */}
           {confirmBulkDelete && (
             <div className="absolute inset-0 z-[70] flex items-center justify-center bg-black/80 p-6 backdrop-blur-sm">
-              <div className="w-full rounded-2xl border border-rose-500/30 bg-[#161318] p-4 shadow-2xl">
+              <div className="w-full rounded-2xl border border-rose-500/30 bg-th-surface p-4 shadow-2xl">
                 <div className="mb-2 flex items-center gap-2 text-rose-400">
                   <AlertTriangle className="h-5 w-5 flex-shrink-0" />
-                  <h4 className="text-sm font-bold text-white">Delete {selectedSongIds.size} Songs?</h4>
+                  <h4 className="text-sm font-bold text-th-primary">Delete {selectedSongIds.size} Songs?</h4>
                 </div>
                 <p className="text-[11px] text-slate-400">
                   Are you sure you want to remove {selectedSongIds.size} selected songs from your library and playlists? This action cannot be undone.
@@ -1220,7 +1220,7 @@ export const MusicDrawer: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setConfirmBulkDelete(false)}
-                    className="rounded-xl px-3 py-1.5 text-xs font-semibold text-slate-300 hover:bg-white/10"
+                    className="rounded-xl px-3 py-1.5 text-xs font-semibold text-slate-300 hover:bg-th-soft-strong"
                   >
                     Cancel
                   </button>
@@ -1269,7 +1269,7 @@ export const MusicDrawer: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => { setPlaylistSong(null); setIsCreatePlaylistOpen(true); }}
-                  className="flex items-center gap-1 rounded-lg border border-indigo-400/30 bg-indigo-400/10 px-2 py-1 text-[10px] font-semibold text-indigo-300 hover:bg-indigo-400/20 active:scale-95"
+                  className="flex items-center gap-1 rounded-lg border border-amber-400/30 bg-amber-400/10 px-2 py-1 text-[10px] font-semibold text-th-accent hover:bg-amber-400/20 active:scale-95"
                 >
                   <Plus className="h-3.5 w-3.5" />
                   <span>New Playlist</span>
@@ -1281,9 +1281,9 @@ export const MusicDrawer: React.FC = () => {
                     type="button"
                     key={playlist.id}
                     onClick={() => selectPlaylist(playlist.id)}
-                    className="group/playlist flex items-center gap-2.5 rounded-2xl border border-white/5 bg-white/5 p-2 text-left transition-all hover:border-indigo-400/25 hover:bg-white/10"
+                    className="group/playlist flex items-center gap-2.5 rounded-2xl border border-th-line bg-th-soft p-2 text-left transition-all hover:border-amber-400/25 hover:bg-th-soft-strong"
                   >
-                    <div className="relative h-11 w-11 flex-shrink-0 overflow-hidden rounded-xl border border-white/10">
+                    <div className="relative h-11 w-11 flex-shrink-0 overflow-hidden rounded-xl border border-th-line">
                       <img
                         src={getDisplayCoverUrl(playlist.songs[0]?.coverUrl || playlist.coverUrl, 96)}
                         onError={handleCoverImageError}
@@ -1295,14 +1295,14 @@ export const MusicDrawer: React.FC = () => {
                       {playlist.songs.length > 0 && (
                         <span
                           onClick={(event) => { event.stopPropagation(); playPlaylist(playlist.id); }}
-                          className="absolute inset-0 flex items-center justify-center bg-black/35 text-white opacity-0 transition-opacity group-hover/playlist:opacity-100"
+                          className="absolute inset-0 flex items-center justify-center bg-black/35 text-th-primary opacity-0 transition-opacity group-hover/playlist:opacity-100"
                         >
                           <Play className="h-4 w-4 fill-current" />
                         </span>
                       )}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <h5 className="truncate text-[11px] font-bold text-white transition-colors group-hover/playlist:text-indigo-300">
+                      <h5 className="truncate text-[11px] font-bold text-th-primary transition-colors group-hover/playlist:text-th-accent">
                         {playlist.name}
                       </h5>
                       <p className="mt-0.5 truncate text-[9px] text-slate-500">
@@ -1327,16 +1327,16 @@ export const MusicDrawer: React.FC = () => {
             /* 2.2 Direction 1: Studio Hero Inset (Playlist Detail View) */
             <div className="flex h-full flex-col">
               {/* Hero Header */}
-              <div className="flex items-center gap-2.5 rounded-2xl border border-white/10 bg-white/5 p-2.5 shadow-md backdrop-blur-sm">
+              <div className="flex items-center gap-2.5 rounded-2xl border border-th-line bg-th-soft p-2.5 shadow-md backdrop-blur-sm">
                 <button
                   type="button"
                   onClick={() => selectPlaylist(null)}
-                  className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-slate-300 transition-colors hover:bg-white/15 hover:text-white"
+                  className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl border border-th-line bg-th-soft text-slate-300 transition-colors hover:bg-th-soft-strong hover:text-th-primary"
                   title="Back to Playlists"
                 >
                   <ArrowLeft className="h-4 w-4" />
                 </button>
-                <div className="relative h-10 w-10 flex-shrink-0 overflow-hidden rounded-xl border border-white/10 shadow-sm">
+                <div className="relative h-10 w-10 flex-shrink-0 overflow-hidden rounded-xl border border-th-line shadow-sm">
                   <img
                     src={getDisplayCoverUrl(managedPlaylist.songs[0]?.coverUrl || managedPlaylist.coverUrl, 96)}
                     onError={handleCoverImageError}
@@ -1346,11 +1346,11 @@ export const MusicDrawer: React.FC = () => {
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-1.5">
-                    <h4 className="truncate text-xs font-bold text-white">{managedPlaylist.name}</h4>
+                    <h4 className="truncate text-xs font-bold text-th-primary">{managedPlaylist.name}</h4>
                     <button
                       type="button"
                       onClick={() => setRenamingPlaylist(managedPlaylist)}
-                      className="rounded p-0.5 text-slate-400 hover:bg-white/10 hover:text-white"
+                      className="rounded p-0.5 text-slate-400 hover:bg-th-soft-strong hover:text-th-primary"
                       title="Rename Playlist"
                       aria-label="Rename Playlist"
                     >
@@ -1374,7 +1374,7 @@ export const MusicDrawer: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setIsAddSongsOpen(true)}
-                    className="flex h-8 w-8 items-center justify-center rounded-xl border border-indigo-400/30 bg-indigo-400/20 text-indigo-300 shadow-sm transition-all hover:bg-indigo-400/30 active:scale-95"
+                    className="flex h-8 w-8 items-center justify-center rounded-xl border border-amber-400/30 bg-amber-400/20 text-th-accent shadow-sm transition-all hover:bg-amber-400/30 active:scale-95"
                     title="Add Songs to Playlist"
                   >
                     <Plus className="h-4 w-4" />
@@ -1385,7 +1385,7 @@ export const MusicDrawer: React.FC = () => {
                       const anchor = event.currentTarget;
                       setPlaylistMenu((current) => current ? null : { anchor });
                     }}
-                    className={`flex h-8 w-8 items-center justify-center rounded-xl border transition-all active:scale-95 ${playlistMenu ? 'border-white/30 bg-white text-dark-900 shadow-sm' : 'border-white/10 bg-white/5 text-slate-300 hover:border-white/20 hover:bg-white hover:text-dark-900'}`}
+                    className={`flex h-8 w-8 items-center justify-center rounded-xl border transition-all active:scale-95 ${playlistMenu ? 'border-th-line-strong bg-th-pill-active text-th-pill-active-text shadow-sm' : 'border-th-line bg-th-soft text-slate-300 hover:border-th-line-strong hover:bg-th-pill-active hover:text-th-pill-active-text'}`}
                     title="Playlist Actions"
                     aria-label="Playlist Actions"
                     aria-haspopup="menu"
@@ -1420,7 +1420,7 @@ export const MusicDrawer: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setIsAddSongsOpen(true)}
-                      className="mt-3 flex items-center gap-1.5 rounded-xl bg-indigo-500 px-3 py-1.5 text-[11px] font-semibold text-white shadow-md hover:bg-indigo-600 active:scale-95"
+                      className="mt-3 flex items-center gap-1.5 rounded-xl bg-th-accent px-3 py-1.5 text-[11px] font-semibold text-th-accent-ink shadow-md hover:bg-th-accent-hover active:scale-95"
                     >
                       <Plus className="h-3.5 w-3.5" />
                       <span>Add Songs</span>
@@ -1448,7 +1448,7 @@ export const MusicDrawer: React.FC = () => {
                 className={`flex h-7 w-7 items-center justify-center rounded-lg border transition-all ${
                   queueEndBehavior === 'repeat-queue'
                     ? 'border-amber-400/40 bg-amber-400/20 text-amber-300 shadow-sm'
-                    : 'border-white/10 bg-white/5 text-slate-400 hover:border-white/20 hover:bg-white/10 hover:text-white'
+                    : 'border-th-line bg-th-soft text-slate-400 hover:border-th-line-strong hover:bg-th-soft-strong hover:text-th-primary'
                 }`}
                 title={queueEndBehavior === 'repeat-queue' ? 'Repeat Queue: On' : 'Repeat Queue: Off'}
                 aria-label="Toggle Repeat Queue"
@@ -1459,7 +1459,7 @@ export const MusicDrawer: React.FC = () => {
                 type="button"
                 onClick={shufflePlaybackQueue}
                 disabled={playbackQueue.length <= 1}
-                className="flex h-7 w-7 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-slate-400 transition-all hover:border-white/20 hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-30"
+                className="flex h-7 w-7 items-center justify-center rounded-lg border border-th-line bg-th-soft text-slate-400 transition-all hover:border-th-line-strong hover:bg-th-soft-strong hover:text-th-primary disabled:cursor-not-allowed disabled:opacity-30"
                 title="Shuffle Upcoming Queue"
                 aria-label="Shuffle Queue"
               >
@@ -1469,7 +1469,7 @@ export const MusicDrawer: React.FC = () => {
                 type="button"
                 onClick={clearPlaybackQueue}
                 disabled={playbackQueue.length <= (currentSong ? 1 : 0)}
-                className="flex h-7 w-7 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-slate-400 transition-all hover:border-rose-400/30 hover:bg-rose-500/15 hover:text-rose-300 disabled:cursor-not-allowed disabled:opacity-30"
+                className="flex h-7 w-7 items-center justify-center rounded-lg border border-th-line bg-th-soft text-slate-400 transition-all hover:border-rose-400/30 hover:bg-rose-500/15 hover:text-rose-300 disabled:cursor-not-allowed disabled:opacity-30"
                 title="Clear Queue"
                 aria-label="Clear Queue"
               >
@@ -1525,16 +1525,16 @@ export const MusicDrawer: React.FC = () => {
                 <div
                   key={song.id}
                   onClick={() => playSong(song)}
-                  className={`group flex cursor-pointer items-center justify-between rounded-2xl border p-2.5 transition-all hover:bg-white/10 active:scale-[0.98] ${
+                  className={`group flex cursor-pointer items-center justify-between rounded-2xl border p-2.5 transition-all hover:bg-th-soft-strong active:scale-[0.98] ${
                     isCurrentlyPlaying
                       ? 'border-amber-400/40 bg-amber-400/10 font-bold'
                       : isTop1
                         ? 'border-amber-400/30 bg-gradient-to-r from-amber-500/15 via-white/[0.06] to-white/[0.04]'
                         : isTop2
-                          ? 'border-slate-300/20 bg-white/5'
+                          ? 'border-[color-mix(in_srgb,var(--th-300)_20%,transparent)] bg-th-soft'
                           : isTop3
-                            ? 'border-amber-700/25 bg-white/5'
-                            : 'border-white/5 bg-white/5'
+                            ? 'border-amber-700/25 bg-th-soft'
+                            : 'border-th-line bg-th-soft'
                   }`}
                 >
                   {/* Left Side: Rank Badge, Artwork Cover, Title & Artist */}
@@ -1544,10 +1544,10 @@ export const MusicDrawer: React.FC = () => {
                         isTop1
                           ? 'bg-gradient-to-br from-amber-400 to-orange-500 text-dark-900 shadow-amber-500/30'
                           : isTop2
-                            ? 'bg-slate-300 text-dark-900'
+                            ? 'bg-slate-300 text-th-pill-active-text'
                             : isTop3
-                              ? 'bg-amber-700/90 text-amber-100'
-                              : 'bg-white/10 text-slate-400'
+                              ? 'bg-amber-700/90 text-th-pill-active-text'
+                              : 'bg-th-soft-strong text-slate-400'
                       }`}
                     >
                       #{index + 1}
@@ -1559,11 +1559,11 @@ export const MusicDrawer: React.FC = () => {
                       alt={song.title}
                       loading="lazy"
                       decoding="async"
-                      className="h-10 w-10 flex-shrink-0 rounded-xl border border-white/10 object-cover"
+                      className="h-10 w-10 flex-shrink-0 rounded-xl border border-th-line object-cover"
                     />
 
                     <div className="min-w-0">
-                      <h5 className="flex items-center gap-1.5 truncate text-xs font-bold text-white">
+                      <h5 className="flex items-center gap-1.5 truncate text-xs font-bold text-th-primary">
                         <span className="truncate">{song.title}</span>
                         {isTop1 && <Sparkles className="h-3.5 w-3.5 flex-shrink-0 fill-amber-400 text-amber-400" />}
                       </h5>
@@ -1618,11 +1618,11 @@ export const MusicDrawer: React.FC = () => {
 
       {playlistToDelete && (
         <div className="absolute inset-0 z-[70] flex items-center justify-center bg-black/80 p-6 backdrop-blur-sm">
-          <div className="w-full rounded-2xl border border-rose-500/30 bg-[#161318] p-4 text-center shadow-2xl">
+          <div className="w-full rounded-2xl border border-rose-500/30 bg-th-surface p-4 text-center shadow-2xl">
             <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-rose-500/10 text-rose-300">
               <Trash2 className="h-5 w-5" />
             </div>
-            <h4 className="text-sm font-bold text-white">Delete Playlist?</h4>
+            <h4 className="text-sm font-bold text-th-primary">Delete Playlist?</h4>
             <p className="mt-1 text-[11px] text-slate-400">
               Are you sure you want to delete “{playlistToDelete.name}”? The songs inside will remain in your library.
             </p>
@@ -1630,7 +1630,7 @@ export const MusicDrawer: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setPlaylistToDelete(null)}
-                className="rounded-xl px-3.5 py-1.5 text-xs font-semibold text-slate-300 hover:bg-white/10"
+                className="rounded-xl px-3.5 py-1.5 text-xs font-semibold text-slate-300 hover:bg-th-soft-strong"
               >
                 Cancel
               </button>
@@ -1730,16 +1730,16 @@ export const MusicDrawer: React.FC = () => {
 
       {deletingSong && (
         <div className="absolute inset-0 z-[70] flex items-center justify-center bg-black/75 p-7 backdrop-blur-sm">
-          <div className="w-full rounded-2xl border border-rose-400/20 bg-[#11141c] p-5 text-center shadow-2xl">
+          <div className="w-full rounded-2xl border border-rose-400/20 bg-th-elevated p-5 text-center shadow-2xl">
             <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-rose-500/10 text-rose-300">
               <AlertTriangle className="h-5 w-5" />
             </div>
-            <h4 className="text-sm font-bold text-white">Delete song?</h4>
+            <h4 className="text-sm font-bold text-th-primary">Delete song?</h4>
             <p className="mt-1 text-[11px] leading-relaxed text-slate-400">
               “{deletingSong.title}” will be removed from your library{deletingSong.source.kind === 'local' && deletingSong.source.managed ? ' along with application storage files.' : '.'}
             </p>
             <div className="mt-4 flex justify-center gap-2">
-              <button type="button" onClick={() => setDeletingSong(null)} className="rounded-xl bg-white/5 px-3 py-2 text-xs font-semibold text-slate-300 hover:bg-white/10">Cancel</button>
+              <button type="button" onClick={() => setDeletingSong(null)} className="rounded-xl bg-th-soft px-3 py-2 text-xs font-semibold text-slate-300 hover:bg-th-soft-strong">Cancel</button>
               <button type="button" onClick={async () => { await deleteSong(deletingSong.id); setDeletingSong(null); }} className="flex items-center gap-1.5 rounded-xl bg-rose-500 px-3 py-2 text-xs font-bold text-white hover:bg-rose-400">
                 <Trash2 className="h-3.5 w-3.5" /> Delete
               </button>

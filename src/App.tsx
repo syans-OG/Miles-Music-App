@@ -2,12 +2,17 @@ import React, { lazy, Suspense, useEffect, useState } from 'react';
 import { shallow } from 'zustand/shallow';
 import { useShallow } from 'zustand/react/shallow';
 import { usePlayerStore } from './stores/usePlayerStore';
+import { applyTheme, useThemeStore } from './stores/useThemeStore';
 import { syncDiscordActivity } from './services/discordRpcService';
 
 import { ControlBar } from './components/ControlBar';
 import { VinylWidget } from './components/VinylWidget';
 import { MicroBubble } from './components/MicroBubble';
 import { WindowControlsBar } from './components/WindowControlsBar';
+import { isTauri } from './utils/tauriEnv';
+import { listen } from '@tauri-apps/api/event';
+import { getCurrentWindow } from '@tauri-apps/api/window';
+
 import { AlertTriangle, Check, RotateCcw, UploadCloud, X } from 'lucide-react';
 import { useWindowResizer } from './hooks/useWindowResizer';
 
@@ -39,6 +44,11 @@ export const App: React.FC = () => {
   useWindowResizer();
 
   useEffect(() => {
+    const { mode, colorId, custom } = useThemeStore.getState();
+    applyTheme(mode, colorId, custom);
+  }, []);
+
+  useEffect(() => {
     void syncDiscordActivity();
     const unsub = usePlayerStore.subscribe(
       (state) => ({
@@ -60,11 +70,18 @@ export const App: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    void import('@tauri-apps/api/window')
-      .then(({ getCurrentWindow }) => getCurrentWindow().setAlwaysOnTop(isAlwaysOnTop))
-      .catch(() => {
-        // Browser fallback
-      });
+    if (!isTauri()) return;
+    try {
+      void getCurrentWindow()
+        .setAlwaysOnTop(isAlwaysOnTop)
+        .catch((error) => {
+          console.error('[App] setAlwaysOnTop failed:', error);
+          usePlayerStore.getState().setLibraryNotice('Failed to apply always-on-top window setting.');
+        });
+    } catch (error) {
+      console.error('[App] setAlwaysOnTop threw:', error);
+      usePlayerStore.getState().setLibraryNotice('Failed to apply always-on-top window setting.');
+    }
   }, [isAlwaysOnTop]);
 
   const [isFocusNudged, setIsFocusNudged] = useState(false);
@@ -84,7 +101,6 @@ export const App: React.FC = () => {
 
     const setupTrayListeners = async () => {
       try {
-        const { listen } = await import('@tauri-apps/api/event');
         if (!isMounted) return;
 
         const handlePlayPause = () => {
@@ -150,8 +166,8 @@ export const App: React.FC = () => {
         }
 
         unlisteners.push(u1, u2, u3, u4, u5, u6, u7, u8);
-      } catch {
-        // Browser fallback
+      } catch (error) {
+        if (isTauri()) console.error('[App] tray/single-instance listeners setup failed:', error);
       }
     };
 
@@ -221,22 +237,22 @@ export const App: React.FC = () => {
       <WindowControlsBar />
       {/* Drag & Drop Fullscreen Overlay */}
       {isDraggingOver && (
-        <div className="fixed inset-0 z-50 bg-dark-900/90 backdrop-blur-md flex flex-col items-center justify-center border-4 border-dashed border-amber-400/60 transition-all animate-fade-in rounded-3xl">
-          <div className="w-20 h-20 rounded-full bg-amber-400/20 text-amber-300 flex items-center justify-center mb-4 shadow-2xl animate-bounce">
+        <div className="fixed inset-0 z-50 bg-[color-mix(in_srgb,var(--th-surface)_90%,transparent)] backdrop-blur-md flex flex-col items-center justify-center border-4 border-dashed border-amber-400/60 transition-all animate-fade-in rounded-3xl">
+          <div className="w-20 h-20 rounded-full bg-th-accent-soft text-th-accent flex items-center justify-center mb-4 shadow-2xl animate-bounce">
             <UploadCloud className="w-10 h-10" />
           </div>
-          <h3 className="text-xl font-bold text-white tracking-wide">Drop MP3 / Audio Files Here</h3>
+          <h3 className="text-xl font-bold text-th-primary tracking-wide">Drop MP3 / Audio Files Here</h3>
           <p className="text-sm text-slate-400 mt-1">Songs will be added instantly to the Miles Music Drawer CD collection</p>
         </div>
       )}
 
       {showBackgroundResult && youtubeImportTask && (
-        <div className={`absolute left-1/2 top-7 z-[100] flex -translate-x-1/2 items-center gap-2 rounded-[4px] border border-white/12 bg-[#11141c] px-2.5 py-2 shadow-2xl ${mode === 'control-bar' ? 'w-[420px]' : mode === 'vinyl-widget' ? 'w-[184px]' : 'w-[144px]'}`} role="status">
+        <div className={`absolute left-1/2 top-7 z-[100] flex -translate-x-1/2 items-center gap-2 rounded-[4px] border border-th-line bg-th-surface px-2.5 py-2 shadow-2xl ${mode === 'control-bar' ? 'w-[420px]' : mode === 'vinyl-widget' ? 'w-[184px]' : 'w-[144px]'}`} role="status">
           {youtubeImportTask.status === 'success'
             ? <Check className="h-3.5 w-3.5 flex-shrink-0 text-emerald-300" />
             : <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0 text-rose-300" />}
           <div className="min-w-0 flex-1">
-            <p className="truncate text-[10px] font-semibold text-white">{youtubeImportTask.message}</p>
+            <p className="truncate text-[10px] font-semibold text-th-primary">{youtubeImportTask.message}</p>
             {mode === 'control-bar' && youtubeImportTask.report && (
               <p className="mt-0.5 text-[9px] text-slate-500">{youtubeImportTask.report.added} added · {youtubeImportTask.report.duplicates} duplicates · {youtubeImportTask.report.skipped} skipped</p>
             )}
@@ -247,7 +263,7 @@ export const App: React.FC = () => {
           {mode === 'control-bar' && youtubeImportTask.targetPlaylistId && (
             <button type="button" onClick={() => { setDrawerOpen(true); setDrawerTab('playlist'); selectPlaylist(youtubeImportTask.targetPlaylistId ?? null); }} className="text-[9px] font-semibold text-amber-300 hover:text-amber-200">Open</button>
           )}
-          <button type="button" onClick={dismissYoutubeTask} className="flex-shrink-0 rounded-[3px] p-1 text-slate-500 hover:bg-white/10 hover:text-white" aria-label="Close import notification"><X className="h-3.5 w-3.5" /></button>
+          <button type="button" onClick={dismissYoutubeTask} className="flex-shrink-0 rounded-[3px] p-1 text-slate-500 hover:bg-th-soft-strong hover:text-th-primary" aria-label="Close import notification"><X className="h-3.5 w-3.5" /></button>
         </div>
       )}
 

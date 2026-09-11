@@ -2,6 +2,14 @@ import { invoke } from '@tauri-apps/api/core';
 import { usePlayerStore } from '../stores/usePlayerStore';
 
 let lastSentKey = '';
+let lastErrorWarnAt = 0;
+
+const warnDiscordError = (message: string, error: unknown) => {
+  const now = Date.now();
+  if (now - lastErrorWarnAt < 60_000) return;
+  lastErrorWarnAt = now;
+  console.warn(`[DiscordRPC] ${message}:`, error);
+};
 
 export const syncDiscordActivity = async (force = false) => {
   const state = usePlayerStore.getState();
@@ -25,7 +33,7 @@ export const syncDiscordActivity = async (force = false) => {
           clientId,
         });
       } catch (error) {
-        console.debug('[DiscordRPC] activity disable update failed:', error);
+        warnDiscordError('activity disable update failed', error);
       }
     }
     return;
@@ -59,6 +67,6 @@ export const syncDiscordActivity = async (force = false) => {
       clientId,
     });
   } catch (error) {
-    console.debug('[DiscordRPC] activity update failed:', error);
+    warnDiscordError('activity update failed', error);
   }
 };

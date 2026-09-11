@@ -410,9 +410,11 @@ fn join_reader(
 ) -> Result<Vec<u8>, ProcessError> {
     reader
         .join()
-        .ok()
-        .and_then(Result::ok)
-        .ok_or_else(|| process_error(request_id, ProcessErrorKind::OutputTooLarge))
+        .map_err(|_| process_error(request_id, ProcessErrorKind::ProcessFailed))?
+        .map_err(|error| {
+            log::warn!("youtube_process_output_read_error request_id={request_id} err={error}");
+            process_error(request_id, ProcessErrorKind::ProcessFailed)
+        })
 }
 
 fn process_error(request_id: u64, kind: ProcessErrorKind) -> ProcessError {

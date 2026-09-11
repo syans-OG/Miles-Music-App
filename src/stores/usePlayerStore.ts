@@ -156,6 +156,7 @@ export interface PlayerActions {
   deleteMultipleSongs: (songIds: string[]) => Promise<void>;
   purgeUnavailableYoutubeSong: (songId: string, nextSongId: string | null, notice: string) => void;
   clearLibraryNotice: () => void;
+  setLibraryNotice: (message: string | null) => void;
   incrementPlayCount: (songId: string) => void;
   addListenedTime: (songId: string, seconds: number) => void;
   toggleAlwaysOnTop: () => void;
@@ -1238,6 +1239,9 @@ export const usePlayerStore = create<PlayerStore>()(
           } catch (error) {
             if (activeYoutubeImportRequestId !== requestId) return;
             const mapped = error instanceof YoutubeServiceError ? error : null;
+            if (mapped?.detail) {
+              console.error(`[YouTube] import failed (${mapped.code}): ${mapped.detail}`);
+            }
             const activeTask = get().youtubeImportTask?.requestId === requestId
               ? get().youtubeImportTask
               : null;
@@ -2119,6 +2123,7 @@ export const usePlayerStore = create<PlayerStore>()(
         },
 
         clearLibraryNotice: () => set({ libraryNotice: null }),
+        setLibraryNotice: (message) => set({ libraryNotice: message }),
 
         incrementPlayCount: (songId: string) => {
           set((state) => {

@@ -13,9 +13,11 @@ import {
 } from 'lucide-react';
 
 import { usePlayerStore } from '../stores/usePlayerStore';
+import { getCurrentWindow } from '@tauri-apps/api/window';
 
 import { handleMagneticSnapOnRelease } from '../hooks/useWindowResizer';
 import { getDisplayCoverUrl, handleCoverImageError } from '../utils/coverImage';
+import { isTauri } from '../utils/tauriEnv';
 
 export const VinylWidget: React.FC = () => {
   const {
@@ -77,14 +79,13 @@ export const VinylWidget: React.FC = () => {
       return;
     }
     try {
-      const { getCurrentWindow } = await import('@tauri-apps/api/window');
       const win = getCurrentWindow();
       await win.startDragging();
       setTimeout(() => {
         handleMagneticSnapOnRelease(setDockPosition);
       }, 300);
-    } catch {
-      // Browser fallback
+    } catch (error) {
+      if (isTauri()) console.error('[VinylWidget] startDragging failed:', error);
     }
   };
 
@@ -104,8 +105,8 @@ export const VinylWidget: React.FC = () => {
 
 
         {/* Top-Left Branding / Logo */}
-        <div className="absolute top-2 left-2.5 text-[8px] font-bold text-slate-400 tracking-wider flex items-center gap-1 z-20">
-          <Disc className="w-2.5 h-2.5 text-slate-300" />
+        <div className="absolute top-2 left-2.5 text-[8px] font-bold text-[color:var(--th-tt-ink)] tracking-wider flex items-center gap-1 z-20">
+          <Disc className="w-2.5 h-2.5 text-[color:var(--th-tt-soft)]" />
           <span>MILES</span>
         </div>
 
@@ -141,14 +142,14 @@ export const VinylWidget: React.FC = () => {
               className="w-full h-full object-cover"
             />
             {/* Center Spindle Hole */}
-            <div className="absolute inset-0 m-auto w-2 h-2 rounded-full bg-neutral-950 border border-slate-400/50 shadow-inner" />
+            <div className="absolute inset-0 m-auto w-2 h-2 rounded-full bg-neutral-950 border border-[color-mix(in_srgb,var(--th-400)_50%,transparent)] shadow-inner" />
           </div>
         </div>
 
         {/* Bottom Switch Power Indicator Light */}
         <div className="absolute bottom-2.5 left-3 flex items-center gap-1.5 z-20">
           <div className={`w-2 h-2 rounded-full ${isPlaying ? 'bg-emerald-400 shadow-lg shadow-emerald-400/50 animate-pulse' : 'bg-rose-500/80'}`} />
-          <span className="text-[9px] text-slate-400 font-mono tracking-widest uppercase">
+          <span className="text-[9px] text-[color:var(--th-tt-ink)] font-mono tracking-widest uppercase">
             {isPlaying ? 'ON' : 'OFF'}
           </span>
         </div>
@@ -156,21 +157,21 @@ export const VinylWidget: React.FC = () => {
         {/* Bottom-Right Mode Switcher Button */}
         <button
           onClick={cycleMode}
-          className="absolute bottom-2.5 right-2.5 p-1 rounded-lg bg-white/5 hover:bg-white/20 text-slate-300 hover:text-white border border-white/10 shadow-md transition-all z-20"
+          className="absolute bottom-2.5 right-2.5 p-1 rounded-lg bg-th-soft hover:bg-th-soft-strong text-th-muted hover:text-th-primary border border-th-line shadow-md transition-all z-20"
           title="Switch to Next Mode"
         >
           <Layers className="w-3 h-3" />
         </button>
 
         {/* HOVER OVERLAY CONTROLS - Original Interactive Hi-Fi Overlay */}
-        <div className="absolute inset-0 bg-dark-900/95 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col items-center justify-between p-3 z-30">
+        <div className="absolute inset-0 bg-[color-mix(in_srgb,var(--th-elevated)_95%,transparent)] rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col items-center justify-between p-3 z-30">
 
           {/* Top Track Info */}
           <div className="text-center w-full pt-0.5">
-            <h5 className="text-xs font-bold text-white truncate max-w-[140px] mx-auto">
+            <h5 className="text-xs font-bold text-th-primary truncate max-w-[140px] mx-auto">
               {currentSong?.title}
             </h5>
-            <p className="text-[10px] text-slate-400 truncate max-w-[130px] mx-auto mt-0.5">
+            <p className="text-[10px] text-th-muted truncate max-w-[130px] mx-auto mt-0.5">
               {currentSong?.artist}
             </p>
           </div>
@@ -179,7 +180,7 @@ export const VinylWidget: React.FC = () => {
           <div className="flex items-center gap-3 my-auto">
             <button
               onClick={() => playPrev()}
-              className="text-slate-300 hover:text-white p-1 hover:scale-110 transition-transform"
+              className="text-th-muted hover:text-th-primary p-1 hover:scale-110 transition-transform"
               title="Previous Track"
             >
               <SkipBack className="w-3.5 h-3.5" />
@@ -187,7 +188,7 @@ export const VinylWidget: React.FC = () => {
 
             <button
               onClick={() => togglePlayPause()}
-              className={`w-9 h-9 rounded-full flex items-center justify-center shadow-xl hover:scale-105 transition-transform ${playbackError ? 'bg-rose-400 text-white' : 'bg-white text-dark-900'}`}
+              className={`w-9 h-9 rounded-full flex items-center justify-center shadow-xl hover:scale-105 transition-transform ${playbackError ? 'bg-th-err text-white' : 'bg-th-pill-active text-th-pill-active-text'}`}
               title={playbackError ? `${playbackError.message} Retry` : playbackIntent ? 'Pause' : 'Play'}
             >
               {playbackError
@@ -201,7 +202,7 @@ export const VinylWidget: React.FC = () => {
 
             <button
               onClick={() => playNext()}
-              className="text-slate-300 hover:text-white p-1 hover:scale-110 transition-transform"
+              className="text-th-muted hover:text-th-primary p-1 hover:scale-110 transition-transform"
               title="Next Track"
             >
               <SkipForward className="w-3.5 h-3.5" />
@@ -215,7 +216,7 @@ export const VinylWidget: React.FC = () => {
               className={`p-1.5 rounded-lg transition-all ${
                 isLooping
                   ? 'bg-amber-400/20 text-amber-300 border border-amber-400/40 shadow-sm scale-105'
-                  : 'bg-white/5 hover:bg-white/15 text-slate-400 hover:text-white border border-white/5'
+                  : 'bg-th-soft hover:bg-th-soft-strong text-th-muted hover:text-th-primary border border-th-line'
               }`}
               title={isLooping ? 'Repeat Track: ON' : 'Repeat Track: OFF'}
             >
@@ -224,7 +225,7 @@ export const VinylWidget: React.FC = () => {
 
             <button
               onClick={cycleMode}
-              className="p-1.5 rounded-lg bg-white/5 hover:bg-white/15 text-slate-300 hover:text-white border border-white/5 transition-all shadow-sm hover:scale-105"
+              className="p-1.5 rounded-lg bg-th-soft hover:bg-th-soft-strong text-th-muted hover:text-th-primary border border-th-line transition-all shadow-sm hover:scale-105"
               title="Switch View Mode"
             >
               <Layers className="w-3 h-3" />

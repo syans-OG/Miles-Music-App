@@ -255,13 +255,22 @@ async fn save_imported_audio(
         if let Some(picture) = tag.pictures().first() {
             if let Some(normalized_cover) = normalize_embedded_cover(picture.data()) {
                 let covers_dir = library_dir.join("covers");
-                if std::fs::create_dir_all(&covers_dir).is_ok() {
-                    let cover_destination = covers_dir.join(format!("{file_hash}.png"));
-                    if cover_destination.exists()
-                        || std::fs::write(&cover_destination, normalized_cover).is_ok()
+                let cover_destination = covers_dir.join(format!("{file_hash}.png"));
+                if cover_destination.exists() {
+                    metadata.cover_path = Some(cover_destination.to_string_lossy().into_owned());
+                } else {
+                    match std::fs::create_dir_all(&covers_dir)
+                        .and_then(|_| std::fs::write(&cover_destination, normalized_cover))
                     {
-                        metadata.cover_path =
-                            Some(cover_destination.to_string_lossy().into_owned());
+                        Ok(()) => {
+                            metadata.cover_path =
+                                Some(cover_destination.to_string_lossy().into_owned());
+                        }
+                        Err(error) => {
+                            log::warn!(
+                                "local_import_cover_write_failed file={file_hash}.png err={error}"
+                            );
+                        }
                     }
                 }
             }
@@ -337,10 +346,10 @@ async fn resize_widget_window(
 
     let current_size = window
         .outer_size()
-        .unwrap_or(tauri::PhysicalSize::new(0, 0));
+        .map_err(|error| format!("resize_widget_window outer_size failed: {error}"))?;
     let current_pos = window
         .outer_position()
-        .unwrap_or(PhysicalPosition::new(0, 0));
+        .map_err(|error| format!("resize_widget_window outer_position failed: {error}"))?;
 
     let start_w = current_size.width as f64;
     let start_h = current_size.height as f64;
@@ -547,8 +556,13 @@ async fn handle_drag_end_snap(window: Window) -> Result<String, String> {
             }
 
             // Ensure final exact position
-            let _ = window.set_position(PhysicalPosition::new(target_x, target_y));
-            Ok(corner_name.to_string())
+            match window.set_position(PhysicalPosition::new(target_x, target_y)) {
+                Ok(()) => Ok(corner_name.to_string()),
+                Err(error) => {
+                    log::warn!("handle_drag_end_snap_final_set_position_failed corner={corner_name} err={error}");
+                    Ok(corner_name.to_string())
+                }
+            }
         } else {
             Ok("free".to_string())
         }

@@ -63,12 +63,14 @@ export const getYoutubeErrorMessage = (code: YoutubeErrorCode): string => errorM
 export class YoutubeServiceError extends Error {
   readonly code: YoutubeErrorCode;
   readonly retryable: boolean;
+  readonly detail?: string;
 
   constructor(error: YoutubeCommandError) {
-    super(errorMessages[error.code]);
+    super(`${errorMessages[error.code]}${error.detail ? ` — ${error.detail}` : ''}`);
     this.name = 'YoutubeServiceError';
     this.code = error.code;
     this.retryable = error.retryable;
+    this.detail = error.detail;
   }
 }
 

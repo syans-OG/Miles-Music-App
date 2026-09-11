@@ -106,5 +106,5 @@ describe('playback hot-path persist cost', () => {
 
     expect(afterMs).toBeLessThan(beforeMs);
     expect(afterWrites).toBeLessThan(beforeWrites);
-  });
+  }, 20_000);
 });

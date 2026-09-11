@@ -250,11 +250,20 @@ impl YoutubeCommandService {
         if let Some(img_entry) = image_entry {
             if let Ok(img_bytes) = std::fs::read(img_entry.path()) {
                 let covers_dir = library_dir.join("covers");
-                let _ = std::fs::create_dir_all(&covers_dir);
                 let cover_destination = covers_dir.join(format!("{file_hash}.png"));
                 if let Some(normalized) = crate::normalize_embedded_cover(&img_bytes) {
-                    let _ = std::fs::write(&cover_destination, normalized);
-                    cover_path = Some(cover_destination.to_string_lossy().into_owned());
+                    match std::fs::create_dir_all(&covers_dir)
+                        .and_then(|_| std::fs::write(&cover_destination, normalized))
+                    {
+                        Ok(()) => {
+                            cover_path = Some(cover_destination.to_string_lossy().into_owned());
+                        }
+                        Err(error) => {
+                            log::warn!(
+                                "youtube_import_cover_write_failed file={file_hash}.png err={error}"
+                            );
+                        }
+                    }
                 }
             }
         }

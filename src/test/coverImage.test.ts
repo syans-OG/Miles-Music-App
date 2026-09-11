@@ -20,14 +20,19 @@ describe('getDisplayCoverUrl', () => {
     expect(getDisplayCoverUrl('asset://localhost/library/cover.jpg')).toBe('asset://localhost/library/cover.jpg');
   });
 
-  it('replaces a broken cover and disables repeated native errors', () => {
+  it('replaces a broken cover with the default, then a zero-network fallback', () => {
     const image = document.createElement('img');
     image.src = 'https://i.scdn.co/image/broken';
     image.onerror = () => undefined;
 
     handleCoverImageError({ currentTarget: image });
 
-    expect(image.onerror).toBeNull();
     expect(image.src).toBe(getDisplayCoverUrl(undefined));
+    expect(typeof image.onerror).toBe('function');
+
+    // If the network default also fails, the final layer disables native errors
+    (image.onerror as () => void)();
+    expect(image.onerror).toBeNull();
+    expect(image.src.startsWith('data:image/svg+xml')).toBe(true);
   });
 });

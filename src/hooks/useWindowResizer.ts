@@ -3,6 +3,7 @@ import { invoke } from '@tauri-apps/api/core';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { useShallow } from 'zustand/react/shallow';
 import { usePlayerStore } from '../stores/usePlayerStore';
+import { isTauri } from '../utils/tauriEnv';
 
 export const useWindowResizer = () => {
   const { mode, isDrawerOpen, isUrlInputOpen, youtubeImportTask, spotifyImportTask, dockPosition, setDockPosition } = usePlayerStore(useShallow((state) => ({
@@ -47,11 +48,11 @@ export const useWindowResizer = () => {
           width: targetWidth,
           height: targetHeight,
           dockPosition: dockPosition
-        }).catch(() => {
-          // Browser environment fallback
+        }).catch((error) => {
+          if (isTauri()) console.error('[useWindowResizer] resize invoke failed:', error);
         });
-      } catch {
-        // Fallback for browser
+      } catch (error) {
+        if (isTauri()) console.error('[useWindowResizer] resize threw:', error);
       }
     };
 
@@ -74,8 +75,8 @@ export const useWindowResizer = () => {
             handleMagneticSnapOnRelease(setDockPosition);
           }, 150);
         });
-      } catch {
-        // Browser environment fallback
+      } catch (error) {
+        if (isTauri()) console.error('[useWindowResizer] onMoved listener setup failed:', error);
       }
     };
 
@@ -101,8 +102,8 @@ export const handleMagneticSnapOnRelease = async (setDockPosition: (pos: any) =>
   try {
     const newPosition = await invoke<string>('handle_drag_end_snap');
     setDockPosition(newPosition);
-  } catch {
-    // Browser fallback
+  } catch (error) {
+    if (isTauri()) console.error('[useWindowResizer] magnetic snap failed:', error);
   }
 };
 
@@ -110,7 +111,7 @@ export const autoDetectDockPosition = async (setDockPosition: (pos: any) => void
   try {
     const detected = await invoke<string>('detect_dock_position');
     setDockPosition(detected);
-  } catch {
-    // Fallback if invoke is not available in browser
+  } catch (error) {
+    if (isTauri()) console.error('[useWindowResizer] dock position detection failed:', error);
   }
 };

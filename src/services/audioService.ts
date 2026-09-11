@@ -12,6 +12,8 @@ import {
 import { matchSpotifyTrack } from './spotifyService';
 import { syncDiscordActivity } from './discordRpcService';
 
+let lastPrefetchWarnAt = 0;
+
 interface MediaErrorLike {
   code: number;
 }
@@ -543,7 +545,11 @@ export class AudioService {
       'prefetch',
       () => generation === this.prefetchGeneration && this.prefetchedKey === prefetchKey,
     ).catch((error) => {
-      console.debug('[AudioService] prefetch failed:', error);
+      const now = Date.now();
+      if (now - lastPrefetchWarnAt >= 60_000) {
+        lastPrefetchWarnAt = now;
+        console.warn('[AudioService] prefetch failed:', error);
+      }
     });
   }
 

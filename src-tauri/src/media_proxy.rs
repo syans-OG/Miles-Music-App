@@ -56,6 +56,7 @@ impl MediaProxy {
             .ok_or_else(|| "Audio proxy did not receive an IP address".to_string())?;
         let client = Client::builder()
             .connect_timeout(Duration::from_secs(8))
+            .timeout(Duration::from_secs(60))
             .build()
             .map_err(|_| "Audio proxy HTTP client could not start".to_string())?;
         let proxy = Self {
@@ -168,7 +169,11 @@ impl MediaProxy {
         }
         match upstream.send() {
             Ok(response) => respond_with_upstream(request, response),
-            Err(_) => {
+            Err(error) => {
+                log::warn!(
+                    "media_proxy_upstream_failed err={error} url={url}",
+                    url = session.upstream_url
+                );
                 let _ = request.respond(empty_response(502));
             }
         }

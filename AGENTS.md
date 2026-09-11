@@ -11,7 +11,7 @@ Desktop music player (Tauri v2 + React) untuk audio lokal, YouTube, dan Spotify.
 ## Code Style
 - TS/TSX: kebab-case untuk file (`audioService.ts`, `usePlayerStore.ts`), PascalCase untuk komponen React
 - Rust: snake_case file & fungsi; error via tipe `YoutubeError { code, message, retryable }` dengan kode enum
-- UI string user-facing dalam Bahasa Indonesia
+- UI string user-facing dalam Bahasa Inggris (English)
 - Jangan tambah komentar tanpa perlu; ikuti pola error handling yang ada
 - Kembalikan error sebagai `Result<T, string>` pada command Tauri sederhana (lib.rs); gunakan `YoutubeErrorCode` pada modul youtube
 

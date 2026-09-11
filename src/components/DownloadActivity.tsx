@@ -33,13 +33,13 @@ export const DownloadActivity: React.FC = () => {
       <div
         role="status"
         aria-live="polite"
-        className="flex w-[340px] items-center gap-2 rounded-[14px] border border-white/10 bg-[#14161c]/90 px-2.5 py-2 shadow-2xl backdrop-blur-md"
+        className="flex w-[340px] items-center gap-2 rounded-[14px] border border-th-line bg-[color-mix(in_srgb,var(--th-elevated)_90%,transparent)] px-2.5 py-2 shadow-2xl backdrop-blur-md"
       >
         {status === 'downloading' ? (
           <>
             <div className="flex-shrink-0">
               <svg viewBox="0 0 20 20" className="h-5 w-5" style={{ transform: 'rotate(-90deg)' }}>
-                <circle cx="10" cy="10" r="8" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="2.5" />
+                <circle cx="10" cy="10" r="8" fill="none" stroke="var(--th-600)" strokeWidth="2.5" />
                 <circle
                   cx="10"
                   cy="10"
@@ -55,7 +55,7 @@ export const DownloadActivity: React.FC = () => {
               </svg>
             </div>
             <div className="min-w-0 flex-1">
-              <p className="truncate text-[11.5px] font-bold text-white">
+              <p className="truncate text-[11.5px] font-bold text-th-primary">
                 {downloadTask.total > 1
                   ? `Downloading ${Math.min(downloadTask.processed + 1, downloadTask.total)} of ${downloadTask.total}`
                   : 'Downloading track'}
@@ -72,7 +72,7 @@ export const DownloadActivity: React.FC = () => {
           <>
             <span className="download-activity-badge success"><Check className="h-3 w-3" /></span>
             <div className="min-w-0 flex-1">
-              <p className="truncate text-[11.5px] font-bold text-white">{downloadTask.message}</p>
+              <p className="truncate text-[11.5px] font-bold text-th-primary">{downloadTask.message}</p>
               {downloadTask.report && downloadTask.report.failed > 0 && (
                 <p className="truncate text-[10px] text-rose-300">
                   {downloadTask.report.failed} track(s) failed to download.
@@ -88,7 +88,7 @@ export const DownloadActivity: React.FC = () => {
         ) : status === 'error' ? (
           <>
             <span className="download-activity-badge error"><AlertTriangle className="h-3 w-3" /></span>
-            <p className="min-w-0 flex-1 truncate text-[11.5px] font-bold text-white">{downloadTask.message}</p>
+            <p className="min-w-0 flex-1 truncate text-[11.5px] font-bold text-th-primary">{downloadTask.message}</p>
             {retryable && (
               <button type="button" onClick={() => void retryDownloadTask()} className="download-activity-btn primary">
                 Retry
@@ -98,7 +98,7 @@ export const DownloadActivity: React.FC = () => {
         ) : (
           <>
             <span className="download-activity-badge cancelled"><X className="h-3 w-3" /></span>
-            <p className="min-w-0 flex-1 truncate text-[11.5px] font-bold text-white">{downloadTask.message}</p>
+            <p className="min-w-0 flex-1 truncate text-[11.5px] font-bold text-th-primary">{downloadTask.message}</p>
           </>
         )}
 
