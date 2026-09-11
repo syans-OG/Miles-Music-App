@@ -334,14 +334,17 @@ const getAudioDuration = (file: File): Promise<number> => {
     const audio = new Audio();
     const url = URL.createObjectURL(file);
     audio.src = url;
-    audio.onloadedmetadata = () => {
+    let settled = false;
+    const finish = (duration: number) => {
+      if (settled) return;
+      settled = true;
+      window.clearTimeout(timer);
       URL.revokeObjectURL(url);
-      resolve(Math.round(audio.duration) || 180);
+      resolve(duration);
     };
-    audio.onerror = () => {
-      URL.revokeObjectURL(url);
-      resolve(180);
-    };
+    const timer = window.setTimeout(() => finish(180), 8000);
+    audio.onloadedmetadata = () => finish(Math.round(audio.duration) || 180);
+    audio.onerror = () => finish(180);
   });
 };
 
@@ -1526,7 +1529,7 @@ export const usePlayerStore = create<PlayerStore>()(
               coverPath: sharedCover ? null : offline.coverPath ?? null,
             });
           } catch (error) {
-            console.error(`Gagal menghapus unduhan ${song.title}:`, error);
+            console.error(`Failed to delete download ${song.title}:`, error);
             set({ libraryNotice: `Failed to remove download “${song.title}”.` });
             return;
           }
@@ -1556,8 +1559,9 @@ export const usePlayerStore = create<PlayerStore>()(
           let savedAudio;
           try {
             savedAudio = await saveAudioPermanently(file);
-          } catch {
-            set({ libraryNotice: `“${file.name}” is not a valid audio file` });
+          } catch (error) {
+            console.error(`Failed to save local file “${file.name}”:`, error);
+            set({ libraryNotice: `Failed to save “${file.name}”. Check disk space and permissions.` });
             return;
           }
           const existingSong = get().queue.find((song) =>
