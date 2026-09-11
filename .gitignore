@@ -41,3 +41,12 @@ desktop.ini
 # Local run scripts and development artifacts
 /run-miles.bat
 
+# Playwright MCP captures (may contain page content)
+/.playwright-mcp/
+
+# Design prototypes and screenshots
+/prototype-*.html
+/prototype-*.png
+/color-*.png
+/theme-*.png
+
