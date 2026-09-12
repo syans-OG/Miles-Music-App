@@ -66,10 +66,10 @@ export const SettingsPanel: React.FC = () => {
   const volumeLabel = isMuted ? 'MUTE' : `${Math.round(volume * 100)}%`;
 
   return (
-    <section className="h-[317px] overflow-y-auto overscroll-contain px-1 animate-fade-in" aria-labelledby="settings-panel-title">
+    <section className="h-[317px] overflow-y-auto overscroll-contain pl-1 pr-3 animate-fade-in" aria-labelledby="settings-panel-title">
       <header className="flex h-[37px] items-center justify-between border-b border-th-line">
         <div className="flex min-w-0 items-center gap-2">
-          <Settings className="h-3.5 w-3.5 flex-shrink-0 text-amber-300" strokeWidth={1.8} />
+          <Settings className="h-3.5 w-3.5 flex-shrink-0 text-th-accent" strokeWidth={1.8} />
           <h3 id="settings-panel-title" className="flex-shrink-0 text-[12px] font-bold tracking-tight text-th-primary">Miles Settings</h3>
           <span className="truncate text-[8px] text-slate-500">Auto-saved</span>
         </div>
@@ -78,7 +78,7 @@ export const SettingsPanel: React.FC = () => {
 
       <div className="divide-y divide-th-line">
         <div className="flex h-[58px] items-center gap-3">
-          <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-th-soft text-amber-300">
+          <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-th-soft text-th-accent">
             <Palette className="h-3.5 w-3.5" strokeWidth={1.8} />
           </div>
           <div className="w-[82px] flex-shrink-0">
@@ -104,7 +104,7 @@ export const SettingsPanel: React.FC = () => {
         </div>
 
         <div className="flex h-[58px] items-center gap-3">
-          <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-th-soft text-amber-300">
+          <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-th-soft text-th-accent">
             <Paintbrush className="h-3.5 w-3.5" strokeWidth={1.8} />
           </div>
           <div className="w-[82px] flex-shrink-0">
@@ -159,7 +159,7 @@ export const SettingsPanel: React.FC = () => {
           </div>
         )}
         <div className="flex h-[48px] items-center gap-3">
-          <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-th-soft text-amber-300">
+          <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-th-soft text-th-accent">
             <Volume2 className="h-3.5 w-3.5" strokeWidth={1.8} />
           </div>
           <div className="w-[82px] flex-shrink-0">
@@ -176,18 +176,18 @@ export const SettingsPanel: React.FC = () => {
             aria-label="Saved volume"
             className="h-1 min-w-0 flex-1 cursor-pointer accent-amber-400 focus-visible:ring-2 focus-visible:ring-amber-300/50"
           />
-          <span className="w-9 text-right font-mono text-[9px] font-bold text-amber-300">{volumeLabel}</span>
+          <span className="w-9 text-right font-mono text-[9px] font-bold text-th-accent">{volumeLabel}</span>
         </div>
 
         <div className="flex h-[48px] items-center gap-3">
-          <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-th-soft text-amber-300">
+          <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-th-soft text-th-accent">
             <Pin className="h-3.5 w-3.5" strokeWidth={1.8} />
           </div>
           <div className="min-w-0 flex-1">
             <p className="text-[10px] font-semibold text-th-primary">Always on top</p>
             <p className="mt-0.5 text-[8px] text-slate-500">Keep Miles above other windows</p>
           </div>
-          <span className={`font-mono text-[8px] font-bold uppercase ${isAlwaysOnTop ? 'text-amber-300' : 'text-slate-600'}`}>
+          <span className={`font-mono text-[8px] font-bold uppercase ${isAlwaysOnTop ? 'text-th-accent' : 'text-slate-600'}`}>
             {isAlwaysOnTop ? 'ON' : 'OFF'}
           </span>
           <button
@@ -197,19 +197,19 @@ export const SettingsPanel: React.FC = () => {
             aria-label="Always on top"
             aria-pressed={isAlwaysOnTop}
           >
-            <span className={`absolute left-0 top-0.5 h-4 w-4 rounded-full shadow-sm transition-transform duration-200 ${isAlwaysOnTop ? 'translate-x-[18px] bg-dark-900' : 'translate-x-0.5 bg-slate-300'}`} />
+            <span className={`absolute left-0 top-0.5 h-4 w-4 rounded-full shadow-sm transition-transform duration-200 ${isAlwaysOnTop ? 'translate-x-[18px] bg-th-pill-active-text' : 'translate-x-0.5 bg-slate-300'}`} />
           </button>
         </div>
 
         <div className="flex h-[48px] items-center gap-3">
-          <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-th-soft text-amber-300">
+          <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-th-soft text-th-accent">
             <Gamepad2 className="h-3.5 w-3.5" strokeWidth={1.8} />
           </div>
           <div className="min-w-0 flex-1">
             <p className="text-[10px] font-semibold text-th-primary">Discord Presence (RPC)</p>
             <p className="mt-0.5 text-[8px] text-slate-500">Display current track on Discord</p>
           </div>
-          <span className={`font-mono text-[8px] font-bold uppercase ${enableDiscordRpc ? 'text-amber-300' : 'text-slate-600'}`}>
+          <span className={`font-mono text-[8px] font-bold uppercase ${enableDiscordRpc ? 'text-th-accent' : 'text-slate-600'}`}>
             {enableDiscordRpc ? 'ON' : 'OFF'}
           </span>
           <button
@@ -219,7 +219,7 @@ export const SettingsPanel: React.FC = () => {
             aria-label="Discord Presence"
             aria-pressed={enableDiscordRpc}
           >
-            <span className={`absolute left-0 top-0.5 h-4 w-4 rounded-full shadow-sm transition-transform duration-200 ${enableDiscordRpc ? 'translate-x-[18px] bg-dark-900' : 'translate-x-0.5 bg-slate-300'}`} />
+            <span className={`absolute left-0 top-0.5 h-4 w-4 rounded-full shadow-sm transition-transform duration-200 ${enableDiscordRpc ? 'translate-x-[18px] bg-th-pill-active-text' : 'translate-x-0.5 bg-slate-300'}`} />
           </button>
         </div>
 

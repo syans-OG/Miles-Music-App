@@ -45,12 +45,11 @@ export const DownloadActivity: React.FC = () => {
                   cy="10"
                   r="8"
                   fill="none"
-                  stroke="#fbbf24"
                   strokeWidth="2.5"
                   strokeLinecap="round"
                   strokeDasharray={ARC_LENGTH}
                   strokeDashoffset={ARC_LENGTH * (1 - progress)}
-                  style={{ transition: 'stroke-dashoffset 0.65s cubic-bezier(0.16,1,0.3,1)' }}
+                  style={{ transition: 'stroke-dashoffset 0.65s cubic-bezier(0.16,1,0.3,1)', stroke: 'rgb(var(--th-a400))' }}
                 />
               </svg>
             </div>

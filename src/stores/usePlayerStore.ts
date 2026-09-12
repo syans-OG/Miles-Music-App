@@ -177,6 +177,7 @@ let nextSpotifyImportRequestId = 1;
 let activeSpotifyImportRequestId = 0;
 let nextDownloadRequestId = 1;
 let activeDownloadRequestId = 0;
+let pendingDownloadSongIds: string[] = [];
 const YOUTUBE_COVER_FALLBACK = 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=600&auto=format&fit=crop&q=80';
 const SPOTIFY_IMPORT_LIMIT = 100;
 const SPOTIFY_ID_PATTERN = /^[A-Za-z0-9]{22}$/;
@@ -1335,20 +1336,10 @@ export const usePlayerStore = create<PlayerStore>()(
 
         enqueueDownloads: async (songIds) => {
           const requestId = nextDownloadRequestId++;
-          activeDownloadRequestId = requestId;
 
-          const previous = get().downloadTask;
-          if (previous?.status === 'downloading') {
-            try {
-              await cancelYoutubeDownload();
-            } catch {
-              // Stale-result guards prevent the old task from committing.
-            }
-          }
-
-          const state = get();
+          const current = get();
           const candidates = [...new Set(songIds)]
-            .map((id) => state.queue.find((song) => song.id === id))
+            .map((id) => current.queue.find((song) => song.id === id))
             .filter((song): song is Song => Boolean(song))
             .filter((song) => !song.offline)
             .filter((song) => getSongDownloadVideoId(song) !== null);
@@ -1357,12 +1348,40 @@ export const usePlayerStore = create<PlayerStore>()(
             return;
           }
 
+          const previous = current.downloadTask;
+          if (previous?.status === 'downloading') {
+            const pendingSet = new Set(pendingDownloadSongIds);
+            const runningIds = new Set(previous.queue.map((item) => item.songId));
+            const appended = candidates
+              .filter((song) => !pendingSet.has(song.id) && !runningIds.has(song.id));
+            if (appended.length > 0) {
+              pendingDownloadSongIds.push(...appended.map((song) => song.id));
+              set((state) => state.downloadTask
+                ? {
+                    downloadTask: {
+                      ...state.downloadTask,
+                      queue: [
+                        ...state.downloadTask.queue,
+                        ...appended.map((song) => ({ songId: song.id, title: song.title })),
+                      ],
+                      total: state.downloadTask.queue.length + appended.length,
+                    },
+                  }
+                : state);
+            }
+            return;
+          }
+
+          pendingDownloadSongIds = candidates.map((song) => song.id);
+          activeDownloadRequestId = requestId;
           const queue = candidates.map((song) => ({ songId: song.id, title: song.title }));
+          const failedSongIds: string[] = [];
+          let processed = 0;
           set({
             downloadTask: {
               requestId,
               queue,
-              currentSongId: queue[0].songId,
+              currentSongId: queue[0]?.songId ?? null,
               processed: 0,
               total: queue.length,
               status: 'downloading',
@@ -1371,98 +1390,94 @@ export const usePlayerStore = create<PlayerStore>()(
             },
           });
 
-          const failedSongIds: string[] = [];
-          for (let index = 0; index < queue.length; index++) {
-            if (activeDownloadRequestId !== requestId) return;
-            const item = queue[index];
-            const markNext = () => set((current) => current.downloadTask
-              ? {
-                  downloadTask: {
-                    ...current.downloadTask,
-                    processed: current.downloadTask.processed + 1,
-                    currentSongId: queue[index + 1]?.songId ?? null,
-                  },
-                }
-              : current);
+          while (true) {
+            const songId = pendingDownloadSongIds.shift();
+            if (songId === undefined) break;
 
-            const song = get().queue.find((existing) => existing.id === item.songId);
-            if (!song || song.offline) {
-              markNext();
+            const item = get().queue.find((existing) => existing.id === songId);
+            if (!item) {
+              processed++;
               continue;
             }
-            const videoId = getSongDownloadVideoId(song);
+            if (item.offline) {
+              processed++;
+              continue;
+            }
+            const videoId = getSongDownloadVideoId(item);
             if (!videoId) {
-              failedSongIds.push(item.songId);
-              markNext();
+              failedSongIds.push(item.id);
+              processed++;
               continue;
             }
 
-            set((current) => current.downloadTask
+            set((state) => state.downloadTask
               ? {
                   downloadTask: {
-                    ...current.downloadTask,
-                    currentSongId: item.songId,
+                    ...state.downloadTask,
+                    currentSongId: item.id,
                     message: `Downloading “${item.title}”…`,
                   },
                 }
-              : current);
+              : state);
 
             try {
               const downloaded = await downloadYoutubeTrack(videoId);
               if (activeDownloadRequestId !== requestId) return;
-              set((current) => {
-                const target = current.queue.find((existing) => existing.id === item.songId);
-                if (!target || target.offline) return current;
+              set((state) => {
+                const target = state.queue.find((existing) => existing.id === item.id);
+                if (!target || target.offline) return state;
                 const offlineSong = withOfflineDownload(target, {
                   filePath: downloaded.filePath,
                   fileHash: downloaded.fileHash,
                   coverPath: downloaded.coverPath ?? undefined,
                 });
-                const updateSong = (existing: Song) => existing.id === item.songId ? offlineSong : existing;
-                const queue = current.queue.map(updateSong);
+                const updateSong = (existing: Song) => existing.id === item.id ? offlineSong : existing;
+                const updatedQueue = state.queue.map(updateSong);
                 return {
-                  queue,
-                  playbackQueue: current.playbackQueue.map(updateSong),
-                  currentSong: current.currentSong ? updateSong(current.currentSong) : null,
-                  playlists: current.playlists.map((playlist) => ({
+                  queue: updatedQueue,
+                  playbackQueue: state.playbackQueue.map(updateSong),
+                  currentSong: state.currentSong ? updateSong(state.currentSong) : null,
+                  playlists: state.playlists.map((playlist) => ({
                     ...playlist,
                     songs: playlist.songs.map(updateSong),
                   })),
-                  topSongs: sortTopSongs(queue),
+                  topSongs: sortTopSongs(updatedQueue),
                 };
               });
             } catch (error) {
               if (activeDownloadRequestId !== requestId) return;
               console.error(`Gagal mengunduh ${item.title}:`, error);
-              failedSongIds.push(item.songId);
+              failedSongIds.push(item.id);
             }
 
+            processed++;
             if (activeDownloadRequestId !== requestId) return;
-            set((current) => current.downloadTask
+            set((state) => state.downloadTask
               ? {
                   downloadTask: {
-                    ...current.downloadTask,
-                    processed: current.downloadTask.processed + 1,
-                    currentSongId: queue[index + 1]?.songId ?? null,
-                    message: index + 1 < queue.length
-                      ? `Downloading ${index + 1} of ${queue.length} tracks…`
-                      : current.downloadTask.message,
+                    ...state.downloadTask,
+                    processed,
+                    currentSongId: pendingDownloadSongIds[0] ?? null,
+                    message: pendingDownloadSongIds.length > 0
+                      ? `Downloading ${processed + 1} of ${state.downloadTask.total} tracks…`
+                      : state.downloadTask.message,
                   },
                 }
-              : current);
+              : state);
           }
 
           if (activeDownloadRequestId !== requestId) return;
-          const succeeded = queue.length - failedSongIds.length;
-          const allFailed = failedSongIds.length === queue.length;
+          pendingDownloadSongIds = [];
+          const succeeded = processed - failedSongIds.length;
+          const allFailed = failedSongIds.length === processed;
           const status: DownloadTask['status'] = allFailed ? 'error' : 'success';
           set({
             downloadTask: {
               requestId,
-              queue,
+              queue: get().downloadTask?.queue ?? queue,
               currentSongId: null,
-              processed: queue.length,
-              total: queue.length,
+              processed,
+              total: processed,
               status,
               message: allFailed
                 ? 'Failed to download tracks.'
@@ -1488,6 +1503,7 @@ export const usePlayerStore = create<PlayerStore>()(
           const task = get().downloadTask;
           if (!task || task.status !== 'downloading') return;
           activeDownloadRequestId = nextDownloadRequestId++;
+          pendingDownloadSongIds = [];
           set({
             downloadTask: {
               ...task,

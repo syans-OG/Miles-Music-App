@@ -258,10 +258,10 @@ export const App: React.FC = () => {
             )}
           </div>
           {youtubeImportTask.status !== 'success' && youtubeImportTask.retryable && (
-            <button type="button" onClick={() => void retryYoutubeTask()} className="flex-shrink-0 text-amber-300 hover:text-amber-200" aria-label="Retry"><RotateCcw className="h-3.5 w-3.5" /></button>
+            <button type="button" onClick={() => void retryYoutubeTask()} className="flex-shrink-0 text-th-accent hover:opacity-80" aria-label="Retry"><RotateCcw className="h-3.5 w-3.5" /></button>
           )}
           {mode === 'control-bar' && youtubeImportTask.targetPlaylistId && (
-            <button type="button" onClick={() => { setDrawerOpen(true); setDrawerTab('playlist'); selectPlaylist(youtubeImportTask.targetPlaylistId ?? null); }} className="text-[9px] font-semibold text-amber-300 hover:text-amber-200">Open</button>
+            <button type="button" onClick={() => { setDrawerOpen(true); setDrawerTab('playlist'); selectPlaylist(youtubeImportTask.targetPlaylistId ?? null); }} className="text-[9px] font-semibold text-th-accent hover:opacity-80">Open</button>
           )}
           <button type="button" onClick={dismissYoutubeTask} className="flex-shrink-0 rounded-[3px] p-1 text-slate-500 hover:bg-th-soft-strong hover:text-th-primary" aria-label="Close import notification"><X className="h-3.5 w-3.5" /></button>
         </div>

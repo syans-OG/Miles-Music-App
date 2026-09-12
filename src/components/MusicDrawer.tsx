@@ -316,10 +316,12 @@ interface AddSongsModalProps {
 const AddSongsToPlaylistModal: React.FC<AddSongsModalProps> = ({ playlist, library, onToggle, onClose }) => {
   const [search, setSearch] = useState('');
   const filtered = useMemo(() => {
+    const inPlaylist = new Set(playlist.songs.map((song) => song.id));
+    const available = library.filter((song) => !inPlaylist.has(song.id));
     const q = search.trim().toLowerCase();
-    if (!q) return library;
-    return library.filter((s) => s.title.toLowerCase().includes(q) || s.artist.toLowerCase().includes(q));
-  }, [library, search]);
+    if (!q) return available;
+    return available.filter((s) => s.title.toLowerCase().includes(q) || s.artist.toLowerCase().includes(q));
+  }, [library, playlist.songs, search]);
   const songsScrollRef = useRef<HTMLDivElement>(null);
   const songsVirtualizer = useVirtualizer({
     count: filtered.length,
@@ -363,15 +365,12 @@ const AddSongsToPlaylistModal: React.FC<AddSongsModalProps> = ({ playlist, libra
               {songsVirtualizer.getVirtualItems().map((virtualItem) => {
                 const song = filtered[virtualItem.index];
                 if (!song) return null;
-                const included = playlist.songs.some((s) => s.id === song.id);
                 return (
                   <div
                     key={virtualItem.key}
                     onClick={() => onToggle(song.id)}
                     style={{ transform: `translateY(${virtualItem.start}px)` }}
-                    className={`absolute inset-x-0 top-0 flex cursor-pointer items-center gap-2.5 rounded-xl p-1.5 transition-colors ${
-                      included ? 'border border-amber-400/30 bg-amber-500/10' : 'bg-th-soft hover:bg-th-soft-strong'
-                    }`}
+                    className="absolute inset-x-0 top-0 flex cursor-pointer items-center gap-2.5 rounded-xl bg-th-soft p-1.5 transition-colors hover:bg-th-soft-strong"
                   >
                     <img
                       src={getDisplayCoverUrl(song.coverUrl, 96)}
@@ -382,14 +381,12 @@ const AddSongsToPlaylistModal: React.FC<AddSongsModalProps> = ({ playlist, libra
                       className="h-8 w-8 rounded-lg object-cover"
                     />
                     <div className="min-w-0 flex-1">
-                      <p className={`truncate text-[11px] font-semibold ${included ? 'text-th-accent' : 'text-th-primary'}`}>
+                      <p className="truncate text-[11px] font-semibold text-th-primary">
                         {song.title}
                       </p>
                       <p className="truncate text-[9px] text-slate-400">{song.artist}</p>
                     </div>
-                    <div className={`flex h-5 w-5 items-center justify-center rounded-md border ${
-                      included ? 'border-th-accent bg-th-accent text-th-accent-ink' : 'border-th-line-strong text-transparent'
-                    }`}>
+                    <div className="flex h-5 w-5 items-center justify-center rounded-md border border-th-line-strong text-transparent">
                       <Check className="h-3 w-3" />
                     </div>
                   </div>
@@ -397,7 +394,11 @@ const AddSongsToPlaylistModal: React.FC<AddSongsModalProps> = ({ playlist, libra
               })}
             </div>
           ) : (
-            <p className="py-8 text-center text-[11px] text-slate-500">No songs found.</p>
+            <p className="py-8 text-center text-[11px] text-slate-500">
+              {library.length > 0 && library.every((s) => playlist.songs.some((p) => p.id === s.id))
+                ? 'All library songs are already in this playlist.'
+                : 'No songs found.'}
+            </p>
           )}
         </div>
 
@@ -483,7 +484,7 @@ const CdActionMenu: React.FC<CdActionMenuProps> = ({
       ref={menuRef}
       role="menu"
       aria-label={`Actions for ${song.title}`}
-      className="fixed z-[120] w-32 overflow-hidden rounded-xl border border-th-line bg-th-elevated p-1 text-left shadow-2xl"
+      className="fixed z-[120] w-36 overflow-hidden rounded-xl border border-th-line bg-th-elevated p-1 text-left shadow-2xl"
       style={{
         left: position?.left ?? 0,
         top: position?.top ?? 0,
@@ -822,7 +823,7 @@ export const MusicDrawer: React.FC = () => {
     <div className="w-[400px] self-center bg-[color-mix(in_srgb,var(--th-surface)_95%,transparent)] rounded-b-3xl p-4 border-x border-b border-th-line drawer-cabinet-shadow animate-drawer-pull -mt-2 z-10 relative overflow-hidden">
 
       {libraryNotice && (
-        <div className="absolute left-1/2 top-12 z-[60] max-w-[340px] -translate-x-1/2 rounded-xl border border-amber-400/25 bg-[color-mix(in_srgb,var(--th-elevated)_95%,transparent)] px-3 py-2 text-center text-[10px] font-semibold text-amber-200 shadow-xl">
+        <div className="absolute left-1/2 top-12 z-[60] max-w-[340px] -translate-x-1/2 rounded-xl border border-amber-400/25 bg-[color-mix(in_srgb,var(--th-elevated)_95%,transparent)] px-3 py-2 text-center text-[10px] font-semibold text-th-primary shadow-xl">
           {libraryNotice}
         </div>
       )}
