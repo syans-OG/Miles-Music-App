@@ -4,6 +4,30 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 const DEFAULT_CLIENT_ID: &str = "1534752337543954512";
 
+fn valid_client_id(value: &str) -> bool {
+    let trimmed = value.trim();
+    (17..=20).contains(&trimmed.len()) && trimmed.bytes().all(|b| b.is_ascii_digit())
+}
+
+fn valid_cover_url(value: &str) -> bool {
+    if !value.starts_with("https://") {
+        return false;
+    }
+    let rest = match value.split_once("://") {
+        Some((_, rest)) => rest,
+        None => return false,
+    };
+    let authority = rest.split(['/', '?', '#']).next().unwrap_or("");
+    if authority.is_empty() || authority.contains('@') || authority.contains(':') {
+        return false;
+    }
+    const ALLOWED_HOSTS: [&str; 3] = ["i.scdn.co", "i.ytimg.com", "images.unsplash.com"];
+    let host = authority.to_ascii_lowercase();
+    ALLOWED_HOSTS
+        .iter()
+        .any(|allowed| host == *allowed || host.ends_with(&format!(".{allowed}")))
+}
+
 pub struct DiscordRpcState {
     client: Option<DiscordIpcClient>,
     current_client_id: String,
@@ -32,10 +56,10 @@ impl DiscordRpcState {
         client_id: Option<&str>,
     ) -> Result<&mut DiscordIpcClient, String> {
         let target_id = client_id.unwrap_or(DEFAULT_CLIENT_ID).trim();
-        let target_id = if target_id.is_empty() {
-            DEFAULT_CLIENT_ID
-        } else {
+        let target_id = if valid_client_id(target_id) {
             target_id
+        } else {
+            DEFAULT_CLIENT_ID
         };
 
         if self.current_client_id != target_id {
@@ -73,10 +97,7 @@ impl DiscordRpcState {
                 trimmed_artist.to_string()
             };
 
-        let has_http_cover = input
-            .cover_url
-            .map(|url| url.starts_with("http://") || url.starts_with("https://"))
-            .unwrap_or(false);
+        let has_http_cover = input.cover_url.map(valid_cover_url).unwrap_or(false);
 
         let assets = if has_http_cover {
             let img_url = input.cover_url.unwrap_or_default();
@@ -177,4 +198,37 @@ pub fn clear_discord_activity() -> Result<(), String> {
         .map_err(|_| "Failed to lock Discord RPC mutex")?;
     rpc.clear_activity();
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{valid_client_id, valid_cover_url};
+
+    #[test]
+    fn accepts_only_snowflake_client_ids() {
+        assert!(valid_client_id("1534752337543954512"));
+        assert!(valid_client_id("  1534752337543954512  "));
+        assert!(!valid_client_id(""));
+        assert!(!valid_client_id("short"));
+        assert!(!valid_client_id("1534752337543954512!"));
+        assert!(!valid_client_id("../../etc/passwd"));
+    }
+
+    #[test]
+    fn accepts_only_allowlisted_https_covers() {
+        assert!(valid_cover_url("https://i.scdn.co/image/abc"));
+        assert!(valid_cover_url(
+            "https://i.ytimg.com/vi/abc/maxresdefault.jpg"
+        ));
+        assert!(valid_cover_url(
+            "https://images.unsplash.com/photo-123?w=600"
+        ));
+        assert!(valid_cover_url("https://a.i.ytimg.com/x.jpg"));
+        assert!(!valid_cover_url("http://i.scdn.co/image/abc"));
+        assert!(!valid_cover_url("https://evil.test/i.scdn.co/x.jpg"));
+        assert!(!valid_cover_url("https://i.scdn.co.evil.test/x.jpg"));
+        assert!(!valid_cover_url("https://user@i.scdn.co/x.jpg"));
+        assert!(!valid_cover_url("https://i.scdn.co:444/x.jpg"));
+        assert!(!valid_cover_url("asset://localhost/covers/x.png"));
+    }
 }

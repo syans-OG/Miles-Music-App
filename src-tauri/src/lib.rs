@@ -208,9 +208,15 @@ async fn save_imported_audio(
     let library_dir = app_handle
         .path()
         .app_local_data_dir()
-        .map_err(|error| error.to_string())?
+        .map_err(|error| {
+            log::warn!("save_imported_audio_library_dir_failed err={error}");
+            "Could not access music library".to_string()
+        })?
         .join("library");
-    std::fs::create_dir_all(&library_dir).map_err(|error| error.to_string())?;
+    std::fs::create_dir_all(&library_dir).map_err(|error| {
+        log::warn!("save_imported_audio_create_dir_failed err={error}");
+        "Could not access music library".to_string()
+    })?;
 
     let InvokeBody::Raw(bytes) = request.body() else {
         return Err("Audio file payload is invalid".to_string());
@@ -220,7 +226,10 @@ async fn save_imported_audio(
     let file_hash = format!("{:x}", Sha256::digest(bytes));
     let destination = library_dir.join(format!("{file_hash}.{extension}"));
     if !destination.exists() {
-        std::fs::write(&destination, bytes).map_err(|error| error.to_string())?;
+        std::fs::write(&destination, bytes).map_err(|error| {
+            log::warn!("save_imported_audio_write_failed err={error}");
+            "Could not save audio file".to_string()
+        })?;
     }
 
     let mut metadata = ImportedAudioMetadata {
@@ -306,15 +315,22 @@ fn remove_managed_file(library_dir: &Path, file_path: Option<String>) -> Result<
         return Ok(());
     }
 
-    let canonical_library =
-        std::fs::canonicalize(library_dir).map_err(|error| error.to_string())?;
-    let canonical_candidate =
-        std::fs::canonicalize(&candidate).map_err(|error| error.to_string())?;
+    let canonical_library = std::fs::canonicalize(library_dir).map_err(|error| {
+        log::warn!("remove_managed_file_canonicalize_library_failed err={error}");
+        "Could not verify library file".to_string()
+    })?;
+    let canonical_candidate = std::fs::canonicalize(&candidate).map_err(|error| {
+        log::warn!("remove_managed_file_canonicalize_candidate_failed err={error}");
+        "Could not verify library file".to_string()
+    })?;
     if !canonical_candidate.starts_with(&canonical_library) || !canonical_candidate.is_file() {
         return Err("File is outside the application library".to_string());
     }
 
-    std::fs::remove_file(canonical_candidate).map_err(|error| error.to_string())
+    std::fs::remove_file(canonical_candidate).map_err(|error| {
+        log::warn!("remove_managed_file_delete_failed err={error}");
+        "Could not delete library file".to_string()
+    })
 }
 
 #[tauri::command]
@@ -326,7 +342,10 @@ async fn delete_library_song(
     let library_dir = app_handle
         .path()
         .app_local_data_dir()
-        .map_err(|error| error.to_string())?
+        .map_err(|error| {
+            log::warn!("delete_library_song_library_dir_failed err={error}");
+            "Could not access music library".to_string()
+        })?
         .join("library");
 
     remove_managed_file(&library_dir, file_path)?;
@@ -459,12 +478,20 @@ async fn resize_widget_window(
 
         if end_x > start_x || end_y > start_y {
             // Anchored right/bottom: Set position first to keep right/bottom edge aligned, then trim size
-            let _ = window.set_position(target_pos);
-            let _ = window.set_size(target_size);
+            window
+                .set_position(target_pos)
+                .map_err(|error| format!("resize_widget_window set_position failed: {error}"))?;
+            window
+                .set_size(target_size)
+                .map_err(|error| format!("resize_widget_window set_size failed: {error}"))?;
         } else {
             // Anchored left/top: Set size first, then fine-tune position
-            let _ = window.set_size(target_size);
-            let _ = window.set_position(target_pos);
+            window
+                .set_size(target_size)
+                .map_err(|error| format!("resize_widget_window set_size failed: {error}"))?;
+            window
+                .set_position(target_pos)
+                .map_err(|error| format!("resize_widget_window set_position failed: {error}"))?;
         }
 
         Ok(())
@@ -560,7 +587,7 @@ async fn handle_drag_end_snap(window: Window) -> Result<String, String> {
                 Ok(()) => Ok(corner_name.to_string()),
                 Err(error) => {
                     log::warn!("handle_drag_end_snap_final_set_position_failed corner={corner_name} err={error}");
-                    Ok(corner_name.to_string())
+                    Ok("free".to_string())
                 }
             }
         } else {
@@ -606,50 +633,21 @@ pub fn run() {
             }
         }))
         .setup(|app| {
-            let header_item = MenuItem::with_id(
-                app,
-                "header",
-                "🎵 Miles v1.0.7",
-                false,
-                None::<&str>,
-            )?;
+            let header_item =
+                MenuItem::with_id(app, "header", "🎵 Miles v1.0.7", false, None::<&str>)?;
             let sep1 = PredefinedMenuItem::separator(app)?;
 
-            let play_pause_item = MenuItem::with_id(
-                app,
-                "play_pause",
-                "⏯️ Play / Pause",
-                true,
-                None::<&str>,
-            )?;
-            let next_item =
-                MenuItem::with_id(app, "next", "⏭️ Next Track", true, None::<&str>)?;
-            let prev_item =
-                MenuItem::with_id(app, "prev", "⏮️ Prev Track", true, None::<&str>)?;
+            let play_pause_item =
+                MenuItem::with_id(app, "play_pause", "⏯️ Play / Pause", true, None::<&str>)?;
+            let next_item = MenuItem::with_id(app, "next", "⏭️ Next Track", true, None::<&str>)?;
+            let prev_item = MenuItem::with_id(app, "prev", "⏮️ Prev Track", true, None::<&str>)?;
             let sep2 = PredefinedMenuItem::separator(app)?;
 
             // Submenu: Player Mode
-            let mode1_item = MenuItem::with_id(
-                app,
-                "mode_1",
-                "🎚️ Console Bar",
-                true,
-                None::<&str>,
-            )?;
-            let mode2_item = MenuItem::with_id(
-                app,
-                "mode_2",
-                "💿 Turntable",
-                true,
-                None::<&str>,
-            )?;
-            let mode3_item = MenuItem::with_id(
-                app,
-                "mode_3",
-                "🫧 Bubble",
-                true,
-                None::<&str>,
-            )?;
+            let mode1_item =
+                MenuItem::with_id(app, "mode_1", "🎚️ Console Bar", true, None::<&str>)?;
+            let mode2_item = MenuItem::with_id(app, "mode_2", "💿 Turntable", true, None::<&str>)?;
+            let mode3_item = MenuItem::with_id(app, "mode_3", "🫧 Bubble", true, None::<&str>)?;
             let mode_submenu = Submenu::with_items(
                 app,
                 "🎛️ Player Mode",
@@ -658,27 +656,12 @@ pub fn run() {
             )?;
 
             // Submenu: Playback / Queue
-            let loop_item = MenuItem::with_id(
-                app,
-                "toggle_loop",
-                "🔂 Loop Track",
-                true,
-                None::<&str>,
-            )?;
-            let shuffle_item = MenuItem::with_id(
-                app,
-                "shuffle_queue",
-                "🔀 Shuffle Queue",
-                true,
-                None::<&str>,
-            )?;
-            let clear_queue_item = MenuItem::with_id(
-                app,
-                "clear_queue",
-                "🗑️ Clear Queue",
-                true,
-                None::<&str>,
-            )?;
+            let loop_item =
+                MenuItem::with_id(app, "toggle_loop", "🔂 Loop Track", true, None::<&str>)?;
+            let shuffle_item =
+                MenuItem::with_id(app, "shuffle_queue", "🔀 Shuffle Queue", true, None::<&str>)?;
+            let clear_queue_item =
+                MenuItem::with_id(app, "clear_queue", "🗑️ Clear Queue", true, None::<&str>)?;
             let queue_submenu = Submenu::with_items(
                 app,
                 "🔁 Playback",
@@ -688,13 +671,7 @@ pub fn run() {
 
             let sep3 = PredefinedMenuItem::separator(app)?;
 
-            let quit_item = MenuItem::with_id(
-                app,
-                "quit",
-                "⏻ Exit Miles",
-                true,
-                None::<&str>,
-            )?;
+            let quit_item = MenuItem::with_id(app, "quit", "⏻ Exit Miles", true, None::<&str>)?;
 
             let menu = Menu::with_items(
                 app,

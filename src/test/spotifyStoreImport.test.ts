@@ -127,6 +127,48 @@ describe('Spotify store import behavior', () => {
     expect(state.spotifyImportTask?.report).toMatchObject({ added: 1, skipped: 1, processed: 2 });
   });
 
+  it('counts backend-dropped tracks as skipped with reasons', async () => {
+    mockedInvoke.mockImplementation(async (command) => {
+      if (command === 'fetch_spotify_playlist') return {
+        resource_type: 'playlist',
+        id: '37i9dQZF1DXcBWIGoYBM5M',
+        title: 'Gappy Playlist',
+        owner: 'Fixture Owner',
+        cover_url: 'https://i.scdn.co/image/playlist-cover',
+        tracks: [
+          { id: '4xF4ZBGPZKxECeDFrqSAG4', title: 'Good Track', artist: 'Good Artist', duration_seconds: 180, search_query: 'Good Artist Good Track' },
+        ],
+        skipped: [
+          { title: null, reason: 'missing_title' },
+          { title: 'Bad Id Track', reason: 'invalid_track_id' },
+        ],
+      };
+      if (command === 'match_spotify_track') return {
+        status: 'matched',
+        spotifyId: '4xF4ZBGPZKxECeDFrqSAG4',
+        videoId: 'aaaaaaaaaaa',
+        title: 'Good Artist - Good Track',
+        artist: 'Good Artist',
+        durationSeconds: 180,
+        canonicalUrl: 'https://www.youtube.com/watch?v=aaaaaaaaaaa',
+        score: 95,
+      };
+      throw new Error(`Unexpected command: ${command}`);
+    });
+
+    await usePlayerStore.getState().importSpotifyUrl(
+      'https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M',
+    );
+
+    const state = usePlayerStore.getState();
+    expect(state.spotifyImportTask?.status).toBe('partial');
+    expect(state.spotifyImportTask?.report).toMatchObject({ added: 1, skipped: 2, processed: 3, total: 3 });
+    expect(state.spotifyImportTask?.report.skippedItems).toEqual([
+      { title: 'Unknown track', reason: 'Missing title' },
+      { title: 'Bad Id Track', reason: 'Invalid Spotify ID' },
+    ]);
+  });
+
   it('uses playlist artwork as the initial cover even when a YouTube thumbnail is available', async () => {
     mockedInvoke.mockImplementation(async (command) => {
       if (command === 'fetch_spotify_playlist') return {

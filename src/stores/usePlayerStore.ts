@@ -788,6 +788,21 @@ export const usePlayerStore = create<PlayerStore>()(
               ? undefined
               : `spotify-${data.resource_type}-${data.id}`;
             let report = createSpotifyReport(data.title || 'Spotify', tracks.length, truncated);
+            for (const item of data.skipped ?? []) {
+              report = {
+                ...report,
+                skipped: report.skipped + 1,
+                processed: report.processed + 1,
+                total: report.total + 1,
+                skippedItems: [
+                  ...report.skippedItems,
+                  {
+                    title: item.title || 'Unknown track',
+                    reason: item.reason === 'missing_title' ? 'Missing title' : 'Invalid Spotify ID',
+                  },
+                ],
+              };
+            }
             let startedPlayback = false;
 
             if (tracks.length === 0) {

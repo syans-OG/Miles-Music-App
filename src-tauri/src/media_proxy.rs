@@ -170,10 +170,7 @@ impl MediaProxy {
         match upstream.send() {
             Ok(response) => respond_with_upstream(request, response),
             Err(error) => {
-                log::warn!(
-                    "media_proxy_upstream_failed err={error} url={url}",
-                    url = session.upstream_url
-                );
+                log::warn!("media_proxy_upstream_failed err={error}");
                 let _ = request.respond(empty_response(502));
             }
         }

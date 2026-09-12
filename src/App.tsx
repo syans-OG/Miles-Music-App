@@ -44,8 +44,8 @@ export const App: React.FC = () => {
   useWindowResizer();
 
   useEffect(() => {
-    const { mode, colorId, custom } = useThemeStore.getState();
-    applyTheme(mode, colorId, custom);
+    const { mode, colorId, custom, floating } = useThemeStore.getState();
+    applyTheme(mode, colorId, custom, floating);
   }, []);
 
   useEffect(() => {

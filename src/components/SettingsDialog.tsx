@@ -54,13 +54,15 @@ export const SettingsPanel: React.FC = () => {
     setEnableDiscordRpc: state.setEnableDiscordRpc,
   })));
 
-  const { mode, setMode, colorId, setColorId, custom, setCustom } = useThemeStore(useShallow((state) => ({
+  const { mode, setMode, colorId, setColorId, custom, setCustom, floating, setFloating } = useThemeStore(useShallow((state) => ({
     mode: state.mode,
     setMode: state.setMode,
     colorId: state.colorId,
     setColorId: state.setColorId,
     custom: state.custom,
     setCustom: state.setCustom,
+    floating: state.floating,
+    setFloating: state.setFloating,
   })));
 
   const volumeLabel = isMuted ? 'MUTE' : `${Math.round(volume * 100)}%`;
@@ -85,14 +87,14 @@ export const SettingsPanel: React.FC = () => {
             <p className="text-[10px] font-semibold text-th-primary">Mode</p>
             <p className="mt-0.5 text-[8px] text-slate-500">Dark / Light</p>
           </div>
-          <div className="grid min-w-0 flex-1 grid-cols-2 gap-1 rounded-xl bg-th-soft p-1" role="group" aria-label="Theme mode">
+          <div className="grid min-w-0 flex-1 grid-cols-3 gap-1 rounded-xl bg-th-soft p-1" role="group" aria-label="Theme mode">
             {themeModeOptions.map((option) => {
-              const isActive = mode === option.value;
+              const isActive = !floating && mode === option.value;
               return (
                 <button
                   key={option.value}
                   type="button"
-                  onClick={() => setMode(option.value)}
+                  onClick={() => { setFloating(false); setMode(option.value); }}
                   className={`rounded-lg px-1 py-1.5 text-[8px] font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-amber-300/50 active:scale-[0.97] ${isActive ? 'bg-th-pill-active text-th-pill-active-text shadow-sm' : 'text-slate-500 hover:bg-th-soft-strong hover:text-th-primary'}`}
                   aria-pressed={isActive}
                 >
@@ -100,6 +102,14 @@ export const SettingsPanel: React.FC = () => {
                 </button>
               );
             })}
+            <button
+              type="button"
+              onClick={() => setFloating(true)}
+              className={`rounded-lg px-1 py-1.5 text-[8px] font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-amber-300/50 active:scale-[0.97] ${floating ? 'bg-th-pill-active text-th-pill-active-text shadow-sm' : 'text-slate-500 hover:bg-th-soft-strong hover:text-th-primary'}`}
+              aria-pressed={floating}
+            >
+              Transparent
+            </button>
           </div>
         </div>
 

@@ -10,6 +10,11 @@ export interface SpotifyTrackEntry {
   search_query: string;
 }
 
+export interface SpotifySkippedTrack {
+  title: string | null;
+  reason: string;
+}
+
 export interface SpotifyPlaylistImport {
   resource_type: SpotifyResourceType;
   id: string;
@@ -17,6 +22,7 @@ export interface SpotifyPlaylistImport {
   owner: string;
   cover_url?: string;
   tracks: SpotifyTrackEntry[];
+  skipped: SpotifySkippedTrack[];
 }
 
 export interface SpotifyImportError {

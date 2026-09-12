@@ -17,6 +17,12 @@ pub struct SpotifyTrackEntry {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SpotifySkippedTrack {
+    pub title: Option<String>,
+    pub reason: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SpotifyPlaylistImport {
     pub resource_type: String,
     pub id: String,
@@ -24,6 +30,7 @@ pub struct SpotifyPlaylistImport {
     pub owner: String,
     pub cover_url: Option<String>,
     pub tracks: Vec<SpotifyTrackEntry>,
+    pub skipped: Vec<SpotifySkippedTrack>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -219,6 +226,7 @@ pub async fn fetch_spotify_playlist(
                         .map(|s| s.to_string());
 
                     let mut tracks = Vec::new();
+                    let mut skipped = Vec::new();
                     let raw_track_list = entity
                         .pointer("/trackList")
                         .and_then(|v| v.as_array())
@@ -237,6 +245,10 @@ pub async fn fetch_spotify_playlist(
                                 .unwrap_or("");
 
                             if title_str.is_empty() {
+                                skipped.push(SpotifySkippedTrack {
+                                    title: None,
+                                    reason: "missing_title".to_string(),
+                                });
                                 continue;
                             }
 
@@ -276,6 +288,14 @@ pub async fn fetch_spotify_playlist(
                                 .unwrap_or(180000);
 
                             let Some(tid) = extract_spotify_track_id(track_obj) else {
+                                skipped.push(SpotifySkippedTrack {
+                                    title: if title_str.is_empty() {
+                                        None
+                                    } else {
+                                        Some(title_str.to_string())
+                                    },
+                                    reason: "invalid_track_id".to_string(),
+                                });
                                 continue;
                             };
 
@@ -301,6 +321,7 @@ pub async fn fetch_spotify_playlist(
                             owner: html_escape_decode(owner),
                             cover_url,
                             tracks,
+                            skipped,
                         });
                     }
                 }
@@ -340,6 +361,7 @@ pub async fn fetch_spotify_playlist(
                         duration_seconds: 180,
                         search_query: format!("{} {}", artist_name, song_title),
                     }],
+                    skipped: Vec::new(),
                 });
             }
         }

@@ -167,11 +167,13 @@ export const CUSTOM_VAR_KEYS = Object.keys(getCustomVars('dark', DEFAULT_CUSTOM)
 export const customAccentStyle = (mode: ThemeMode, c: CustomColor): string =>
   `hsl(${((c.hue % 360) + 360) % 360}, ${clamp(c.sat, 0, 100)}%, ${accentLightFor(mode, c.light)}%)`;
 
-export const applyTheme = (mode: ThemeMode, colorId: ThemeColorId, custom: CustomColor = DEFAULT_CUSTOM): void => {
+export const applyTheme = (mode: ThemeMode, colorId: ThemeColorId, custom: CustomColor = DEFAULT_CUSTOM, floating = false): void => {
   const root = document.documentElement;
   root.dataset.mode = mode;
   root.dataset.color = colorId;
   root.style.colorScheme = mode;
+  if (floating) root.dataset.floating = 'on';
+  else delete root.dataset.floating;
   for (const key of CUSTOM_VAR_KEYS) root.style.removeProperty(key);
   if (colorId === 'custom') {
     for (const [key, value] of Object.entries(getCustomVars(mode, custom))) {
@@ -184,16 +186,19 @@ interface ThemeState {
   mode: ThemeMode;
   colorId: ThemeColorId;
   custom: CustomColor;
+  floating: boolean;
   setMode: (mode: ThemeMode) => void;
   toggleMode: () => void;
   setColorId: (colorId: ThemeColorId) => void;
   setCustom: (patch: Partial<CustomColor>) => void;
+  setFloating: (floating: boolean) => void;
 }
 
 const initialState = {
   mode: 'dark' as ThemeMode,
   colorId: 'minimal' as ThemeColorId,
   custom: DEFAULT_CUSTOM as CustomColor,
+  floating: false,
 };
 
 export const useThemeStore = create<ThemeState>()(
@@ -202,7 +207,7 @@ export const useThemeStore = create<ThemeState>()(
       ...initialState,
       setMode: (mode) => {
         set({ mode });
-        applyTheme(mode, get().colorId, get().custom);
+        applyTheme(mode, get().colorId, get().custom, get().floating);
       },
       toggleMode: () => {
         const next = get().mode === 'dark' ? 'light' : 'dark';
@@ -210,20 +215,24 @@ export const useThemeStore = create<ThemeState>()(
       },
       setColorId: (colorId) => {
         set({ colorId });
-        applyTheme(get().mode, colorId, get().custom);
+        applyTheme(get().mode, colorId, get().custom, get().floating);
       },
       setCustom: (patch) => {
         const custom = { ...get().custom, ...patch, light: 50, tint: 70 };
         set({ custom });
         if (get().colorId === 'custom') {
-          applyTheme(get().mode, 'custom', custom);
+          applyTheme(get().mode, 'custom', custom, get().floating);
         }
+      },
+      setFloating: (floating) => {
+        set({ floating });
+        applyTheme(get().mode, get().colorId, get().custom, floating);
       },
     }),
     {
       name: 'miles_theme',
       version: 3,
-      partialize: (state) => ({ mode: state.mode, colorId: state.colorId, custom: state.custom }),
+      partialize: (state) => ({ mode: state.mode, colorId: state.colorId, custom: state.custom, floating: state.floating }),
       migrate: (persistedState, _version) => {
         const prev = persistedState as Partial<ThemeState> & { customHue?: number };
         const oldHue = typeof prev.customHue === 'number' ? prev.customHue : undefined;
@@ -241,7 +250,7 @@ export const useThemeStore = create<ThemeState>()(
         const mode = state?.mode ?? initialState.mode;
         const colorId = state?.colorId ?? initialState.colorId;
         const custom = state?.custom ?? initialState.custom;
-        applyTheme(mode, colorId, custom);
+        applyTheme(mode, colorId, custom, state?.floating ?? initialState.floating);
       },
     }
   )
