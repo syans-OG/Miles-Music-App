@@ -1,41 +1,42 @@
-# Miles Music Player
+<p align="center">
+  <img src="src-tauri/icons/miles-logo-master.png" width="120" alt="Miles logo" />
+</p>
 
-Miles is a lightweight cross-platform desktop music player built with Tauri, Rust, React, and TypeScript. It plays managed local audio files, public YouTube videos and playlists, and public Spotify links (playlists, albums, tracks) through a compact, three-mode Hi-Fi vinyl interface.
+<h1 align="center">Miles Music Player</h1>
 
-## Download
+<p align="center">
+  <a href="https://github.com/syans-OG/Miles-Music-App/releases/latest"><img src="https://img.shields.io/github/v/release/syans-OG/Miles-Music-App" alt="Latest release" /></a>
+  <a href="https://github.com/syans-OG/Miles-Music-App/actions/workflows/ci.yml"><img src="https://github.com/syans-OG/Miles-Music-App/actions/workflows/ci.yml/badge.svg" alt="CI status" /></a>
+  <img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT license" />
+</p>
 
-[Download the latest installer](https://github.com/syans-OG/Miles-Music-App/releases/latest)
-
-Miles targets Windows x64, macOS Apple Silicon, macOS Intel, and Linux x64. Release installers are published as GitHub Release assets and are not committed to the source repository.
+> A lightweight, local-first desktop music player for your audio files, YouTube, and Spotify links — no accounts, no telemetry, no API keys.
 
 ## Features
 
-- Three compact player modes: control bar, vinyl widget, and micro bubble.
-- Spotify link import: import public Spotify playlists, albums, and single tracks without login or API keys.
-- YouTube video and playlist import with lazy audio-stream resolution.
-- Discord Rich Presence (RPC): display currently playing track, artist, duration, playback status, and custom artwork on Discord.
-- Managed local library with metadata and embedded-cover extraction.
-- Automatic track-level album cover art resolution.
-- Full English UI localization across console bar, music drawer, settings, and notifications.
-- Playlist, queue, favorite, play-count, resume, and always-on-top state persistence.
-- Bounded imports: up to 128 MB per local file and 50 files per selection.
-- No telemetry, account requirement, Google API key, YouTube/Spotify login, or tracking cookies.
+- **Three player modes** — Full control bar, floating vinyl Widget, and Mini micro-bubble, with magnetic edge snapping and always-on-top.
+- **Transparent Floating UI** — panels dissolve away so only the controls float over your desktop; empty areas stay click-through.
+- **Themes** — Dark / Light / Transparent, curated presets (Minimal, Emerald, Sunset), plus a custom color wheel for your own accent.
+- **Offline downloads** — download YouTube tracks for offline playback with a queued, cancellable task list; each song keeps its own file.
+- **Link imports** — paste public YouTube videos/playlists or Spotify tracks/albums/playlists; matching and deduplication handled automatically.
+- **Local library** — drag-and-drop MP3/audio import with metadata and cover extraction, content-hash deduplication, playlists with drag-reorder, favorites, top songs, and resume.
+- **Discord Rich Presence** — show the current track, artist, and artwork on Discord (optional, configurable client ID).
+- **System tray** — play/pause/next and mode switching without opening the window.
 
-## Security and privacy
+## Download
 
-Miles stores library files and preferences locally. YouTube and Spotify stream URLs remain in volatile memory and are never persisted. The integration validates hosts and IDs, isolates sidecar execution, limits concurrent processes, and terminates timed-out process trees.
+Grab the installer for your platform from the [latest release](https://github.com/syans-OG/Miles-Music-App/releases/latest):
 
-The pinned yt-dlp and Deno sidecars are downloaded from their official GitHub releases and verified with SHA256 checksums at download time, clean build time, and runtime. Never add cookies, downloaded media, user library files, or resolved stream URLs to this repository.
+| Platform | Asset |
+| -------- | ----- |
+| Windows x64 | `.msi` / `-setup.exe` |
+| macOS Apple Silicon | `.dmg` (aarch64) |
+| macOS Intel | `.dmg` (x64) |
+| Linux x64 | `.AppImage` / `.deb` |
 
-See [SECURITY.md](SECURITY.md) for private vulnerability reporting.
+## Quick start
 
-## Build from source
-
-Requirements:
-
-- Node.js 22 or newer
-- Rust stable with the toolchain for your target
-- Tauri's system prerequisites for Windows, macOS, or Linux
+Prerequisites: **Node.js 22+**, a **Rust stable** toolchain, and the [Tauri system prerequisites](https://v2.tauri.app/start/prerequisites/) for your OS.
 
 ```powershell
 git clone https://github.com/syans-OG/Miles-Music-App.git
@@ -45,13 +46,31 @@ node scripts/download-sidecars.mjs
 npm run tauri dev
 ```
 
-Create a release installer:
+> [!NOTE]
+> `download-sidecars.mjs` is a required one-time step: it fetches the pinned `yt-dlp` + Deno sidecars and verifies their SHA256 checksums.
+
+Web-only preview (no desktop shell, Tauri APIs stubbed out):
+
+```powershell
+npm run dev
+```
+
+## Usage
+
+- **Switch modes** from the window controls or tray: Full for the drawer library, Widget/Mini to keep music floating beside your work.
+- **Import links** with the `+` button in the control bar — YouTube and Spotify URLs are detected automatically.
+- **Download for offline** from any song's `···` menu, or select several discs and hit the download button; progress lives in the pill at the bottom.
+- **Theme it** from the gear menu: pick Dark / Light / **Transparent**, a preset, or drag the custom color wheel until it feels like yours.
+
+## Build & validate
+
+Release installer:
 
 ```powershell
 npm run tauri -- build
 ```
 
-Run validation:
+Run all checks before pushing:
 
 ```powershell
 npm run build
@@ -62,12 +81,24 @@ cargo clippy --all-targets -- -D warnings
 cargo test
 ```
 
-## Third-party components
+## Project structure
 
-Binary distributions include yt-dlp and Deno. Their pinned versions, source URLs, and checksums are declared in `src-tauri/sidecars/`; applicable notices are kept in `src-tauri/licenses/`.
+```
+src/                 React frontend (components, stores, services, types, tests)
+src-tauri/           Rust backend (audio import, YouTube/Spotify, media proxy, tray)
+src-tauri/sidecars/  Pinned sidecar versions + SHA256 checksums
+scripts/             Sidecar downloader
+```
 
-Miles is not affiliated with or endorsed by Spotify, YouTube, yt-dlp, Deno, or Google. Use the application only for personal content or content you are authorized to access, in accordance with applicable terms and law.
+## Security & privacy
 
-## License
+Miles is local-first: your library and preferences stay on your machine, and resolved stream URLs live only in memory — never on disk or in git. Uploads are size- and type-checked, file deletes are confined to the library folder, and sidecars are checksum-verified at download, build, and runtime.
 
-Miles source code is available under the [MIT License](LICENSE). Bundled third-party components remain subject to their respective licenses.
+> [!WARNING]
+> Never commit cookies, downloaded media, stream URLs, or credentials to this repository.
+
+See [SECURITY.md](SECURITY.md) to report a vulnerability privately.
+
+## Acknowledgments
+
+Bundled binaries: [yt-dlp](https://github.com/yt-dlp/yt-dlp) and [Deno](https://github.com/denoland/deno) (see `src-tauri/sidecars/` and `src-tauri/licenses/`). Miles is not affiliated with or endorsed by Spotify, YouTube, yt-dlp, Deno, or Google — use it only for content you own or are authorized to access.
