@@ -64,7 +64,9 @@ impl DiscordRpcState {
 
         if self.current_client_id != target_id {
             if let Some(mut client) = self.client.take() {
-                let _ = client.close();
+                if let Err(error) = client.close() {
+                    log::warn!("discord_client_close_failed err={error}");
+                }
             }
             self.current_client_id = target_id.to_string();
         }
@@ -144,7 +146,9 @@ impl DiscordRpcState {
 
     pub fn clear_activity(&mut self) {
         if let Some(client) = self.client.as_mut() {
-            let _ = client.clear_activity();
+            if let Err(error) = client.clear_activity() {
+                log::warn!("discord_clear_activity_failed err={error}");
+            }
         }
     }
 }

@@ -1,7 +1,7 @@
 export const MAX_LOCAL_AUDIO_FILE_BYTES = 128 * 1024 * 1024;
 export const MAX_LOCAL_IMPORT_FILES = 50;
 
-const SUPPORTED_AUDIO_EXTENSION = /\.(mp3|wav|flac|m4a|aac|ogg)$/i;
+const SUPPORTED_AUDIO_EXTENSION = /\.(mp3|wav|flac|m4a|aac|ogg|opus)$/i;
 
 interface LocalAudioCandidate {
   name: string;

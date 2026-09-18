@@ -168,19 +168,31 @@ export const migrateSongToV2 = (value: unknown): Song | null => {
   });
 };
 
-const migrateSongList = (value: unknown) => Array.isArray(value)
-  ? value.map(migrateSongToV2).filter((song): song is Song => song !== null)
-  : [];
+const migrateSongList = (value: unknown) => {
+  if (!Array.isArray(value)) return [];
+  const songs = value.map(migrateSongToV2).filter((song): song is Song => song !== null);
+  if (songs.length < value.length) {
+    console.warn(`[Persist] Migration dropped ${value.length - songs.length} song(s) due to invalid schema`);
+  }
+  return songs;
+};
 
 const migratePlaylists = (value: unknown, libraryById: Map<string, Song>): Playlist[] => {
   if (!Array.isArray(value)) return [];
-  return value.flatMap((item) => {
-    if (!isRecord(item)) return [];
+  let dropped = 0;
+  const playlists = value.flatMap((item) => {
+    if (!isRecord(item)) {
+      dropped += 1;
+      return [];
+    }
     const id = optionalString(item.id);
     const name = optionalString(item.name);
     const curator = optionalString(item.curator);
     const coverUrl = optionalString(item.coverUrl);
-    if (!id || !name || !curator || !coverUrl) return [];
+    if (!id || !name || !curator || !coverUrl) {
+      dropped += 1;
+      return [];
+    }
     const songIds = migrateSongList(item.songs).map((song) => song.id);
     const rawSource = isRecord(item.source) ? item.source : null;
     const youtubePlaylistId = rawSource?.kind === 'youtube'
@@ -209,6 +221,10 @@ const migratePlaylists = (value: unknown, libraryById: Map<string, Song>): Playl
       source,
     }];
   });
+  if (dropped > 0) {
+    console.warn(`[Persist] Migration dropped ${dropped} playlist(s) due to invalid schema`);
+  }
+  return playlists;
 };
 
 export const migratePlayerPersistedState = (persistedState: unknown, _version: number): unknown => {

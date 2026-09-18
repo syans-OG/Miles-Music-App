@@ -115,7 +115,7 @@ pub fn normalize_track_json(contents: &str) -> Result<ResolvedYoutubeTrack, Yout
     let parsed_stream = validate_stream_url(stream_url)?;
     let extension = raw.ext.as_deref().unwrap_or_default().to_ascii_lowercase();
     let audio_codec = raw.acodec.as_deref().unwrap_or_default().to_string();
-    if !matches!(extension.as_str(), "m4a" | "mp4" | "aac")
+    if !matches!(extension.as_str(), "webm" | "opus" | "m4a" | "mp4" | "aac")
         || audio_codec.is_empty()
         || audio_codec == "none"
         || raw.vcodec.as_deref().is_some_and(|codec| codec != "none")
@@ -338,7 +338,7 @@ mod tests {
         assert_eq!(track.video_id, "dQw4w9WgXcQ");
         assert_eq!(track.artist, "Fixture Artist");
         assert_eq!(track.duration_seconds, 212);
-        assert_eq!(track.stream.extension, "m4a");
+        assert_eq!(track.stream.extension, "webm");
         assert_eq!(track.stream.expires_at_unix, Some(2_000_000_000));
         assert!(track
             .thumbnail_url

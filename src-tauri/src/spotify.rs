@@ -122,7 +122,8 @@ async fn fetch_bounded_text(
     client: &reqwest::Client,
     url: &str,
 ) -> Result<String, SpotifyImportError> {
-    let response = client.get(url).send().await.map_err(|_| {
+    let response = client.get(url).send().await.map_err(|error| {
+        log::error!("spotify_send_failed url={url} err={error}");
         spotify_error(
             "FETCH_FAILED",
             "Miles could not connect to Spotify. Please try again.",
@@ -139,14 +140,16 @@ async fn fetch_bounded_text(
         ));
     }
 
-    let mut response = response.error_for_status().map_err(|_| {
+    let mut response = response.error_for_status().map_err(|error| {
+        log::error!("spotify_http_error url={url} err={error}");
         spotify_error(
             "SPOTIFY_HTTP_ERROR",
             "Spotify did not accept the request. Check that the link is public and available.",
         )
     })?;
     let mut body = Vec::new();
-    while let Some(chunk) = response.chunk().await.map_err(|_| {
+    while let Some(chunk) = response.chunk().await.map_err(|error| {
+        log::error!("spotify_read_failed url={url} err={error}");
         spotify_error(
             "READ_FAILED",
             "Miles could not read Spotify's response. Please try again.",
@@ -155,7 +158,8 @@ async fn fetch_bounded_text(
         append_bounded(&mut body, &chunk, MAX_SPOTIFY_RESPONSE_BYTES)?;
     }
 
-    String::from_utf8(body).map_err(|_| {
+    String::from_utf8(body).map_err(|error| {
+        log::error!("spotify_invalid_utf8 url={url} err={error}");
         spotify_error(
             "INVALID_RESPONSE",
             "Spotify returned a response Miles could not process.",
@@ -188,7 +192,8 @@ pub async fn fetch_spotify_playlist(
         .user_agent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
         .timeout(std::time::Duration::from_secs(12))
         .build()
-        .map_err(|_| {
+        .map_err(|error| {
+            log::error!("spotify_client_build_failed err={error}");
             spotify_error(
                 "HTTP_CLIENT_ERROR",
                 "Miles could not initialize the Spotify connection.",

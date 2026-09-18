@@ -1,5 +1,5 @@
 import React from 'react';
-import { Gamepad2, Palette, Paintbrush, Pin, Repeat2, Settings, Square, Volume2 } from 'lucide-react';
+import { Gamepad2, Palette, Paintbrush, Pin, Repeat2, Settings, Sparkles, Square, Volume2 } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
 import { usePlayerStore } from '../stores/usePlayerStore';
 import { useThemeStore, customAccentStyle, ThemeColorId, ThemeMode } from '../stores/useThemeStore';
@@ -75,7 +75,7 @@ export const SettingsPanel: React.FC = () => {
           <h3 id="settings-panel-title" className="flex-shrink-0 text-[12px] font-bold tracking-tight text-th-primary">Miles Settings</h3>
           <span className="truncate text-[8px] text-slate-500">Auto-saved</span>
         </div>
-        <span className="pt-1 font-mono text-[8px] uppercase tracking-[0.14em] text-slate-600">7 preferences</span>
+        <span className="pt-1 font-mono text-[8px] uppercase tracking-[0.14em] text-slate-600">8 preferences</span>
       </header>
 
       <div className="divide-y divide-th-line">
@@ -87,14 +87,14 @@ export const SettingsPanel: React.FC = () => {
             <p className="text-[10px] font-semibold text-th-primary">Mode</p>
             <p className="mt-0.5 text-[8px] text-slate-500">Dark / Light</p>
           </div>
-          <div className="grid min-w-0 flex-1 grid-cols-3 gap-1 rounded-xl bg-th-soft p-1" role="group" aria-label="Theme mode">
+          <div className="grid min-w-0 flex-1 grid-cols-2 gap-1 rounded-xl bg-th-soft p-1" role="group" aria-label="Theme mode">
             {themeModeOptions.map((option) => {
-              const isActive = !floating && mode === option.value;
+              const isActive = mode === option.value;
               return (
                 <button
                   key={option.value}
                   type="button"
-                  onClick={() => { setFloating(false); setMode(option.value); }}
+                  onClick={() => setMode(option.value)}
                   className={`rounded-lg px-1 py-1.5 text-[8px] font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-amber-300/50 active:scale-[0.97] ${isActive ? 'bg-th-pill-active text-th-pill-active-text shadow-sm' : 'text-slate-500 hover:bg-th-soft-strong hover:text-th-primary'}`}
                   aria-pressed={isActive}
                 >
@@ -102,14 +102,6 @@ export const SettingsPanel: React.FC = () => {
                 </button>
               );
             })}
-            <button
-              type="button"
-              onClick={() => setFloating(true)}
-              className={`rounded-lg px-1 py-1.5 text-[8px] font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-amber-300/50 active:scale-[0.97] ${floating ? 'bg-th-pill-active text-th-pill-active-text shadow-sm' : 'text-slate-500 hover:bg-th-soft-strong hover:text-th-primary'}`}
-              aria-pressed={floating}
-            >
-              Transparent
-            </button>
           </div>
         </div>
 
@@ -168,6 +160,29 @@ export const SettingsPanel: React.FC = () => {
             </div>
           </div>
         )}
+
+        <div className="flex h-[48px] items-center gap-3">
+          <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-th-soft text-th-accent">
+            <Sparkles className="h-3.5 w-3.5" strokeWidth={1.8} />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-[10px] font-semibold text-th-primary">Transparent</p>
+            <p className="mt-0.5 text-[8px] text-slate-500">Glass control bar &amp; widget</p>
+          </div>
+          <span className={`font-mono text-[8px] font-bold uppercase ${floating ? 'text-th-accent' : 'text-slate-600'}`}>
+            {floating ? 'ON' : 'OFF'}
+          </span>
+          <button
+            type="button"
+            onClick={() => setFloating(!floating)}
+            className={`relative h-5 w-9 flex-shrink-0 rounded-full transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-amber-300/50 active:scale-[0.96] ${floating ? 'bg-amber-400' : 'bg-slate-700'}`}
+            aria-label="Transparent"
+            aria-pressed={floating}
+          >
+            <span className={`absolute left-0 top-0.5 h-4 w-4 rounded-full shadow-sm transition-transform duration-200 ${floating ? 'translate-x-[18px] bg-th-pill-active-text' : 'translate-x-0.5 bg-slate-300'}`} />
+          </button>
+        </div>
+
         <div className="flex h-[48px] items-center gap-3">
           <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-th-soft text-th-accent">
             <Volume2 className="h-3.5 w-3.5" strokeWidth={1.8} />

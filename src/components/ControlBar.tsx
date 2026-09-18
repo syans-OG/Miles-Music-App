@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { invoke } from '@tauri-apps/api/core';
 import { getCurrentWindow } from '@tauri-apps/api/window';
@@ -142,6 +142,8 @@ export const ControlBar: React.FC = () => {
 
   const [inputUrl, setInputUrl] = useState('');
   const [isReportOpen, setReportOpen] = useState(false);
+  const urlInputRef = useRef<HTMLInputElement>(null);
+  const justPastedRef = useRef(false);
   const detectedSpotify = inputUrl.trim() ? isSpotifyUrl(inputUrl) : false;
   const detectedResource = inputUrl.trim() ? detectYoutubeResource(inputUrl) : null;
   const isYoutubeTaskActive = youtubeImportTask?.status === 'importing' || youtubeImportTask?.status === 'resolving';
@@ -157,12 +159,37 @@ export const ControlBar: React.FC = () => {
   const ledState = playbackError ? 'error' : isPlaybackPending ? 'busy' : isPlaying ? 'play' : 'idle';
   const ledLabel = ledState === 'error' ? 'Needs retry' : ledState === 'busy' ? 'Preparing audio' : ledState === 'play' ? 'Playing' : 'Ready';
 
+  const submitImportFrom = (url: string) => {
+    if (!url.trim() || isImportTaskActive) return false;
+    setReportOpen(false);
+    void addSongFromUrl(url);
+    return true;
+  };
+
   const handleUrlSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!inputUrl.trim() || isImportTaskActive) return;
-    setReportOpen(false);
-    void addSongFromUrl(inputUrl);
+    submitImportFrom(inputUrl);
   };
+
+  useEffect(() => {
+    if (!isUrlInputOpen) return;
+    const onGlobalKeyDown = (event: KeyboardEvent) => {
+      if (!((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'v')) return;
+      const target = event.target as HTMLElement | null;
+      const isEditable = !!target
+        && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable);
+      if (isEditable) {
+        if (target === urlInputRef.current) justPastedRef.current = true;
+        return;
+      }
+      if (!isImportTaskActive) {
+        urlInputRef.current?.focus();
+        justPastedRef.current = true;
+      }
+    };
+    window.addEventListener('keydown', onGlobalKeyDown);
+    return () => window.removeEventListener('keydown', onGlobalKeyDown);
+  }, [isUrlInputOpen, isImportTaskActive]);
 
   const closeImportLedger = () => {
     if (showingSpotifyTask) dismissSpotifyTask();
@@ -280,15 +307,26 @@ export const ControlBar: React.FC = () => {
             <div className="flex-1 flex flex-col justify-center">
               <input
                 type="text"
+                ref={urlInputRef}
                 placeholder={detectedSpotify ? 'Spotify link detected...' : detectedResource?.kind === 'playlist' ? 'YouTube playlist detected...' : detectedResource?.kind === 'video' ? 'YouTube video detected...' : 'Paste link YouTube or Spotify'}
                 value={inputUrl}
-                onChange={(event) => setInputUrl(event.target.value)}
+                onChange={(event) => {
+                  const { value } = event.target;
+                  setInputUrl(value);
+                  if (justPastedRef.current) {
+                    justPastedRef.current = false;
+                    const trimmed = value.trim();
+                    if (trimmed && (detectYoutubeResource(trimmed) !== null || isSpotifyUrl(trimmed))) {
+                      submitImportFrom(trimmed);
+                    }
+                  }
+                }}
                 onKeyDown={(event) => {
                   if (event.key === 'Escape') closeImportLedger();
                 }}
                 disabled={isImportTaskActive}
                 autoFocus
-                className="w-full min-w-0 bg-transparent border-none outline-none text-th-primary text-xs placeholder:text-th-muted font-medium disabled:text-th-faint rounded-md focus-visible:ring-2 focus-visible:ring-amber-400/50 focus-visible:bg-th-soft"
+                className="w-full min-w-0 bg-transparent border-none outline-none text-th-primary text-xs placeholder:text-th-muted font-medium disabled:text-th-faint rounded-md"
               />
             </div>
 

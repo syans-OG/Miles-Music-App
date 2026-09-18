@@ -38,9 +38,9 @@ const TRACK_ARGUMENTS: [&str; 9] = [
     "--no-cache-dir",
     "--no-warnings",
     "--format",
-    "bestaudio[ext=m4a]/bestaudio",
+    "bestaudio[acodec=opus]/bestaudio[ext=m4a]/bestaudio",
     "--format-sort",
-    "ext:m4a",
+    "acodec:opus",
 ];
 const SPOTIFY_MATCH_ARGUMENTS: [&str; 7] = [
     "--flat-playlist",
@@ -145,7 +145,7 @@ impl YoutubeCommandService {
             "--no-cache-dir",
             "--no-warnings",
             "--format",
-            "ba[ext=m4a]/ba",
+            "ba[acodec=opus]/ba",
             "--write-thumbnail",
             "--output",
             &output_str,
@@ -234,7 +234,7 @@ impl YoutubeCommandService {
             .path()
             .extension()
             .and_then(|e| e.to_str())
-            .unwrap_or("m4a")
+            .unwrap_or("opus")
             .to_string();
 
         std::fs::create_dir_all(&library_dir)
@@ -446,7 +446,10 @@ pub async fn import_youtube_playlist(
     let service = service.inner().clone();
     tauri::async_runtime::spawn_blocking(move || service.import_playlist(url))
         .await
-        .unwrap_or_else(|_| Err(YoutubeError::new(YoutubeErrorCode::ProcessFailed)))
+        .unwrap_or_else(|error| {
+            log::error!("youtube_worker_panic import_playlist: {error}");
+            Err(YoutubeError::new(YoutubeErrorCode::ProcessFailed))
+        })
 }
 
 #[tauri::command]
@@ -466,7 +469,10 @@ pub async fn resolve_youtube_track(
         Ok(track)
     })
     .await
-    .unwrap_or_else(|_| Err(YoutubeError::new(YoutubeErrorCode::ProcessFailed)))
+    .unwrap_or_else(|error| {
+        log::error!("youtube_worker_panic resolve_track: {error}");
+        Err(YoutubeError::new(YoutubeErrorCode::ProcessFailed))
+    })
 }
 
 #[tauri::command]
@@ -495,7 +501,10 @@ pub async fn match_spotify_track(
         )
     })
     .await
-    .unwrap_or_else(|_| Err(YoutubeError::new(YoutubeErrorCode::ProcessFailed)))
+    .unwrap_or_else(|error| {
+        log::error!("youtube_worker_panic match_spotify_track: {error}");
+        Err(YoutubeError::new(YoutubeErrorCode::ProcessFailed))
+    })
 }
 
 #[tauri::command]
@@ -519,7 +528,10 @@ pub async fn download_youtube_track(
         service.download_track_with(video_id, YoutubeExecutables::verified()?, library_dir)
     })
     .await
-    .unwrap_or_else(|_| Err(YoutubeError::new(YoutubeErrorCode::ProcessFailed)))
+    .unwrap_or_else(|error| {
+        log::error!("youtube_worker_panic download_track: {error}");
+        Err(YoutubeError::new(YoutubeErrorCode::ProcessFailed))
+    })
 }
 
 #[tauri::command]
@@ -633,7 +645,7 @@ mod tests {
     fn operation_arguments_never_request_media_downloads() {
         assert!(PLAYLIST_ARGUMENTS.contains(&"--skip-download"));
         assert!(TRACK_ARGUMENTS.contains(&"--skip-download"));
-        assert!(TRACK_ARGUMENTS.contains(&"bestaudio[ext=m4a]/bestaudio"));
+        assert!(TRACK_ARGUMENTS.contains(&"bestaudio[acodec=opus]/bestaudio[ext=m4a]/bestaudio"));
         assert!(!PLAYLIST_ARGUMENTS
             .iter()
             .any(|value| value.contains("cookies")));

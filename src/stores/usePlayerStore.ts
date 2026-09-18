@@ -318,8 +318,12 @@ const deduplicatedLocalStorage: StateStorage = {
   },
   setItem: (name, value) => {
     if (storageValueCache.get(name) === value) return;
-    window.localStorage.setItem(name, value);
-    storageValueCache.set(name, value);
+    try {
+      window.localStorage.setItem(name, value);
+      storageValueCache.set(name, value);
+    } catch (error) {
+      console.warn('[Persist] localStorage write failed:', error);
+    }
   },
   removeItem: (name) => {
     window.localStorage.removeItem(name);
@@ -346,7 +350,10 @@ const getAudioDuration = (file: File): Promise<number> => {
     };
     const timer = window.setTimeout(() => finish(180), 8000);
     audio.onloadedmetadata = () => finish(Math.round(audio.duration) || 180);
-    audio.onerror = () => finish(180);
+    audio.onerror = () => {
+      console.warn('[Player] Audio metadata unreadable, defaulting to 180s');
+      finish(180);
+    };
   });
 };
 
@@ -1016,6 +1023,7 @@ export const usePlayerStore = create<PlayerStore>()(
             });
           } catch (error: unknown) {
             if (activeSpotifyImportRequestId !== requestId) return;
+            console.error('[Spotify] import failed:', error);
             const message = error instanceof Error ? error.message : 'Failed to import from Spotify';
             set({
               spotifyImportTask: {
@@ -1255,9 +1263,7 @@ export const usePlayerStore = create<PlayerStore>()(
           } catch (error) {
             if (activeYoutubeImportRequestId !== requestId) return;
             const mapped = error instanceof YoutubeServiceError ? error : null;
-            if (mapped?.detail) {
-              console.error(`[YouTube] import failed (${mapped.code}): ${mapped.detail}`);
-            }
+            console.error('[YouTube] import failed:', mapped?.code ?? 'unknown', mapped?.detail ?? mapped?.message ?? error);
             const activeTask = get().youtubeImportTask?.requestId === requestId
               ? get().youtubeImportTask
               : null;

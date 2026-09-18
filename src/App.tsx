@@ -237,7 +237,7 @@ export const App: React.FC = () => {
       <WindowControlsBar />
       {/* Drag & Drop Fullscreen Overlay */}
       {isDraggingOver && (
-        <div className="fixed inset-0 z-50 bg-[color-mix(in_srgb,var(--th-surface)_90%,transparent)] backdrop-blur-md flex flex-col items-center justify-center border-4 border-dashed border-amber-400/60 transition-all animate-fade-in rounded-3xl">
+        <div className="fixed inset-0 z-50 bg-[color-mix(in_srgb,var(--th-elevated)_90%,transparent)] backdrop-blur-md flex flex-col items-center justify-center border-4 border-dashed border-amber-400/60 transition-all animate-fade-in rounded-3xl">
           <div className="w-20 h-20 rounded-full bg-th-accent-soft text-th-accent flex items-center justify-center mb-4 shadow-2xl animate-bounce">
             <UploadCloud className="w-10 h-10" />
           </div>
@@ -247,7 +247,7 @@ export const App: React.FC = () => {
       )}
 
       {showBackgroundResult && youtubeImportTask && (
-        <div className={`absolute left-1/2 top-7 z-[100] flex -translate-x-1/2 items-center gap-2 rounded-[4px] border border-th-line bg-th-surface px-2.5 py-2 shadow-2xl ${mode === 'control-bar' ? 'w-[420px]' : mode === 'vinyl-widget' ? 'w-[184px]' : 'w-[144px]'}`} role="status">
+        <div className={`absolute left-1/2 top-7 z-[100] flex -translate-x-1/2 items-center gap-2 rounded-[4px] border border-th-line bg-th-elevated px-2.5 py-2 shadow-2xl ${mode === 'control-bar' ? 'w-[420px]' : mode === 'vinyl-widget' ? 'w-[184px]' : 'w-[144px]'}`} role="status">
           {youtubeImportTask.status === 'success'
             ? <Check className="h-3.5 w-3.5 flex-shrink-0 text-emerald-300" />
             : <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0 text-rose-300" />}

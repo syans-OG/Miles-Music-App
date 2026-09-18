@@ -89,7 +89,11 @@ export const toYoutubeServiceError = (error: unknown): YoutubeServiceError => {
       });
     }
   }
-  return new YoutubeServiceError({ code: 'process_failed', retryable: false });
+  return new YoutubeServiceError({
+    code: 'process_failed',
+    retryable: false,
+    detail: error instanceof Error ? error.message : String(error),
+  });
 };
 
 const isFresh = (stream: YoutubeAudioStream) =>

@@ -150,6 +150,7 @@ fn file_type_matches_extension(file_type: FileType, extension: &str) -> bool {
             file_type,
             FileType::Vorbis | FileType::Opus | FileType::Speex
         ),
+        "opus" => file_type == FileType::Opus,
         _ => false,
     }
 }
@@ -200,7 +201,7 @@ async fn save_imported_audio(
 
     if !matches!(
         extension.as_str(),
-        "mp3" | "wav" | "flac" | "m4a" | "aac" | "ogg"
+        "mp3" | "wav" | "flac" | "m4a" | "aac" | "ogg" | "opus"
     ) {
         return Err(format!("Audio format .{extension} is not supported"));
     }
@@ -352,6 +353,13 @@ async fn delete_library_song(
     remove_managed_file(&library_dir, cover_path)
 }
 
+fn window_scale_factor(window: &Window) -> f64 {
+    window.scale_factor().unwrap_or_else(|error| {
+        log::warn!("scale_factor_unavailable_defaulting_to_1.0 err={error}");
+        1.0
+    })
+}
+
 #[tauri::command]
 async fn resize_widget_window(
     window: Window,
@@ -359,7 +367,7 @@ async fn resize_widget_window(
     height: f64,
     dock_position: String,
 ) -> Result<(), String> {
-    let factor = window.scale_factor().unwrap_or(1.0);
+    let factor = window_scale_factor(&window);
     let target_w = (width * factor).round();
     let target_h = (height * factor).round();
 
@@ -505,7 +513,7 @@ async fn handle_drag_end_snap(window: Window) -> Result<String, String> {
         window.outer_size(),
         window.current_monitor(),
     ) {
-        let factor = window.scale_factor().unwrap_or(1.0);
+        let factor = window_scale_factor(&window);
         let physical_w = size.width as i32;
         let physical_h = size.height as i32;
 

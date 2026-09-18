@@ -146,7 +146,7 @@ impl MediaProxy {
             let _ = request.respond(empty_response(404));
             return;
         };
-        if self.inner.active_requests.fetch_add(1, Ordering::AcqRel) > MAX_ACTIVE_REQUESTS {
+        if self.inner.active_requests.fetch_add(1, Ordering::AcqRel) >= MAX_ACTIVE_REQUESTS {
             self.inner.active_requests.fetch_sub(1, Ordering::AcqRel);
             let _ = request.respond(empty_response(503));
             return;

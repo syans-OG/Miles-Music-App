@@ -187,20 +187,26 @@ impl ProcessRunner {
         attempt: u8,
     ) -> Result<ProcessOutput, ProcessError> {
         let started = Instant::now();
-        let mut child = spawn_child(&request).map_err(|_| ProcessError {
-            request_id,
-            kind: ProcessErrorKind::SpawnFailed,
-            exit_code: None,
-            diagnostic: Vec::new(),
+        let mut child = spawn_child(&request).map_err(|error| {
+            log::error!("youtube_spawn_failed request_id={request_id} err={error}");
+            ProcessError {
+                request_id,
+                kind: ProcessErrorKind::SpawnFailed,
+                exit_code: None,
+                diagnostic: format!("spawn_failed: {error}").into_bytes(),
+            }
         })?;
         let _active_process = ActiveProcess::register(child.id());
         let readers =
             start_output_readers(&mut child, self.max_stdout_bytes, self.max_stderr_bytes)
-                .map_err(|_| ProcessError {
-                    request_id,
-                    kind: ProcessErrorKind::SpawnFailed,
-                    exit_code: None,
-                    diagnostic: Vec::new(),
+                .map_err(|error| {
+                    log::error!("youtube_reader_setup_failed request_id={request_id} err={error}");
+                    ProcessError {
+                        request_id,
+                        kind: ProcessErrorKind::SpawnFailed,
+                        exit_code: None,
+                        diagnostic: format!("reader_setup_failed: {error}").into_bytes(),
+                    }
                 })?;
         let status = self.wait_for_child(request_id, &mut child, cancellation, &readers)?;
         let (stdout, stderr) = readers.finish(request_id)?;

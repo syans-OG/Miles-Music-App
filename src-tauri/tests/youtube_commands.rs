@@ -51,7 +51,7 @@ fn resolve_command_returns_volatile_stream_contract() {
         .expect("resolve command should normalize fixture");
 
     assert_eq!(track.video_id, "dQw4w9WgXcQ");
-    assert_eq!(track.stream.extension, "m4a");
+    assert_eq!(track.stream.extension, "webm");
     assert!(track.stream.url.contains("googlevideo.com"));
 }
 

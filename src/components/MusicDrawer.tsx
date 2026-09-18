@@ -820,7 +820,7 @@ export const MusicDrawer: React.FC = () => {
 
   return (
     /* Bottom Box (Physical Cabinet Drawer): Inset width (400px vs 440px top box) attached directly underneath top console */
-    <div className="w-[400px] self-center bg-[color-mix(in_srgb,var(--th-surface)_95%,transparent)] rounded-b-3xl p-4 border-x border-b border-th-line drawer-cabinet-shadow animate-drawer-pull -mt-2 z-10 relative overflow-hidden">
+    <div className="w-[400px] self-center bg-[color-mix(in_srgb,var(--th-cabinet)_95%,transparent)] rounded-b-3xl p-4 border-x border-b border-th-line drawer-cabinet-shadow animate-drawer-pull -mt-2 z-10 relative overflow-hidden">
 
       {libraryNotice && (
         <div className="absolute left-1/2 top-12 z-[60] max-w-[340px] -translate-x-1/2 rounded-xl border border-amber-400/25 bg-[color-mix(in_srgb,var(--th-elevated)_95%,transparent)] px-3 py-2 text-center text-[10px] font-semibold text-th-primary shadow-xl">
@@ -869,7 +869,7 @@ export const MusicDrawer: React.FC = () => {
         ref={fileInputRef}
         onChange={handleFileChange}
         multiple
-        accept="audio/*,.mp3,.wav,.flac,.m4a,.aac,.ogg"
+        accept="audio/*,.mp3,.wav,.flac,.m4a,.aac,.ogg,.opus"
         className="hidden"
       />
 
@@ -1142,7 +1142,7 @@ export const MusicDrawer: React.FC = () => {
 
             {/* Floating Multi-Select Action Bar */}
             {isSelectMode && (
-              <div className="sticky bottom-0 left-0 right-0 z-50 flex items-center justify-between rounded-xl border border-th-line-strong bg-[color-mix(in_srgb,var(--th-surface)_95%,transparent)] p-2 shadow-2xl backdrop-blur-md">
+              <div className="sticky bottom-0 left-0 right-0 z-50 flex items-center justify-between rounded-xl border border-th-line-strong bg-[color-mix(in_srgb,var(--th-cabinet)_95%,transparent)] p-2 shadow-2xl backdrop-blur-md">
                 <div className="flex items-center gap-2">
                   <span className="rounded-lg bg-amber-400/20 px-2 py-0.5 text-[10px] font-bold text-amber-300">
                     {selectedSongIds.size} Selected

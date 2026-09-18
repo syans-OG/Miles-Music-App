@@ -34,7 +34,7 @@ fn emits_track_json_with_direct_stream_fixture() {
 
     assert!(output.status.success());
     assert_eq!(payload["id"], "dQw4w9WgXcQ");
-    assert_eq!(payload["ext"], "m4a");
+    assert_eq!(payload["ext"], "webm");
     assert!(payload["url"]
         .as_str()
         .is_some_and(|url| url.contains("expire=")));

@@ -107,9 +107,9 @@ const resolvedTrack = (videoId: string, suffix = ''): ResolvedYoutubeTrack => ({
   liveStatus: 'not_live',
   stream: {
     url: `https://rr1---sn-fixture.googlevideo.com/audio-${videoId}${suffix}`,
-    formatId: '140',
-    extension: 'm4a',
-    audioCodec: 'mp4a.40.2',
+    formatId: '251',
+    extension: 'webm',
+    audioCodec: 'opus',
     averageBitrateKbps: 128,
     expiresAtUnix: null,
   },

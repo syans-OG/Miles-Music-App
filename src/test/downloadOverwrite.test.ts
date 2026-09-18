@@ -29,7 +29,7 @@ const ytSong = (videoId: string): Song => ({
 
 const downloadedTrack = (videoId: string) => ({
   videoId,
-  filePath: `D:\\library\\fakehash-${videoId}.m4a`,
+  filePath: `D:\\library\\fakehash-${videoId}.webm`,
   fileHash: `hash-${videoId}`,
   coverPath: null,
   durationSeconds: 180,
@@ -70,9 +70,9 @@ describe('sequential offline downloads keep independent files', () => {
     const offlineB = store.getState().queue.find((s) => s.id === songB.id)?.offline;
 
     expect(offlineA?.fileHash).toBe('hash-aaaaaaaaaaa');
-    expect(offlineA?.filePath).toBe('D:\\library\\fakehash-aaaaaaaaaaa.m4a');
+    expect(offlineA?.filePath).toBe('D:\\library\\fakehash-aaaaaaaaaaa.webm');
     expect(offlineB?.fileHash).toBe('hash-bbbbbbbbbbb');
-    expect(offlineB?.filePath).toBe('D:\\library\\fakehash-bbbbbbbbbbb.m4a');
+    expect(offlineB?.filePath).toBe('D:\\library\\fakehash-bbbbbbbbbbb.webm');
   });
 
   it('invokes the backend once per song with the correct video id', async () => {
@@ -142,8 +142,8 @@ describe('sequential offline downloads keep independent files', () => {
     const offlineA = store.getState().queue.find((s) => s.id === songA.id)?.offline;
     const offlineB = store.getState().queue.find((s) => s.id === songB.id)?.offline;
     expect(offlineA?.fileHash).toBe('hash-aaaaaaaaaaa');
-    expect(offlineA?.filePath).toBe('D:\\library\\fakehash-aaaaaaaaaaa.m4a');
+    expect(offlineA?.filePath).toBe('D:\\library\\fakehash-aaaaaaaaaaa.webm');
     expect(offlineB?.fileHash).toBe('hash-bbbbbbbbbbb');
-    expect(offlineB?.filePath).toBe('D:\\library\\fakehash-bbbbbbbbbbb.m4a');
+    expect(offlineB?.filePath).toBe('D:\\library\\fakehash-bbbbbbbbbbb.webm');
   });
 });

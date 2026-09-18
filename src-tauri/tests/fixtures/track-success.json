@@ -21,8 +21,8 @@
   "is_live": false,
   "live_status": "not_live",
   "url": "https://rr.example.googlevideo.com/videoplayback?expire=2000000000&fixture=1",
-  "ext": "m4a",
-  "acodec": "mp4a.40.2",
+  "ext": "webm",
+  "acodec": "opus",
   "vcodec": "none",
   "protocol": "https",
   "http_headers": {
