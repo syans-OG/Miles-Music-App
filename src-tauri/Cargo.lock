@@ -2216,7 +2216,7 @@ dependencies = [
 
 [[package]]
 name = "miles-music-player"
-version = "1.0.7"
+version = "1.0.8"
 dependencies = [
  "discord-rich-presence",
  "env_logger",

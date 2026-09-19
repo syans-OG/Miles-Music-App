@@ -2,6 +2,32 @@
 
 All notable changes to Miles Music Player are documented here.
 
+## [1.0.8] - 2026-09-19
+
+### Added
+- Offline queued downloads: concurrency-managed download scheduler, download activity panel with progress, and overwrite handling.
+- Library support for local `.opus` files.
+- Theme presets (Minimal, Emerald, Sunset) plus a custom color wheel; hardcoded colors migrated to theme tokens across drawer, dialogs, and widgets.
+- Import URL autofill on Ctrl+V: pasting over the import panel fills the URL and starts importing without pressing Enter.
+- Playlist header actions and the drag-and-reorder stack behind them.
+
+### Changed
+- YouTube streams now prefer Opus (webm) with m4a as fallback.
+- Per-tick time updates no longer write to the persisted store (5s checkpoint sync) — playbackHotPath benchmark: 438.5ms → 15.2ms persisted-set time, storage writes 288 → 18.
+- Embedded cover decode capped at 1024px and stream hashing via `fs::copy` — lower peak RAM on import.
+- Drawer/cabinet stays solid in transparent/floating mode via the `--th-cabinet` token.
+- "Transparent" moved out of the Mode row into its own ON/OFF toggle.
+- User-facing UI strings translated to English (frontend + Rust).
+- Add Songs modal list virtualized for large libraries.
+- Rust logger initialized (`env_logger`) so YouTube/process diagnostics are actually written.
+- Renderer JS heap bounded and WebView2 background services disabled (networking, component update, sync, breakpad, first-run/default-browser checks).
+
+### Fixed
+- Local import duration timeout: duration lookup falls back to 180s after 8s instead of hanging the import.
+- Local import save errors now log the real Tauri error and warn about disk space/permissions instead of mislabeled "invalid file".
+- Silent failures surfaced: localStorage quota, cover write/resize errors, media-proxy boundaries, zero-network cover fallback, YouTube import detail, migration drop warnings.
+- Dev-only dependency bump: vitest to 4.1.11 (GHSA-82fw-gwwq-j7x9).
+
 ## [1.0.7] - 2026-09-09
 
 ### Added
