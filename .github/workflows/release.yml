@@ -75,9 +75,19 @@ jobs:
           tagName: ${{ github.ref_name }}
           releaseName: 'Miles v__VERSION__'
           releaseBody: |
-            ## What's changed
-            - **System tray improvements** - A clearer tray menu and more reliable window restore behavior.
-            - **Playlist cover sync** - Playlist artwork now follows the first track automatically.
+            ## Features
+            - **Theme Presets & Custom Color Wheel** - Pick curated Minimal, Emerald, or Sunset palettes, or dial in a one-of-a-kind accent with the custom color wheel. Themes flow across the player, drawer, dialogs, and widgets.
+            - **Offline Queued Downloads** - A concurrency-managed download scheduler with live progress in the activity panel and safe overwrite handling.
+            - **Opus Audio Preference** - YouTube streams now resolve to the efficient Opus (webm) codec when available, falling back to m4a only when needed; local `.opus` files are fully supported in your library.
+            - **Import URL Autofill (Ctrl+V)** - Pasting a YouTube or Spotify link over the Import panel fills the URL and starts importing instantly - no Enter required.
+
+            ## Performance & Polish
+            - **Far Less Disk Churn** - Per-tick time updates no longer touch the persisted store; 5s checkpoint sync cuts storage writes from 288 to 18 during heavy playback (persisted-set time 438.5ms to 15.2ms).
+            - **Lower Peak Memory** - Embedded cover decode capped at 1024px and stream hashing via `fs::copy` tame RAM spikes; the renderer JS heap is bounded and WebView2 background services are disabled.
+            - **Smoother Large Libraries** - The Add Songs modal is now virtualized to stay fluid with thousands of tracks.
+            - **Solid Cabinet in Floating Mode** - The drawer stays opaque even with Transparent enabled, now a dedicated ON/OFF toggle.
+            - **Fully English UI** - Every user-facing string in the frontend and backend is in English.
+            - **Silent Failures Surfaced** - Save quotas, cover write errors, media-proxy boundaries, and import details now report instead of failing quietly.
 
             ## Downloads
             - [Windows (EXE Installer)](https://github.com/syans-OG/Miles-Music-App/releases/download/v__VERSION__/Miles___VERSION___x64-setup.exe)
