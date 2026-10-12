@@ -1,24 +1,24 @@
 {
-  "schemaVersion": 1,
-  "target": "x86_64-apple-darwin",
-  "binaries": [
-    {
-      "id": "yt-dlp",
-      "version": "2026.08.19",
-      "downloadUrl": "https://github.com/yt-dlp/yt-dlp/releases/download/2026.08.19/yt-dlp_macos",
-      "publisherAssetSha256": "0f192b7ec147ab6288885d6351d9ab67367640029b4377576ef46dd79cf7b202",
-      "fileName": "binaries/yt-dlp-x86_64-apple-darwin",
-      "runtimeFileName": "yt-dlp",
-      "sha256": "0f192b7ec147ab6288885d6351d9ab67367640029b4377576ef46dd79cf7b202"
-    },
-    {
-      "id": "deno",
-      "version": "2.9.4",
-      "downloadUrl": "https://github.com/denoland/deno/releases/download/v2.9.4/deno-x86_64-apple-darwin.zip",
-      "publisherAssetSha256": "f757df6d3991e37601c69fad56c22b37c4ea77b5dcfad3636a642c2ba4c9b19f",
-      "fileName": "binaries/deno-x86_64-apple-darwin",
-      "runtimeFileName": "deno",
-      "sha256": "e0d641386d4f396414da81fa4cfda7b73533ce092a8e12ab0f0551d1a2bc8dcd"
-    }
-  ]
+    "schemaVersion":  1,
+    "target":  "x86_64-apple-darwin",
+    "binaries":  [
+                     {
+                         "id":  "yt-dlp",
+                         "version":  "2026.10.10.233141",
+                         "downloadUrl":  "https://github.com/yt-dlp/yt-dlp-nightly-builds/releases/download/2026.10.10.233141/yt-dlp_macos",
+                         "publisherAssetSha256":  "e7cafc44db8aa433da8dd78303b9157f2c1dd509c4cbfcd8418081b7e1d26a7a",
+                         "fileName":  "binaries/yt-dlp-x86_64-apple-darwin",
+                         "runtimeFileName":  "yt-dlp",
+                         "sha256":  "e7cafc44db8aa433da8dd78303b9157f2c1dd509c4cbfcd8418081b7e1d26a7a"
+                     },
+                     {
+                         "id":  "deno",
+                         "version":  "2.9.4",
+                         "downloadUrl":  "https://github.com/denoland/deno/releases/download/v2.9.4/deno-x86_64-apple-darwin.zip",
+                         "publisherAssetSha256":  "f757df6d3991e37601c69fad56c22b37c4ea77b5dcfad3636a642c2ba4c9b19f",
+                         "fileName":  "binaries/deno-x86_64-apple-darwin",
+                         "runtimeFileName":  "deno",
+                         "sha256":  "e0d641386d4f396414da81fa4cfda7b73533ce092a8e12ab0f0551d1a2bc8dcd"
+                     }
+                 ]
 }

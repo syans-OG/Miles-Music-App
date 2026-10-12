@@ -1,6 +1,15 @@
-# Changelog
+﻿# Changelog
 
 All notable changes to Miles Music Player are documented here.
+
+## [1.0.9] - 2026-10-12
+
+### Security & Reliability
+- **YouTube streaming robustness**: Update pinned yt-dlp sidecar to 2026.10.10.233141 (nightly) to mitigate intermittent buffering/extraction issues caused by recent YouTube changes while awaiting stable release.
+
+### Technical
+- Update manifest checksums and test to match new yt-dlp version.
+
 
 ## [1.0.8] - 2026-09-19
 
@@ -13,8 +22,8 @@ All notable changes to Miles Music Player are documented here.
 
 ### Changed
 - YouTube streams now prefer Opus (webm) with m4a as fallback.
-- Per-tick time updates no longer write to the persisted store (5s checkpoint sync) — playbackHotPath benchmark: 438.5ms → 15.2ms persisted-set time, storage writes 288 → 18.
-- Embedded cover decode capped at 1024px and stream hashing via `fs::copy` — lower peak RAM on import.
+- Per-tick time updates no longer write to the persisted store (5s checkpoint sync) â€” playbackHotPath benchmark: 438.5ms â†’ 15.2ms persisted-set time, storage writes 288 â†’ 18.
+- Embedded cover decode capped at 1024px and stream hashing via `fs::copy` â€” lower peak RAM on import.
 - Drawer/cabinet stays solid in transparent/floating mode via the `--th-cabinet` token.
 - "Transparent" moved out of the Mode row into its own ON/OFF toggle.
 - User-facing UI strings translated to English (frontend + Rust).
@@ -39,7 +48,7 @@ All notable changes to Miles Music Player are documented here.
 - Queue reorder now uses a drag handle instead of Move Up/Down chevron buttons.
 
 ### Fixed
-- Fixed Spotify import producing tracks that could not be matched or played (`SpotifyTrackMatchResult` was serialized snake_case while the frontend read camelCase fields — `videoId`, `thumbnailUrl`, `canonicalUrl` were always `undefined`).
+- Fixed Spotify import producing tracks that could not be matched or played (`SpotifyTrackMatchResult` was serialized snake_case while the frontend read camelCase fields â€” `videoId`, `thumbnailUrl`, `canonicalUrl` were always `undefined`).
 
 ## [1.0.6] - 2026-08-20
 
@@ -87,3 +96,4 @@ All notable changes to Miles Music Player are documented here.
 
 - Keep Spotify and YouTube URL validation, bounded imports, isolated sidecars, timeouts, and process-tree cleanup enabled.
 - Remove the unused Spotify per-track oEmbed request and its image CDN permission.
+

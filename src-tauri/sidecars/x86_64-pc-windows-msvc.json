@@ -1,24 +1,24 @@
 {
-  "schemaVersion": 1,
-  "target": "x86_64-pc-windows-msvc",
-  "binaries": [
-    {
-      "id": "yt-dlp",
-      "version": "2026.08.19",
-      "downloadUrl": "https://github.com/yt-dlp/yt-dlp/releases/download/2026.08.19/yt-dlp.exe",
-      "publisherAssetSha256": "66674953fe251b89f4d08c5f0e35e0728679bd67ab3d7d05c0562af101dd3e7a",
-      "fileName": "binaries/yt-dlp-x86_64-pc-windows-msvc.exe",
-      "runtimeFileName": "yt-dlp.exe",
-      "sha256": "66674953fe251b89f4d08c5f0e35e0728679bd67ab3d7d05c0562af101dd3e7a"
-    },
-    {
-      "id": "deno",
-      "version": "2.9.4",
-      "downloadUrl": "https://github.com/denoland/deno/releases/download/v2.9.4/deno-x86_64-pc-windows-msvc.zip",
-      "publisherAssetSha256": "68ed08b05c56cf887e9aa509947dc3f468f7e12f47a13e5c1abd51d46d1453ef",
-      "fileName": "binaries/deno-x86_64-pc-windows-msvc.exe",
-      "runtimeFileName": "deno.exe",
-      "sha256": "4a2757fe99afc2c62c46500c8221cfa0189ac4bfb7064141875ad9c0f04b60ef"
-    }
-  ]
+    "schemaVersion":  1,
+    "target":  "x86_64-pc-windows-msvc",
+    "binaries":  [
+                     {
+                         "id":  "yt-dlp",
+                         "version":  "2026.10.10.233141",
+                         "downloadUrl":  "https://github.com/yt-dlp/yt-dlp-nightly-builds/releases/download/2026.10.10.233141/yt-dlp.exe",
+                         "publisherAssetSha256":  "e7cafc44db8aa433da8dd78303b9157f2c1dd509c4cbfcd8418081b7e1d26a7a",
+                         "fileName":  "binaries/yt-dlp-x86_64-pc-windows-msvc.exe",
+                         "runtimeFileName":  "yt-dlp.exe",
+                         "sha256":  "e7cafc44db8aa433da8dd78303b9157f2c1dd509c4cbfcd8418081b7e1d26a7a"
+                     },
+                     {
+                         "id":  "deno",
+                         "version":  "2.9.4",
+                         "downloadUrl":  "https://github.com/denoland/deno/releases/download/v2.9.4/deno-x86_64-pc-windows-msvc.zip",
+                         "publisherAssetSha256":  "68ed08b05c56cf887e9aa509947dc3f468f7e12f47a13e5c1abd51d46d1453ef",
+                         "fileName":  "binaries/deno-x86_64-pc-windows-msvc.exe",
+                         "runtimeFileName":  "deno.exe",
+                         "sha256":  "4a2757fe99afc2c62c46500c8221cfa0189ac4bfb7064141875ad9c0f04b60ef"
+                     }
+                 ]
 }

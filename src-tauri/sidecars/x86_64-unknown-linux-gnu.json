@@ -1,24 +1,24 @@
 {
-  "schemaVersion": 1,
-  "target": "x86_64-unknown-linux-gnu",
-  "binaries": [
-    {
-      "id": "yt-dlp",
-      "version": "2026.08.19",
-      "downloadUrl": "https://github.com/yt-dlp/yt-dlp/releases/download/2026.08.19/yt-dlp_linux",
-      "publisherAssetSha256": "58162f9bfdc27458ea47bfcb311cf47028f17d8154a8bf7d689861d46399230a",
-      "fileName": "binaries/yt-dlp-x86_64-unknown-linux-gnu",
-      "runtimeFileName": "yt-dlp",
-      "sha256": "58162f9bfdc27458ea47bfcb311cf47028f17d8154a8bf7d689861d46399230a"
-    },
-    {
-      "id": "deno",
-      "version": "2.9.4",
-      "downloadUrl": "https://github.com/denoland/deno/releases/download/v2.9.4/deno-x86_64-unknown-linux-gnu.zip",
-      "publisherAssetSha256": "c24f955d9fbfe0ea5ae2b501c8e71ae76e31e4c9782390a54a284b3364fda725",
-      "fileName": "binaries/deno-x86_64-unknown-linux-gnu",
-      "runtimeFileName": "deno",
-      "sha256": "1d97ecaf9e6bbb2a99e991caaf64ba9d62bf98759e8ef9938b9005855772b017"
-    }
-  ]
+    "schemaVersion":  1,
+    "target":  "x86_64-unknown-linux-gnu",
+    "binaries":  [
+                     {
+                         "id":  "yt-dlp",
+                         "version":  "2026.10.10.233141",
+                         "downloadUrl":  "https://github.com/yt-dlp/yt-dlp-nightly-builds/releases/download/2026.10.10.233141/yt-dlp_linux",
+                         "publisherAssetSha256":  "e7cafc44db8aa433da8dd78303b9157f2c1dd509c4cbfcd8418081b7e1d26a7a",
+                         "fileName":  "binaries/yt-dlp-x86_64-unknown-linux-gnu",
+                         "runtimeFileName":  "yt-dlp",
+                         "sha256":  "e7cafc44db8aa433da8dd78303b9157f2c1dd509c4cbfcd8418081b7e1d26a7a"
+                     },
+                     {
+                         "id":  "deno",
+                         "version":  "2.9.4",
+                         "downloadUrl":  "https://github.com/denoland/deno/releases/download/v2.9.4/deno-x86_64-unknown-linux-gnu.zip",
+                         "publisherAssetSha256":  "c24f955d9fbfe0ea5ae2b501c8e71ae76e31e4c9782390a54a284b3364fda725",
+                         "fileName":  "binaries/deno-x86_64-unknown-linux-gnu",
+                         "runtimeFileName":  "deno",
+                         "sha256":  "1d97ecaf9e6bbb2a99e991caaf64ba9d62bf98759e8ef9938b9005855772b017"
+                     }
+                 ]
 }
