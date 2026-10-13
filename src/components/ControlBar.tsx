@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+﻿import React, { useEffect, useRef, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { invoke } from '@tauri-apps/api/core';
 import { getCurrentWindow } from '@tauri-apps/api/window';
@@ -82,6 +82,7 @@ export const ControlBar: React.FC = () => {
     volume,
     isMuted,
     toggleMute,
+    setVolume,
     isDrawerOpen,
     toggleDrawer,
     cycleMode,
@@ -118,6 +119,7 @@ export const ControlBar: React.FC = () => {
     volume: state.volume,
     isMuted: state.isMuted,
     toggleMute: state.toggleMute,
+    setVolume: state.setVolume,
     isDrawerOpen: state.isDrawerOpen,
     toggleDrawer: state.toggleDrawer,
     cycleMode: state.cycleMode,
@@ -141,6 +143,8 @@ export const ControlBar: React.FC = () => {
   })));
 
   const [inputUrl, setInputUrl] = useState('');
+  const [volumeOpen, setVolumeOpen] = useState(false);
+  const stripRef = useRef<HTMLDivElement>(null);
   const [isReportOpen, setReportOpen] = useState(false);
   const urlInputRef = useRef<HTMLInputElement>(null);
   const justPastedRef = useRef(false);
@@ -165,6 +169,29 @@ export const ControlBar: React.FC = () => {
     void addSongFromUrl(url);
     return true;
   };
+
+  const handleVolumeChange = (value: number) => {
+    setVolume(value);
+    if (value > 0 && isMuted) toggleMute();
+  };
+
+  useEffect(() => {
+    if (!volumeOpen) return;
+    const handlePointerDown = (event: MouseEvent) => {
+      if (stripRef.current && !stripRef.current.contains(event.target as Node)) {
+        setVolumeOpen(false);
+      }
+    };
+    const handleEsc = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setVolumeOpen(false);
+    };
+    document.addEventListener('mousedown', handlePointerDown);
+    document.addEventListener('keydown', handleEsc);
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown);
+      document.removeEventListener('keydown', handleEsc);
+    };
+  }, [volumeOpen]);
 
   const handleUrlSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -385,7 +412,7 @@ export const ControlBar: React.FC = () => {
                         ['Added', importTask.report.added],
                         ['Duplicates', importTask.report.duplicates],
                         ['Skipped', importTask.report.skipped],
-                        ['Limit 100', importTask.report.truncated ? 'Yes' : '—'],
+                        ['Limit 100', importTask.report.truncated ? 'Yes' : 'â€”'],
                       ].map(([label, value]) => (
                         <span key={label} className="flex flex-col">
                           <strong className="font-mono text-[11px] text-th-primary">{value}</strong>
@@ -549,66 +576,95 @@ export const ControlBar: React.FC = () => {
 
           {/* Bottom Row: Perfect 2 - 3 - 2 Symmetric Hi-Fi Composition */}
           <div className="flex items-center justify-between mt-0.5">
-            {/* Left Utility: Volume & Loop Controls */}
-            <div className="flex items-center gap-1.5">
-              <button
-                onClick={toggleMute}
-                className="p-1.5 text-slate-400 hover:text-th-primary transition-all active:scale-90 rounded-xl hover:bg-th-soft focus-visible:ring-2 focus-visible:ring-amber-400/70 focus-visible:outline-none"
-                title="Mute/Unmute"
-                aria-label="Mute/Unmute"
-              >
-                {isMuted || volume === 0 ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
-              </button>
+            {volumeOpen ? (
+              <div ref={stripRef} className="flex min-w-0 flex-1 items-center gap-2 pr-3">
+                <button
+                  onClick={toggleMute}
+                  className="p-1.5 text-slate-400 hover:text-th-primary transition-all active:scale-90 rounded-xl hover:bg-th-soft focus-visible:ring-2 focus-visible:ring-amber-400/70 focus-visible:outline-none"
+                  title={isMuted ? 'Unmute' : 'Mute'}
+                  aria-label={isMuted ? 'Unmute' : 'Mute'}
+                >
+                  {isMuted || volume === 0 ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
+                </button>
+                <input
+                  type="range"
+                  min={0}
+                  max={1}
+                  step={0.01}
+                  value={isMuted ? 0 : volume}
+                  onChange={(event) => handleVolumeChange(Number(event.target.value))}
+                  aria-label="Volume level"
+                  className="h-1 min-w-0 flex-1 cursor-pointer accent-amber-400 focus-visible:ring-2 focus-visible:ring-amber-300/50"
+                />
+                <span className="w-9 flex-shrink-0 text-right font-mono text-[9px] font-bold text-th-accent">
+                  {isMuted ? 'MUTE' : `${Math.round(volume * 100)}%`}
+                </span>
+              </div>
+            ) : (
+              <>
+                {/* Left Utility: Volume & Loop Controls */}
+                <div className="flex items-center gap-1.5">
+                  <button
+                    onClick={() => setVolumeOpen(true)}
+                    className="p-1.5 text-slate-400 hover:text-th-primary transition-all active:scale-90 rounded-xl hover:bg-th-soft focus-visible:ring-2 focus-visible:ring-amber-400/70 focus-visible:outline-none"
+                    title="Volume"
+                    aria-label="Volume"
+                    aria-expanded={volumeOpen}
+                  >
+                    {isMuted || volume === 0 ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
+                  </button>
 
-              <button
-                onClick={toggleLoop}
-                className={`p-1.5 rounded-xl transition-all active:scale-90 focus-visible:ring-2 focus-visible:ring-amber-400/70 focus-visible:outline-none border ${
-                  isLooping
-                    ? 'bg-amber-400/20 text-amber-300 border-amber-400/40 shadow-sm'
-                    : 'text-slate-400 hover:text-th-primary hover:bg-th-soft border-transparent'
-                }`}
-                title={isLooping ? 'Loop: ON (Repeat This Track)' : 'Loop: OFF'}
-                aria-label="Toggle Loop"
-              >
-                <Repeat className="w-3.5 h-3.5" />
-              </button>
-            </div>
+                  <button
+                    onClick={toggleLoop}
+                    className={`p-1.5 rounded-xl transition-all active:scale-90 focus-visible:ring-2 focus-visible:ring-amber-400/70 focus-visible:outline-none border ${
+                      isLooping
+                        ? 'bg-amber-400/20 text-amber-300 border-amber-400/40 shadow-sm'
+                        : 'text-slate-400 hover:text-th-primary hover:bg-th-soft border-transparent'
+                    }`}
+                    title={isLooping ? 'Loop: ON (Repeat This Track)' : 'Loop: OFF'}
+                    aria-label="Toggle Loop"
+                  >
+                    <Repeat className="w-3.5 h-3.5" />
+                  </button>
+                </div>
 
-            {/* Center Anchor: Perfectly Centered Primary Playback Controls (Prev, Prominent Play Circle, Next) */}
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => playPrev()}
-                className="text-slate-400 hover:text-th-primary transition-all p-1 hover:scale-110 active:scale-90 focus-visible:ring-2 focus-visible:ring-amber-400/70 focus-visible:outline-none rounded-lg"
-                title="Previous Track"
-                aria-label="Previous Track"
-              >
-                <SkipBack className="w-3.5 h-3.5" />
-              </button>
+                {/* Center Anchor: Perfectly Centered Primary Playback Controls (Prev, Prominent Play Circle, Next) */}
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => playPrev()}
+                    className="text-slate-400 hover:text-th-primary transition-all p-1 hover:scale-110 active:scale-90 focus-visible:ring-2 focus-visible:ring-amber-400/70 focus-visible:outline-none rounded-lg"
+                    title="Previous Track"
+                    aria-label="Previous Track"
+                  >
+                    <SkipBack className="w-3.5 h-3.5" />
+                  </button>
 
-              <button
-                onClick={() => togglePlayPause()}
-                className={`w-[22px] h-[22px] rounded-full flex items-center justify-center hover:scale-105 active:scale-90 transition-transform shadow-lg shadow-black/10 focus-visible:ring-2 focus-visible:ring-amber-400/70 focus-visible:outline-none ${playbackError ? 'bg-rose-400 text-white' : 'bg-th-pill-active text-th-pill-active-text'}`}
-                title={playbackError ? `${playbackError.message} Retry` : playbackIntent ? 'Pause' : 'Play'}
-                aria-label={playbackError ? 'Retry' : playbackIntent ? 'Pause' : 'Play'}
-              >
-                {playbackError
-                  ? <RotateCcw className="w-3.5 h-3.5" />
-                  : isPlaybackPending
-                    ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    : playbackIntent
-                      ? <Pause className="w-3.5 h-3.5 fill-current" />
-                      : <Play className="w-3.5 h-3.5 fill-current ml-0.5" />}
-              </button>
+                  <button
+                    onClick={() => togglePlayPause()}
+                    className={`w-[22px] h-[22px] rounded-full flex items-center justify-center hover:scale-105 active:scale-90 transition-transform shadow-lg shadow-black/10 focus-visible:ring-2 focus-visible:ring-amber-400/70 focus-visible:outline-none ${playbackError ? 'bg-rose-400 text-white' : 'bg-th-pill-active text-th-pill-active-text'}`}
+                    title={playbackError ? `${playbackError.message} Retry` : playbackIntent ? 'Pause' : 'Play'}
+                    aria-label={playbackError ? 'Retry' : playbackIntent ? 'Pause' : 'Play'}
+                  >
+                    {playbackError
+                      ? <RotateCcw className="w-3.5 h-3.5" />
+                      : isPlaybackPending
+                        ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        : playbackIntent
+                          ? <Pause className="w-3.5 h-3.5 fill-current" />
+                          : <Play className="w-3.5 h-3.5 fill-current ml-0.5" />}
+                  </button>
 
-              <button
-                onClick={() => playNext()}
-                className="text-slate-400 hover:text-th-primary transition-all p-1 hover:scale-110 active:scale-90 focus-visible:ring-2 focus-visible:ring-amber-400/70 focus-visible:outline-none rounded-lg"
-                title="Next Track"
-                aria-label="Next Track"
-              >
-                <SkipForward className="w-3.5 h-3.5" />
-              </button>
-            </div>
+                  <button
+                    onClick={() => playNext()}
+                    className="text-slate-400 hover:text-th-primary transition-all p-1 hover:scale-110 active:scale-90 focus-visible:ring-2 focus-visible:ring-amber-400/70 focus-visible:outline-none rounded-lg"
+                    title="Next Track"
+                    aria-label="Next Track"
+                  >
+                    <SkipForward className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </>
+            )}
 
             {/* Right Utility: Mode Switcher (Cycle 1 -> 2 -> 3) & Pure Cabinet Drawer Button */}
             <div className="flex items-center gap-1.5">
