@@ -1,4 +1,4 @@
-﻿[package]
+[package]
 name = "miles-music-player"
 version = "1.0.9"
 description = "A lightweight cross-platform music player for local audio and public YouTube links."
