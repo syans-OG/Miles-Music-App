@@ -6,10 +6,10 @@
                          "id":  "yt-dlp",
                          "version":  "2026.10.10.233141",
                          "downloadUrl":  "https://github.com/yt-dlp/yt-dlp-nightly-builds/releases/download/2026.10.10.233141/yt-dlp_macos",
-                         "publisherAssetSha256":  "e7cafc44db8aa433da8dd78303b9157f2c1dd509c4cbfcd8418081b7e1d26a7a",
+                         "publisherAssetSha256":  "c8ee97b3f6aa0fb5cbc3f56d772c0d79dc2c5d3d60f3bf0b240d5dd0d461fd25",
                          "fileName":  "binaries/yt-dlp-aarch64-apple-darwin",
                          "runtimeFileName":  "yt-dlp",
-                         "sha256":  "e7cafc44db8aa433da8dd78303b9157f2c1dd509c4cbfcd8418081b7e1d26a7a"
+                         "sha256":  "c8ee97b3f6aa0fb5cbc3f56d772c0d79dc2c5d3d60f3bf0b240d5dd0d461fd25"
                      },
                      {
                          "id":  "deno",

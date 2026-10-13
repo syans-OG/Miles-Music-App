@@ -6,10 +6,10 @@
                          "id":  "yt-dlp",
                          "version":  "2026.10.10.233141",
                          "downloadUrl":  "https://github.com/yt-dlp/yt-dlp-nightly-builds/releases/download/2026.10.10.233141/yt-dlp_linux",
-                         "publisherAssetSha256":  "e7cafc44db8aa433da8dd78303b9157f2c1dd509c4cbfcd8418081b7e1d26a7a",
+                         "publisherAssetSha256":  "60606cef1a65d70f6639a85b45ebb7acf08dbb81831e134dd93939e23ca2b792",
                          "fileName":  "binaries/yt-dlp-x86_64-unknown-linux-gnu",
                          "runtimeFileName":  "yt-dlp",
-                         "sha256":  "e7cafc44db8aa433da8dd78303b9157f2c1dd509c4cbfcd8418081b7e1d26a7a"
+                         "sha256":  "60606cef1a65d70f6639a85b45ebb7acf08dbb81831e134dd93939e23ca2b792"
                      },
                      {
                          "id":  "deno",
