@@ -31,12 +31,14 @@ const PLAYLIST_ARGUMENTS: [&str; 7] = [
     "--no-cache-dir",
     "--no-warnings",
 ];
-const TRACK_ARGUMENTS: [&str; 9] = [
+const TRACK_ARGUMENTS: [&str; 11] = [
     "--dump-single-json",
     "--no-playlist",
     "--skip-download",
     "--no-cache-dir",
     "--no-warnings",
+    "--extractor-args",
+    "youtube:player_client=visionos",
     "--format",
     "bestaudio[acodec=opus]/bestaudio[ext=m4a]/bestaudio",
     "--format-sort",
@@ -83,6 +85,25 @@ impl From<&VerifiedSidecars> for YoutubeExecutables {
             yt_dlp: sidecars.yt_dlp.clone(),
             deno: sidecars.deno.clone(),
             prefix_arguments: Vec::new(),
+        }
+    }
+}
+
+/// Removes the download scratch dir on early return; explicit removals
+/// elsewhere hit `NotFound` and stay silent.
+struct TempDirGuard {
+    path: PathBuf,
+}
+
+impl Drop for TempDirGuard {
+    fn drop(&mut self) {
+        if let Err(error) = std::fs::remove_dir_all(&self.path) {
+            if error.kind() != std::io::ErrorKind::NotFound {
+                log::warn!(
+                    "youtube_download_temp_cleanup_failed path={} err={error}",
+                    self.path.display()
+                );
+            }
         }
     }
 }
@@ -134,6 +155,9 @@ impl YoutubeCommandService {
             .map_err(schedule_error)?;
 
         let temp_dir = std::env::temp_dir().join(format!("miles-dl-{video_id}"));
+        let _temp_guard = TempDirGuard {
+            path: temp_dir.clone(),
+        };
         let _ = std::fs::remove_dir_all(&temp_dir);
         std::fs::create_dir_all(&temp_dir)
             .map_err(|_| YoutubeError::new(YoutubeErrorCode::ProcessFailed))?;
@@ -646,6 +670,7 @@ mod tests {
         assert!(PLAYLIST_ARGUMENTS.contains(&"--skip-download"));
         assert!(TRACK_ARGUMENTS.contains(&"--skip-download"));
         assert!(TRACK_ARGUMENTS.contains(&"bestaudio[acodec=opus]/bestaudio[ext=m4a]/bestaudio"));
+        assert!(TRACK_ARGUMENTS.contains(&"youtube:player_client=visionos"));
         assert!(!PLAYLIST_ARGUMENTS
             .iter()
             .any(|value| value.contains("cookies")));
