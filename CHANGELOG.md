@@ -4,11 +4,20 @@ All notable changes to Miles Music Player are documented here.
 
 ## [1.0.9] - 2026-10-12
 
-### Security & Reliability
-- **YouTube streaming robustness**: Update pinned yt-dlp sidecar to 2026.10.10.233141 (nightly) to mitigate intermittent buffering/extraction issues caused by recent YouTube changes while awaiting stable release.
+### Fixed
+- **YouTube playback restored**: pin the YouTube player client to `visionos` for stream resolution. The bundled yt-dlp nightly changed its default client to TVHTML5, whose playback signatures YouTube currently rejects with 403 (endless buffering and retry).
+- **YouTube streaming robustness**: update pinned yt-dlp sidecar to 2026.10.10.233141 (nightly) to mitigate intermittent buffering/extraction issues caused by recent YouTube changes while awaiting stable release.
+
+### Added
+- **Quick volume strip in Mode 1**: clicking the volume icon swaps the loop-to-next segment for a mute + slider + percent strip that never shifts the drawer or mode buttons; closes on outside click or Escape, and dragging while muted auto-unmutes.
+
+### Changed
+- **Silent-failure batch**: Discord retry key is written only after a successful update; proxy spawn failures are logged; proxy fallback session shortened from 6h to 30min with a missing-expiry warning; download temp dirs are cleaned on every early return; local duration warnings carry file identity.
+- **Persist hardening**: restored cover/audio URLs are allowlisted (tampered covers fall back, tampered local audio URLs drop the entry).
 
 ### Technical
 - Update manifest checksums and test to match new yt-dlp version.
+- CI audits production dependencies only (`--omit=dev`); dev-only tailwindcss 3 advisories tracked for the Tailwind 4 upgrade.
 
 
 ## [1.0.8] - 2026-09-19
