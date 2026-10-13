@@ -13,7 +13,7 @@ use url::Url;
 
 const MAX_SESSIONS: usize = 8;
 const MAX_ACTIVE_REQUESTS: usize = 8;
-const FALLBACK_SESSION_SECONDS: u64 = 6 * 60 * 60;
+const FALLBACK_SESSION_SECONDS: u64 = 30 * 60;
 const EXPIRY_SAFETY_SECONDS: u64 = 30;
 const UPSTREAM_USER_AGENT: &str =
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/131 Safari/537.36";
@@ -74,9 +74,12 @@ impl MediaProxy {
             .spawn(move || {
                 for request in server.incoming_requests() {
                     let connection_proxy = request_proxy.clone();
-                    let _ = thread::Builder::new()
+                    if let Err(error) = thread::Builder::new()
                         .name("miles-media-stream".to_string())
-                        .spawn(move || connection_proxy.handle_request(request));
+                        .spawn(move || connection_proxy.handle_request(request))
+                    {
+                        log::error!("media_proxy_spawn_failed err={error}");
+                    }
                 }
             })
             .map_err(|_| "Audio proxy server thread could not start".to_string())?;
@@ -94,6 +97,9 @@ impl MediaProxy {
 
     fn register_validated(&self, upstream_url: &str, expires_at_unix: Option<u64>) -> String {
         let now = unix_time();
+        if expires_at_unix.is_none() {
+            log::warn!("media_proxy_missing_expiry");
+        }
         let sequence = self.inner.sequence.fetch_add(1, Ordering::Relaxed) + 1;
         let mut hasher = Sha256::new();
         hasher.update(upstream_url.as_bytes());

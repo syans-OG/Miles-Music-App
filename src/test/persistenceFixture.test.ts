@@ -135,7 +135,7 @@ describe('Zustand persistence V6 migration', () => {
       id: 'spotify-4xF4ZBGPZKxECeDFrqSAG4',
       title: 'Verified track',
       artist: 'Verified artist',
-      coverUrl: 'https://example.com/spotify.jpg',
+      coverUrl: 'https://i.scdn.co/image/spotify',
       source: {
         kind: 'spotify',
         spotifyId: '4xF4ZBGPZKxECeDFrqSAG4',
@@ -168,7 +168,7 @@ describe('Zustand persistence V6 migration', () => {
       canonicalUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
     });
     expect(migrated.queue.find((song) => song.id === spotifySong.id)?.coverUrl)
-      .toBe('https://example.com/spotify.jpg');
+      .toBe('https://i.scdn.co/image/spotify');
     expect(migrated.playlists[0]).toMatchObject({
       source: { kind: 'spotify', spotifyId: '37i9dQZF1DXcBWIGoYBM5M' },
       songs: [{ id: spotifySong.id }],
@@ -217,5 +217,48 @@ describe('Zustand persistence V6 migration', () => {
 
     expect(normalizeRestoredSong(song).coverUrl)
       .toBe('https://i.scdn.co/image/playlist-cover');
+  });
+
+  it('falls back tampered covers and drops tampered local audio URLs', () => {
+    const migrated = migratePlayerPersistedState({
+      queue: [
+        {
+          id: 'yt-tampered-cover',
+          title: 'Tampered cover',
+          artist: 'Evil',
+          coverUrl: 'javascript:alert(1)',
+          source: {
+            kind: 'youtube',
+            videoId: 'dQw4w9WgXcQ',
+            canonicalUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+            availability: 'available',
+          },
+          duration: 180,
+          playCount: 0,
+        },
+        {
+          id: 'local-tampered-audio',
+          title: 'Tampered audio',
+          artist: 'Evil',
+          coverUrl: 'https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg',
+          source: {
+            kind: 'local',
+            filePath: 'C:\\Music\\evil.mp3',
+            audioUrl: 'https://evil.example/audio.mp3',
+            fileHash: 'tampered-hash',
+            managed: true,
+          },
+          duration: 180,
+          playCount: 0,
+        },
+      ],
+      playbackQueue: [],
+      playlists: [],
+      currentSong: null,
+    }, 3) as { queue: Song[] };
+
+    expect(migrated.queue.find((song) => song.id === 'yt-tampered-cover')?.coverUrl)
+      .toBe(SUNFLOWER_DEFAULT_SONG.coverUrl);
+    expect(migrated.queue.some((song) => song.id === 'local-tampered-audio')).toBe(false);
   });
 });

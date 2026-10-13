@@ -23,6 +23,45 @@ const YOUTUBE_AVAILABILITY = new Set<YoutubeAvailability>([
   'live_unsupported',
   'upcoming_unsupported',
 ]);
+const SAFE_COVER_HOSTS = new Set([
+  'i.scdn.co',
+  'i.ytimg.com',
+  'images.unsplash.com',
+  'asset.localhost',
+]);
+const COVER_FALLBACK = SUNFLOWER_DEFAULT_SONG.coverUrl;
+
+const sanitizeCoverUrl = (value: string | undefined): string => {
+  if (value && value.startsWith('asset:')) return value;
+  try {
+    if (!value) return COVER_FALLBACK;
+    const url = new URL(value);
+    if ((url.protocol === 'https:' || url.protocol === 'http:')
+      && !url.username && !url.password && !url.port
+      && SAFE_COVER_HOSTS.has(url.hostname.toLowerCase())) {
+      return value;
+    }
+  } catch {
+    // Fall through to the bundled fallback below.
+  }
+  return COVER_FALLBACK;
+};
+
+const sanitizeLocalAudioUrl = (value: string | undefined): string | undefined => {
+  if (!value) return undefined;
+  if (value.startsWith('asset:')) return value;
+  try {
+    const url = new URL(value);
+    if ((url.protocol === 'https:' || url.protocol === 'http:')
+      && url.hostname.toLowerCase() === 'asset.localhost'
+      && !url.username && !url.password) {
+      return value;
+    }
+    return undefined;
+  } catch {
+    return undefined;
+  }
+};
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -36,7 +75,10 @@ const optionalString = (value: unknown) => typeof value === 'string' && value.le
 const validNumber = (value: unknown, fallback: number) =>
   typeof value === 'number' && Number.isFinite(value) ? value : fallback;
 
-export const normalizeRestoredSong = (song: Song): Song => song;
+export const normalizeRestoredSong = (song: Song): Song => ({
+  ...song,
+  coverUrl: sanitizeCoverUrl(song.coverUrl),
+});
 
 const extractYoutubeVideoId = (value: unknown): string | null => {
   if (typeof value !== 'string') return null;
@@ -72,7 +114,7 @@ const migrateSource = (song: UnknownRecord): LocalSongSource | YoutubeSongSource
   }
   if (source?.kind === 'local') {
     const filePath = optionalString(source.filePath);
-    const audioUrl = optionalString(source.audioUrl);
+    const audioUrl = sanitizeLocalAudioUrl(optionalString(source.audioUrl));
     if (!filePath || !audioUrl) return null;
     return {
       kind: 'local',
@@ -114,7 +156,7 @@ const migrateSource = (song: UnknownRecord): LocalSongSource | YoutubeSongSource
       : null;
   }
 
-  const audioUrl = optionalString(song.audioUrl);
+  const audioUrl = sanitizeLocalAudioUrl(optionalString(song.audioUrl));
   const filePath = optionalString(song.filePath) ?? audioUrl;
   if (!audioUrl || !filePath) return null;
   return {
@@ -133,11 +175,12 @@ const migrateOffline = (value: UnknownRecord): OfflineInfo | undefined => {
   const filePath = optionalString(offline.filePath);
   const fileHash = optionalString(offline.fileHash);
   if (!filePath || !fileHash) return undefined;
+  const remoteCoverUrl = optionalString(offline.remoteCoverUrl);
   return {
     filePath,
     fileHash,
     coverPath: optionalString(offline.coverPath),
-    remoteCoverUrl: optionalString(offline.remoteCoverUrl),
+    remoteCoverUrl: remoteCoverUrl ? sanitizeCoverUrl(remoteCoverUrl) : undefined,
   };
 };
 
@@ -146,9 +189,9 @@ export const migrateSongToV2 = (value: unknown): Song | null => {
   const id = optionalString(value.id);
   const title = optionalString(value.title);
   const artist = optionalString(value.artist);
-  const coverUrl = optionalString(value.coverUrl);
+  const coverUrl = sanitizeCoverUrl(optionalString(value.coverUrl));
   const source = migrateSource(value);
-  if (!id || !title || !artist || !coverUrl || !source) return null;
+  if (!id || !title || !artist || !source) return null;
 
   return normalizeRestoredSong({
     id,
@@ -215,7 +258,7 @@ const migratePlaylists = (value: unknown, libraryById: Map<string, Song>): Playl
       id,
       name,
       curator,
-      coverUrl: songs[0]?.coverUrl || coverUrl,
+      coverUrl: songs[0]?.coverUrl || sanitizeCoverUrl(coverUrl),
       songs,
       isPinned: item.isPinned === true || undefined,
       source,

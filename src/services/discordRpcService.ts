@@ -20,7 +20,6 @@ export const syncDiscordActivity = async (force = false) => {
 
   if (!enabled) {
     if (lastSentKey !== 'disabled') {
-      lastSentKey = 'disabled';
       try {
         await invoke('set_discord_activity', {
           title: '',
@@ -32,6 +31,7 @@ export const syncDiscordActivity = async (force = false) => {
           enabled: false,
           clientId,
         });
+        lastSentKey = 'disabled';
       } catch (error) {
         warnDiscordError('activity disable update failed', error);
       }
@@ -53,7 +53,6 @@ export const syncDiscordActivity = async (force = false) => {
 
   const currentKey = `${title}|${artist}|${coverUrl}|${isPlaying}|${duration}|${clientId}`;
   if (!force && currentKey === lastSentKey) return;
-  lastSentKey = currentKey;
 
   try {
     await invoke('set_discord_activity', {
@@ -66,6 +65,7 @@ export const syncDiscordActivity = async (force = false) => {
       enabled: true,
       clientId,
     });
+    lastSentKey = currentKey;
   } catch (error) {
     warnDiscordError('activity update failed', error);
   }

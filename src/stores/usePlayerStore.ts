@@ -348,10 +348,13 @@ const getAudioDuration = (file: File): Promise<number> => {
       URL.revokeObjectURL(url);
       resolve(duration);
     };
-    const timer = window.setTimeout(() => finish(180), 8000);
+    const timer = window.setTimeout(() => {
+      console.warn('[Player] Audio metadata timeout, defaulting to 180s:', file.name, file.size);
+      finish(180);
+    }, 8000);
     audio.onloadedmetadata = () => finish(Math.round(audio.duration) || 180);
     audio.onerror = () => {
-      console.warn('[Player] Audio metadata unreadable, defaulting to 180s');
+      console.warn('[Player] Audio metadata unreadable, defaulting to 180s:', file.name, file.size);
       finish(180);
     };
   });
